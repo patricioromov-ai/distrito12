@@ -262,10 +262,22 @@ function cambiarApiUrl(){
 }
 
 // ---------- LLAMADAS A LA API ----------
+async function _parsearRespuesta(res){
+  const texto = await res.text();
+  if(!res.ok){
+    throw new Error(`La API respondió con error HTTP ${res.status}. Revisa que la implementación esté publicada con acceso "Cualquier usuario".`);
+  }
+  try{
+    return JSON.parse(texto);
+  } catch(err){
+    // Si Apps Script devuelve HTML (ej. pantalla de login de Google), esto lo detecta
+    throw new Error('La API no devolvió JSON válido (probablemente un problema de permisos en la implementación de Apps Script). Respuesta recibida: ' + texto.slice(0,150));
+  }
+}
 async function apiGet(params){
   const qs = new URLSearchParams({...params, clave: CLAVE}).toString();
   const res = await fetch(`${API_URL}?${qs}`);
-  return res.json();
+  return _parsearRespuesta(res);
 }
 async function apiPost(payload){
   const res = await fetch(API_URL, {
@@ -273,7 +285,7 @@ async function apiPost(payload){
     headers: {'Content-Type': 'text/plain;charset=utf-8'},
     body: JSON.stringify({...payload, clave: CLAVE})
   });
-  return res.json();
+  return _parsearRespuesta(res);
 }
 
 function mostrarCargando(v){ document.getElementById('loadingOverlay').style.display = v ? 'flex':'none'; }
@@ -309,10 +321,10 @@ function cerrarSesion(){
   location.reload();
 }
 
-function toast(msg){
+function toast(msg, duracionMs){
   const t = document.getElementById('toast');
   t.innerText = msg; t.style.display='block';
-  setTimeout(()=>t.style.display='none', 2500);
+  setTimeout(()=>t.style.display='none', duracionMs || 2500);
 }
 
 async function entrarApp(){
@@ -323,20 +335,26 @@ async function entrarApp(){
     document.getElementById('btnWspMasivo').style.display='none';
   }
   mostrarCargando(true);
-  const data = await apiGet({action:'getAll'});
-  mostrarCargando(false);
-  if(!data.ok){ toast(data.error || 'Error cargando datos'); return; }
-  MILITANTES = data.militantes; ROLES = data.roles; PLANTILLAS = data.plantillas;
-  document.getElementById('totalBadge').innerText = MILITANTES.length + ' militantes';
-  poblarFiltros();
-  const fRol = document.getElementById('fRol'), dRol = document.getElementById('dRol');
-  ROLES.forEach(r=>{
-    fRol.innerHTML += `<option value="${r.rol}">${r.rol}</option>`;
-    dRol.innerHTML += `<option value="${r.rol}">${r.rol}</option>`;
-  });
-  const selP = document.getElementById('mPlantilla');
-  PLANTILLAS.forEach(p=> selP.innerHTML += `<option value="${p.id}">${p.nombre}</option>`);
-  aplicarFiltros();
+  try{
+    const data = await apiGet({action:'getAll'});
+    mostrarCargando(false);
+    if(!data.ok){ toast(data.error || 'Error cargando datos'); return; }
+    MILITANTES = data.militantes; ROLES = data.roles; PLANTILLAS = data.plantillas;
+    document.getElementById('totalBadge').innerText = MILITANTES.length + ' militantes';
+    poblarFiltros();
+    const fRol = document.getElementById('fRol'), dRol = document.getElementById('dRol');
+    ROLES.forEach(r=>{
+      fRol.innerHTML += `<option value="${r.rol}">${r.rol}</option>`;
+      dRol.innerHTML += `<option value="${r.rol}">${r.rol}</option>`;
+    });
+    const selP = document.getElementById('mPlantilla');
+    PLANTILLAS.forEach(p=> selP.innerHTML += `<option value="${p.id}">${p.nombre}</option>`);
+    aplicarFiltros();
+  } catch(err){
+    mostrarCargando(false);
+    toast('No se pudo cargar la base: ' + err.message, 8000);
+    console.error(err);
+  }
 }
 
 function poblarFiltros(){
