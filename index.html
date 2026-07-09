@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRYSMA · Gestión Distrital D12</title>
+<style>
+  :root{
+    --navy:#101828; --navy2:#1B2A47; --gold:#C9A227; --gold-light:#E8CE6B;
+    --bg:#F4F5F7; --card:#FFFFFF; --text:#1B2330; --muted:#6B7280; --border:#E3E6EA;
+    --green:#1E8E5A; --red:#C0392B;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);}
+  #configScreen,#loginScreen{height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy),var(--navy2));}
+  #configBox,#loginBox{background:var(--card);padding:40px;border-radius:12px;width:340px;box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center;}
+  #configBox h1,#loginBox h1{font-size:20px;color:var(--navy);margin-bottom:4px;}
+  #configBox p,#loginBox p{color:var(--muted);font-size:13px;margin-top:0;margin-bottom:20px;}
+  #configBox input,#loginBox input{width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;margin-bottom:12px;font-size:13px;}
+  #configBox button,#loginBox button{width:100%;padding:10px;background:var(--gold);border:none;border-radius:6px;font-weight:bold;color:var(--navy);cursor:pointer;font-size:14px;}
+  #loginError,#configError{color:var(--red);font-size:12px;min-height:16px;}
+
+  #app{display:none;height:100vh;flex-direction:column;}
+  header{background:var(--navy);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;}
+  header .brand{font-weight:bold;font-size:16px;}
+  header .brand span{color:var(--gold);}
+  header .userinfo{font-size:12px;color:#cfd4dd;display:flex;align-items:center;gap:12px;}
+  header .badge{background:var(--gold);color:var(--navy);padding:2px 8px;border-radius:10px;font-weight:bold;}
+  header button{background:transparent;border:1px solid #4b5a75;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;}
+
+  #body{display:flex;flex:1;overflow:hidden;}
+  #sidebar{width:230px;background:var(--card);border-right:1px solid var(--border);padding:16px;overflow-y:auto;}
+  #sidebar h3{font-size:11px;text-transform:uppercase;color:var(--muted);margin:16px 0 6px;letter-spacing:.5px;}
+  #sidebar h3:first-child{margin-top:0;}
+  #sidebar select, #sidebar input{width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-bottom:6px;}
+  #sidebar label{display:flex;align-items:center;gap:6px;font-size:12px;padding:2px 0;}
+  #clearFilters{background:none;border:none;color:var(--gold);font-size:11px;cursor:pointer;padding:0;margin-top:8px;}
+
+  #main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+  #toolbar{padding:10px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;}
+  #toolbar input[type=text]{flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;}
+  #toolbar button{padding:8px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;}
+  .btn-gold{background:var(--gold);color:var(--navy);}
+  .btn-outline{background:#fff;border:1px solid var(--border) !important;color:var(--text);}
+  .btn-green{background:var(--green);color:#fff;}
+  #selCount{font-size:12px;color:var(--muted);}
+
+  #tableWrap{flex:1;overflow:auto;padding:0 16px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;}
+  thead th{position:sticky;top:0;background:var(--navy);color:#fff;padding:8px;text-align:left;z-index:2;}
+  tbody td{padding:7px 8px;border-bottom:1px solid var(--border);}
+  tbody tr:hover{background:#F7F5EA;cursor:pointer;}
+  .rolPill{padding:2px 8px;border-radius:10px;font-size:11px;color:#fff;}
+  .noEmail,.noTel{color:var(--muted);opacity:.4;}
+  #pager{display:flex;justify-content:center;gap:8px;padding:10px;font-size:12px;align-items:center;}
+  #pager button{padding:4px 10px;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;}
+
+  #overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10;}
+  #drawer{display:none;position:fixed;right:0;top:0;bottom:0;width:420px;max-width:92vw;background:#fff;z-index:11;box-shadow:-8px 0 24px rgba(0,0,0,.15);overflow-y:auto;}
+  #drawer .dhead{background:var(--navy);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}
+  #drawer .dhead h2{margin:0;font-size:16px;}
+  #drawer .dhead button{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;}
+  #drawer .section{padding:16px 20px;border-bottom:1px solid var(--border);}
+  #drawer .section h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.5px;}
+  #drawer label{font-size:11px;color:var(--muted);display:block;margin-top:8px;}
+  #drawer input,#drawer select,#drawer textarea{width:100%;padding:7px;border:1px solid var(--border);border-radius:6px;font-size:13px;margin-top:2px;}
+  #drawer iframe{width:100%;height:180px;border:0;border-radius:8px;}
+  .actionRow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .actionRow button{flex:1;padding:8px;border-radius:6px;border:none;font-size:12px;cursor:pointer;font-weight:600;}
+  #notaList{max-height:140px;overflow-y:auto;font-size:11.5px;color:var(--muted);margin-top:8px;white-space:pre-wrap;background:#FAFAFA;padding:8px;border-radius:6px;}
+
+  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;align-items:center;justify-content:center;}
+  #modal{background:#fff;border-radius:10px;width:480px;max-width:92vw;max-height:85vh;overflow-y:auto;}
+  #modal .mhead{background:var(--navy);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;border-radius:10px 10px 0 0;}
+  #modal .mbody{padding:20px;}
+  #modal label{font-size:11px;color:var(--muted);display:block;margin-top:10px;}
+  #modal input,#modal select,#modal textarea{width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;margin-top:3px;}
+  #modal textarea{min-height:120px;}
+  #modal .mfoot{padding:14px 20px;text-align:right;border-top:1px solid var(--border);}
+  #toast{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:30;}
+  #loadingOverlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.6);z-index:40;align-items:center;justify-content:center;font-size:13px;color:var(--navy);}
+</style>
+</head>
+<body>
+
+<!-- CONFIG (primera vez: URL de la API) -->
+<div id="configScreen">
+  <div id="configBox">
+    <h1>PRYSMA</h1>
+    <p>Configura la URL de tu API de Apps Script (una sola vez, se guarda en este navegador)</p>
+    <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+    <button onclick="guardarApiUrl()">Continuar</button>
+    <div id="configError"></div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen" style="display:none;">
+  <div id="loginBox">
+    <h1>PRYSMA</h1>
+    <p>Gestión Distrital · Distrito 12</p>
+    <input type="password" id="passInput" placeholder="Clave de acceso" onkeydown="if(event.key==='Enter')hacerLogin()">
+    <button onclick="hacerLogin()">Ingresar</button>
+    <div id="loginError"></div>
+    <p style="margin-top:16px;"><a href="#" onclick="cambiarApiUrl();return false;" style="color:var(--muted);font-size:11px;">Cambiar URL de la API</a></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="brand">PRYSMA <span>· Distrito 12</span></div>
+    <div class="userinfo">
+      <span id="totalBadge"></span>
+      <span class="badge" id="rolBadge"></span>
+      <button onclick="cerrarSesion()">Salir</button>
+    </div>
+  </header>
+  <div id="body">
+    <div id="sidebar">
+      <h3>Comuna</h3>
+      <select id="fComuna" onchange="aplicarFiltros()"><option value="">Todas</option></select>
+      <h3>Sexo</h3>
+      <select id="fSexo" onchange="aplicarFiltros()">
+        <option value="">Todos</option><option value="M">Mujer</option><option value="V">Varón</option>
+      </select>
+      <h3>Rango de edad</h3>
+      <input type="number" id="fEdadMin" placeholder="Mín" onkeyup="aplicarFiltros()">
+      <input type="number" id="fEdadMax" placeholder="Máx" onkeyup="aplicarFiltros()">
+      <h3>Rol</h3>
+      <select id="fRol" onchange="aplicarFiltros()"><option value="">Todos</option></select>
+      <h3>Contacto</h3>
+      <label><input type="checkbox" id="fConEmail" onchange="aplicarFiltros()"> Solo con email</label>
+      <label><input type="checkbox" id="fConTel" onchange="aplicarFiltros()"> Solo con teléfono</label>
+      <button id="clearFilters" onclick="limpiarFiltros()">Limpiar filtros</button>
+    </div>
+    <div id="main">
+      <div id="toolbar">
+        <input type="text" id="buscar" placeholder="Buscar por nombre, cédula o domicilio…" onkeyup="aplicarFiltros()">
+        <span id="selCount">0 seleccionados</span>
+        <button class="btn-outline" onclick="exportarCSV()">Exportar CSV</button>
+        <button class="btn-green" id="btnWspMasivo" onclick="abrirWhatsAppMasivo()">WhatsApp</button>
+        <button class="btn-gold" id="btnEmailMasivo" onclick="abrirModalCorreo(true)">Enviar correo</button>
+      </div>
+      <div id="tableWrap">
+        <table>
+          <thead><tr>
+            <th><input type="checkbox" id="chkAll" onchange="toggleAll(this)"></th>
+            <th>Nombre</th><th>Comuna</th><th>Sexo</th><th>Edad</th><th>Rol</th><th>Estado</th><th></th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div id="pager"></div>
+    </div>
+  </div>
+</div>
+
+<div id="overlay" onclick="cerrarDrawer()"></div>
+<div id="drawer">
+  <div class="dhead"><h2 id="dNombre">—</h2><button onclick="cerrarDrawer()">✕</button></div>
+  <div class="section">
+    <h4>Datos de contacto</h4>
+    <label>Email</label><input id="dEmail">
+    <label>Teléfono</label><input id="dTelefono">
+    <label>Domicilio</label><input id="dDomicilio">
+    <label>Comuna</label><input id="dComuna">
+    <div class="actionRow"><button class="btn-gold" onclick="guardarDatos()">Guardar cambios</button></div>
+  </div>
+  <div class="section">
+    <h4>Ubicación</h4>
+    <iframe id="dMapa" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </div>
+  <div class="section">
+    <h4>Rol y estado</h4>
+    <label>Rol asignado</label>
+    <select id="dRol"></select>
+    <label>Estado</label>
+    <input id="dEstado">
+    <div class="actionRow"><button class="btn-gold" onclick="guardarRolEstado()">Guardar</button></div>
+  </div>
+  <div class="section">
+    <h4>Acciones rápidas</h4>
+    <div class="actionRow">
+      <button class="btn-gold" onclick="abrirModalCorreo(false)">Enviar correo</button>
+      <button class="btn-green" onclick="whatsappIndividual()">WhatsApp</button>
+    </div>
+    <div class="actionRow"><button class="btn-outline" onclick="enviarBienvenidaInd()">Enviar bienvenida</button></div>
+  </div>
+  <div class="section">
+    <h4>Notas</h4>
+    <textarea id="dNotaNueva" placeholder="Escribe una nota o comentario…" rows="3"></textarea>
+    <div class="actionRow"><button class="btn-gold" onclick="guardarNota()">Agregar nota</button></div>
+    <div id="notaList"></div>
+  </div>
+  <div class="section">
+    <h4>Historial de contacto</h4>
+    <div id="histList" style="font-size:11.5px;color:var(--muted);"></div>
+  </div>
+</div>
+
+<div id="modalOverlay">
+  <div id="modal">
+    <div class="mhead"><strong id="modalTitle">Enviar correo</strong><button onclick="cerrarModal()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button></div>
+    <div class="mbody">
+      <label>Plantilla</label>
+      <select id="mPlantilla" onchange="cargarPlantilla()"><option value="">— Personalizado —</option></select>
+      <label>Asunto</label>
+      <input id="mAsunto">
+      <label>Cuerpo (usa {NOMBRE}, {COMUNA}, {ANIOS})</label>
+      <textarea id="mCuerpo"></textarea>
+      <div id="mDestinatarios" style="font-size:12px;color:var(--muted);margin-top:10px;"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-gold" style="padding:8px 16px;border-radius:6px;border:none;cursor:pointer;" onclick="enviarDesdeModal()">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="loadingOverlay">Cargando…</div>
+
+<script>
+let API_URL = localStorage.getItem('prysma_api_url') || '';
+let CLAVE = sessionStorage.getItem('prysma_clave') || '';
+let SESSION = { rol: sessionStorage.getItem('prysma_rol') || null };
+let MILITANTES = [];
+let ROLES = [];
+let PLANTILLAS = [];
+let filtrados = [];
+let seleccionados = new Set();
+let pagina = 1;
+const PORPAGINA = 50;
+let modalEsMasivo = false;
+let cedulaActiva = null;
+
+// ---------- ARRANQUE ----------
+window.onload = function(){
+  if(!API_URL){
+    document.getElementById('configScreen').style.display='flex';
+  } else if(!CLAVE || !SESSION.rol){
+    document.getElementById('loginScreen').style.display='flex';
+  } else {
+    entrarApp();
+  }
+};
+
+function guardarApiUrl(){
+  const url = document.getElementById('apiUrlInput').value.trim();
+  if(!url.startsWith('https://script.google.com/')){
+    document.getElementById('configError').innerText = 'Pega la URL /exec que te entregó Apps Script';
+    return;
+  }
+  API_URL = url;
+  localStorage.setItem('prysma_api_url', url);
+  document.getElementById('configScreen').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+}
+function cambiarApiUrl(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('configScreen').style.display='flex';
+}
+
+// ---------- LLAMADAS A LA API ----------
+async function apiGet(params){
+  const qs = new URLSearchParams({...params, clave: CLAVE}).toString();
+  const res = await fetch(`${API_URL}?${qs}`);
+  return res.json();
+}
+async function apiPost(payload){
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+    body: JSON.stringify({...payload, clave: CLAVE})
+  });
+  return res.json();
+}
+
+function mostrarCargando(v){ document.getElementById('loadingOverlay').style.display = v ? 'flex':'none'; }
+
+// ---------- LOGIN ----------
+async function hacerLogin(){
+  const clave = document.getElementById('passInput').value;
+  mostrarCargando(true);
+  try{
+    const res = await fetch(API_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'login', clave})
+    });
+    const data = await res.json();
+    mostrarCargando(false);
+    if(data.ok){
+      CLAVE = clave; SESSION.rol = data.rol;
+      sessionStorage.setItem('prysma_clave', clave);
+      sessionStorage.setItem('prysma_rol', data.rol);
+      document.getElementById('loginScreen').style.display='none';
+      entrarApp();
+    } else {
+      document.getElementById('loginError').innerText = 'Clave incorrecta';
+    }
+  } catch(err){
+    mostrarCargando(false);
+    document.getElementById('loginError').innerText = 'No se pudo conectar a la API. Revisa la URL.';
+  }
+}
+function cerrarSesion(){
+  sessionStorage.clear();
+  location.reload();
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.innerText = msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none', 2500);
+}
+
+async function entrarApp(){
+  document.getElementById('app').style.display='flex';
+  document.getElementById('rolBadge').innerText = SESSION.rol==='admin' ? 'ADMIN' : 'SOLO VER';
+  if(SESSION.rol==='viewer'){
+    document.getElementById('btnEmailMasivo').style.display='none';
+    document.getElementById('btnWspMasivo').style.display='none';
+  }
+  mostrarCargando(true);
+  const data = await apiGet({action:'getAll'});
+  mostrarCargando(false);
+  if(!data.ok){ toast(data.error || 'Error cargando datos'); return; }
+  MILITANTES = data.militantes; ROLES = data.roles; PLANTILLAS = data.plantillas;
+  document.getElementById('totalBadge').innerText = MILITANTES.length + ' militantes';
+  poblarFiltros();
+  const fRol = document.getElementById('fRol'), dRol = document.getElementById('dRol');
+  ROLES.forEach(r=>{
+    fRol.innerHTML += `<option value="${r.rol}">${r.rol}</option>`;
+    dRol.innerHTML += `<option value="${r.rol}">${r.rol}</option>`;
+  });
+  const selP = document.getElementById('mPlantilla');
+  PLANTILLAS.forEach(p=> selP.innerHTML += `<option value="${p.id}">${p.nombre}</option>`);
+  aplicarFiltros();
+}
+
+function poblarFiltros(){
+  const comunas = [...new Set(MILITANTES.map(m=>m.COMUNA))].sort();
+  const fComuna = document.getElementById('fComuna');
+  comunas.forEach(c=> fComuna.innerHTML += `<option value="${c}">${c}</option>`);
+}
+
+function aplicarFiltros(){
+  const comuna = document.getElementById('fComuna').value;
+  const sexo = document.getElementById('fSexo').value;
+  const rol = document.getElementById('fRol').value;
+  const edadMin = document.getElementById('fEdadMin').value;
+  const edadMax = document.getElementById('fEdadMax').value;
+  const conEmail = document.getElementById('fConEmail').checked;
+  const conTel = document.getElementById('fConTel').checked;
+  const q = document.getElementById('buscar').value.toLowerCase();
+
+  filtrados = MILITANTES.filter(m=>{
+    if(comuna && m.COMUNA!==comuna) return false;
+    if(sexo && m.SEXO!==sexo) return false;
+    if(rol && m.ROL!==rol) return false;
+    if(edadMin && Number(m.EDAD)<Number(edadMin)) return false;
+    if(edadMax && Number(m.EDAD)>Number(edadMax)) return false;
+    if(conEmail && !m.EMAIL) return false;
+    if(conTel && !m.TELEFONO) return false;
+    if(q && !(String(m.NOMBRE).toLowerCase().includes(q) || String(m.CEDULA).includes(q) || String(m.DOMICILIO).toLowerCase().includes(q))) return false;
+    return true;
+  });
+  pagina = 1;
+  renderTabla();
+}
+
+function limpiarFiltros(){
+  document.getElementById('fComuna').value='';
+  document.getElementById('fSexo').value='';
+  document.getElementById('fRol').value='';
+  document.getElementById('fEdadMin').value='';
+  document.getElementById('fEdadMax').value='';
+  document.getElementById('fConEmail').checked=false;
+  document.getElementById('fConTel').checked=false;
+  document.getElementById('buscar').value='';
+  aplicarFiltros();
+}
+
+function rolColor(rol){
+  const r = ROLES.find(x=>x.rol===rol);
+  return r ? r.color : '#7F8C8D';
+}
+
+function renderTabla(){
+  const tbody = document.getElementById('tbody');
+  const inicio = (pagina-1)*PORPAGINA;
+  const pageItems = filtrados.slice(inicio, inicio+PORPAGINA);
+  tbody.innerHTML = pageItems.map(m=>`
+    <tr onclick="abrirDrawer('${m.CEDULA}')">
+      <td onclick="event.stopPropagation()"><input type="checkbox" ${seleccionados.has(String(m.CEDULA))?'checked':''} onchange="toggleSel('${m.CEDULA}', this)"></td>
+      <td>${m.NOMBRE} ${m.EMAIL? '' : '<span class="noEmail" title="Sin email">✉</span>'} ${m.TELEFONO? '' : '<span class="noTel" title="Sin teléfono">☎</span>'}</td>
+      <td>${m.COMUNA}</td>
+      <td>${m.SEXO==='M'?'Mujer':'Varón'}</td>
+      <td>${m.EDAD||'-'}</td>
+      <td>${m.ROL? `<span class="rolPill" style="background:${rolColor(m.ROL)}">${m.ROL}</span>` : '-'}</td>
+      <td>${m.ESTADO||'-'}</td>
+      <td>›</td>
+    </tr>`).join('');
+  renderPager();
+  document.getElementById('selCount').innerText = seleccionados.size + ' seleccionados';
+}
+
+function renderPager(){
+  const totalPag = Math.max(1, Math.ceil(filtrados.length/PORPAGINA));
+  document.getElementById('pager').innerHTML = `
+    <button onclick="cambiarPagina(-1)" ${pagina<=1?'disabled':''}>‹ Anterior</button>
+    <span>Página ${pagina} de ${totalPag} · ${filtrados.length} resultados</span>
+    <button onclick="cambiarPagina(1)" ${pagina>=totalPag?'disabled':''}>Siguiente ›</button>`;
+}
+function cambiarPagina(delta){ pagina += delta; renderTabla(); }
+
+function toggleSel(cedula, el){
+  if(el.checked) seleccionados.add(String(cedula)); else seleccionados.delete(String(cedula));
+  document.getElementById('selCount').innerText = seleccionados.size + ' seleccionados';
+}
+function toggleAll(el){
+  filtrados.forEach(m=>{
+    if(el.checked) seleccionados.add(String(m.CEDULA)); else seleccionados.delete(String(m.CEDULA));
+  });
+  renderTabla();
+}
+
+// ---------- DRAWER ----------
+function abrirDrawer(cedula){
+  cedulaActiva = cedula;
+  const m = MILITANTES.find(x=>String(x.CEDULA)===String(cedula));
+  document.getElementById('dNombre').innerText = m.NOMBRE;
+  document.getElementById('dEmail').value = m.EMAIL||'';
+  document.getElementById('dTelefono').value = m.TELEFONO||'';
+  document.getElementById('dDomicilio').value = m.DOMICILIO||'';
+  document.getElementById('dComuna').value = m.COMUNA||'';
+  document.getElementById('dRol').value = m.ROL||'';
+  document.getElementById('dEstado').value = m.ESTADO||'';
+  document.getElementById('dNotaNueva').value = '';
+  document.getElementById('notaList').innerText = m.NOTAS || 'Sin notas registradas.';
+  const query = encodeURIComponent(`${m.DOMICILIO}, ${m.COMUNA}, Chile`);
+  document.getElementById('dMapa').src = `https://maps.google.com/maps?q=${query}&output=embed`;
+  document.getElementById('histList').innerHTML = 'Cargando…';
+  apiGet({action:'getLog', cedula}).then(res=>{
+    const hist = res.datos || [];
+    document.getElementById('histList').innerHTML = hist.length
+      ? hist.map(h=>`<div style="margin-bottom:6px;">${new Date(h.fecha).toLocaleString('es-CL')} · <b>${h.tipo}</b> · ${h.detalle}</div>`).join('')
+      : 'Sin contactos registrados.';
+  });
+  if(SESSION.rol==='viewer'){
+    ['dEmail','dTelefono','dDomicilio','dComuna','dRol','dEstado','dNotaNueva'].forEach(id=>document.getElementById(id).disabled=true);
+  }
+  document.getElementById('overlay').style.display='block';
+  document.getElementById('drawer').style.display='block';
+}
+function cerrarDrawer(){
+  document.getElementById('overlay').style.display='none';
+  document.getElementById('drawer').style.display='none';
+}
+
+async function guardarDatos(){
+  const campos = {
+    EMAIL: document.getElementById('dEmail').value,
+    TELEFONO: document.getElementById('dTelefono').value,
+    DOMICILIO: document.getElementById('dDomicilio').value,
+    COMUNA: document.getElementById('dComuna').value
+  };
+  const res = await apiPost({action:'actualizarMilitante', cedula: cedulaActiva, campos});
+  toast(res.ok ? 'Datos guardados' : (res.error||'Error'));
+  if(res.ok) refrescarLocal(campos);
+}
+async function guardarRolEstado(){
+  const campos = { ROL: document.getElementById('dRol').value, ESTADO: document.getElementById('dEstado').value };
+  const res = await apiPost({action:'actualizarMilitante', cedula: cedulaActiva, campos});
+  toast(res.ok ? 'Rol/estado actualizado' : (res.error||'Error'));
+  if(res.ok) refrescarLocal(campos);
+}
+function refrescarLocal(campos){
+  const m = MILITANTES.find(x=>String(x.CEDULA)===String(cedulaActiva));
+  Object.assign(m, campos);
+  renderTabla();
+}
+async function guardarNota(){
+  const nota = document.getElementById('dNotaNueva').value.trim();
+  if(!nota) return;
+  const res = await apiPost({action:'agregarNota', cedula: cedulaActiva, nota, usuario: SESSION.rol});
+  if(res.ok){ toast('Nota agregada'); document.getElementById('dNotaNueva').value=''; abrirDrawer(cedulaActiva); }
+  else toast(res.error||'Error');
+}
+
+// ---------- WHATSAPP (cálculo 100% en el navegador, sin llamada a la API) ----------
+function normalizarTelefono(tel){
+  let t = String(tel).replace(/[^0-9]/g,'');
+  if(t.length===9) t = '56'+t;
+  else if(t.length===8) t = '569'+t;
+  return t;
+}
+function whatsappIndividual(){
+  const m = MILITANTES.find(x=>String(x.CEDULA)===String(cedulaActiva));
+  if(!m.TELEFONO){ toast('Sin teléfono registrado'); return; }
+  const mensaje = prompt('Mensaje de WhatsApp (puedes usar {NOMBRE}):', 'Hola {NOMBRE}, te escribimos del Distrito 12…');
+  if(!mensaje) return;
+  const texto = mensaje.replace(/{NOMBRE}/g, m.NOMBRE||'');
+  window.open(`https://wa.me/${normalizarTelefono(m.TELEFONO)}?text=${encodeURIComponent(texto)}`, '_blank');
+}
+async function enviarBienvenidaInd(){
+  if(!confirm('¿Enviar correo de bienvenida a esta persona?')) return;
+  const res = await apiPost({action:'enviarBienvenida', cedula: cedulaActiva, usuario: SESSION.rol});
+  toast(res.ok ? 'Bienvenida enviada' : (res.error||'Error'));
+}
+
+function abrirWhatsAppMasivo(){
+  const objetivo = seleccionados.size ? [...seleccionados] : filtrados.map(m=>String(m.CEDULA));
+  const conTel = objetivo.map(c=>MILITANTES.find(m=>String(m.CEDULA)===c)).filter(m=>m && m.TELEFONO);
+  if(!conTel.length){ toast('Nadie en la selección tiene teléfono registrado'); return; }
+  const mensaje = prompt(`Se abrirán ${conTel.length} conversaciones de WhatsApp (una por una). Mensaje (puedes usar {NOMBRE}):`, 'Hola {NOMBRE}, te escribimos del Distrito 12…');
+  if(!mensaje) return;
+  let i = 0;
+  function siguiente(){
+    if(i>=conTel.length) return;
+    const m = conTel[i];
+    const texto = mensaje.replace(/{NOMBRE}/g, m.NOMBRE||'');
+    window.open(`https://wa.me/${normalizarTelefono(m.TELEFONO)}?text=${encodeURIComponent(texto)}`, '_blank');
+    i++;
+    if(i<conTel.length && confirm(`Abierto ${i} de ${conTel.length}. ¿Continuar con el siguiente?`)) siguiente();
+  }
+  siguiente();
+}
+
+// ---------- MODAL CORREO ----------
+function abrirModalCorreo(masivo){
+  modalEsMasivo = masivo;
+  document.getElementById('modalTitle').innerText = masivo ? 'Enviar correo masivo' : 'Enviar correo';
+  document.getElementById('mAsunto').value='';
+  document.getElementById('mCuerpo').value='';
+  document.getElementById('mPlantilla').value='';
+  if(masivo){
+    const objetivo = seleccionados.size ? [...seleccionados] : filtrados.map(m=>String(m.CEDULA));
+    const conEmail = objetivo.map(c=>MILITANTES.find(m=>String(m.CEDULA)===c)).filter(m=>m && m.EMAIL);
+    document.getElementById('mDestinatarios').innerText = `Destinatarios: ${conEmail.length} de ${objetivo.length} seleccionados tienen email registrado.`;
+  } else {
+    document.getElementById('mDestinatarios').innerText = '';
+  }
+  document.getElementById('modalOverlay').style.display='flex';
+}
+function cerrarModal(){ document.getElementById('modalOverlay').style.display='none'; }
+function cargarPlantilla(){
+  const id = document.getElementById('mPlantilla').value;
+  if(!id) return;
+  const p = PLANTILLAS.find(x=>x.id===id);
+  document.getElementById('mAsunto').value = p.asunto;
+  document.getElementById('mCuerpo').value = p.cuerpo;
+}
+async function enviarDesdeModal(){
+  const asunto = document.getElementById('mAsunto').value;
+  const cuerpo = document.getElementById('mCuerpo').value;
+  if(!asunto || !cuerpo){ toast('Completa asunto y cuerpo'); return; }
+  mostrarCargando(true);
+  if(modalEsMasivo){
+    if(seleccionados.size){
+      const objetivo = [...seleccionados];
+      let enviados = 0;
+      for(const c of objetivo){
+        const r = await apiPost({action:'enviarCorreoIndividual', cedula:c, asunto, cuerpo, usuario: SESSION.rol});
+        if(r.ok) enviados++;
+      }
+      mostrarCargando(false);
+      toast(`Enviado a ${enviados} de ${objetivo.length} seleccionados`);
+      cerrarModal();
+    } else {
+      const filtros = {
+        comuna: document.getElementById('fComuna').value,
+        sexo: document.getElementById('fSexo').value,
+        rol: document.getElementById('fRol').value,
+        edadMin: document.getElementById('fEdadMin').value,
+        edadMax: document.getElementById('fEdadMax').value
+      };
+      const res = await apiPost({action:'enviarCorreoMasivo', filtros, asunto, cuerpo, usuario: SESSION.rol});
+      mostrarCargando(false);
+      toast(res.ok ? `Enviado a ${res.enviados} de ${res.totalCoincidencias} coincidencias` : (res.error||'Error'));
+      cerrarModal();
+    }
+  } else {
+    const res = await apiPost({action:'enviarCorreoIndividual', cedula: cedulaActiva, asunto, cuerpo, usuario: SESSION.rol});
+    mostrarCargando(false);
+    toast(res.ok ? 'Correo enviado' : (res.error||'Error'));
+    cerrarModal();
+  }
+}
+
+function exportarCSV(){
+  const headers = ['CEDULA','NOMBRE','SEXO','EDAD','COMUNA','DOMICILIO','EMAIL','TELEFONO','ROL','ESTADO'];
+  const rows = filtrados.map(m=> headers.map(h=>`"${(m[h]||'').toString().replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'militantes_distrito12.csv';
+  link.click();
+}
+</script>
+</body>
+</html>
