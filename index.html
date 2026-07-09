@@ -4,86 +4,114 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PRYSMA · Gestión Distrital D12</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root{
-    --navy:#101828; --navy2:#1B2A47; --gold:#C9A227; --gold-light:#E8CE6B;
-    --bg:#F4F5F7; --card:#FFFFFF; --text:#1B2330; --muted:#6B7280; --border:#E3E6EA;
-    --green:#1E8E5A; --red:#C0392B;
+    --navy:#0D1526; --navy2:#16233F; --navy3:#1E2E52; --gold:#C9A227; --gold-light:#E8CE6B;
+    --bg:#EEF0F4; --card:#FFFFFF; --text:#1B2330; --muted:#6B7280; --border:#E3E6EA;
+    --green:#1E8E5A; --red:#C0392B; --shadow:0 2px 10px rgba(16,24,40,.06);
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);}
-  #configScreen,#loginScreen{height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy),var(--navy2));}
-  #configBox,#loginBox{background:var(--card);padding:40px;border-radius:12px;width:340px;box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center;}
-  #configBox h1,#loginBox h1{font-size:20px;color:var(--navy);margin-bottom:4px;}
-  #configBox p,#loginBox p{color:var(--muted);font-size:13px;margin-top:0;margin-bottom:20px;}
-  #configBox input,#loginBox input{width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;margin-bottom:12px;font-size:13px;}
-  #configBox button,#loginBox button{width:100%;padding:10px;background:var(--gold);border:none;border-radius:6px;font-weight:bold;color:var(--navy);cursor:pointer;font-size:14px;}
+  body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--bg);color:var(--text);}
+
+  #configScreen,#loginScreen{height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%, var(--navy3), var(--navy) 70%);}
+  #configBox,#loginBox{background:var(--card);padding:44px;border-radius:14px;width:340px;box-shadow:0 24px 60px rgba(0,0,0,.35);text-align:center;}
+  #configBox h1,#loginBox h1{font-size:22px;color:var(--navy);margin-bottom:2px;letter-spacing:.5px;font-weight:800;}
+  #configBox p,#loginBox p{color:var(--muted);font-size:13px;margin-top:0;margin-bottom:22px;}
+  #configBox input,#loginBox input{width:100%;padding:11px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;font-size:14px;font-family:inherit;}
+  #configBox button,#loginBox button{width:100%;padding:11px;background:linear-gradient(135deg,var(--gold-light),var(--gold));border:none;border-radius:8px;font-weight:700;color:var(--navy);cursor:pointer;font-size:14px;}
   #loginError,#configError{color:var(--red);font-size:12px;min-height:16px;}
 
   #app{display:none;height:100vh;flex-direction:column;}
-  header{background:var(--navy);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;}
-  header .brand{font-weight:bold;font-size:16px;}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:0 22px;display:flex;align-items:center;justify-content:space-between;height:58px;box-shadow:0 2px 10px rgba(0,0,0,.15);z-index:5;}
+  header .brand{font-weight:800;font-size:17px;letter-spacing:.3px;display:flex;align-items:center;gap:10px;}
   header .brand span{color:var(--gold);}
+  header nav{display:flex;gap:4px;margin-left:24px;}
+  header nav button{background:none;border:none;color:#B9C2D4;padding:8px 16px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;}
+  header nav button.active{background:rgba(255,255,255,.12);color:#fff;}
   header .userinfo{font-size:12px;color:#cfd4dd;display:flex;align-items:center;gap:12px;}
-  header .badge{background:var(--gold);color:var(--navy);padding:2px 8px;border-radius:10px;font-weight:bold;}
-  header button{background:transparent;border:1px solid #4b5a75;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;}
+  header .badge{background:var(--gold);color:var(--navy);padding:3px 10px;border-radius:10px;font-weight:700;font-size:11px;letter-spacing:.4px;}
+  header button.exit{background:transparent;border:1px solid #3d4b6b;color:#fff;padding:6px 14px;border-radius:7px;cursor:pointer;font-size:12px;font-family:inherit;}
 
   #body{display:flex;flex:1;overflow:hidden;}
-  #sidebar{width:230px;background:var(--card);border-right:1px solid var(--border);padding:16px;overflow-y:auto;}
-  #sidebar h3{font-size:11px;text-transform:uppercase;color:var(--muted);margin:16px 0 6px;letter-spacing:.5px;}
+  #sidebar{width:240px;background:var(--card);border-right:1px solid var(--border);padding:18px;overflow-y:auto;}
+  #sidebar h3{font-size:10.5px;text-transform:uppercase;color:var(--muted);margin:18px 0 7px;letter-spacing:.7px;font-weight:700;}
   #sidebar h3:first-child{margin-top:0;}
-  #sidebar select, #sidebar input{width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-bottom:6px;}
-  #sidebar label{display:flex;align-items:center;gap:6px;font-size:12px;padding:2px 0;}
-  #clearFilters{background:none;border:none;color:var(--gold);font-size:11px;cursor:pointer;padding:0;margin-top:8px;}
+  #sidebar select, #sidebar input{width:100%;padding:7px;border:1px solid var(--border);border-radius:7px;font-size:12.5px;margin-bottom:6px;font-family:inherit;}
+  #sidebar label{display:flex;align-items:center;gap:6px;font-size:12.5px;padding:2px 0;color:var(--text);}
+  #clearFilters{background:none;border:none;color:var(--gold);font-size:11.5px;cursor:pointer;padding:0;margin-top:10px;font-weight:600;}
 
   #main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-  #toolbar{padding:10px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;}
-  #toolbar input[type=text]{flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;}
-  #toolbar button{padding:8px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;}
-  .btn-gold{background:var(--gold);color:var(--navy);}
+  #toolbar{padding:12px 18px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;}
+  #toolbar input[type=text]{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;}
+  #toolbar button{padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit;}
+  .btn-gold{background:linear-gradient(135deg,var(--gold-light),var(--gold));color:var(--navy);}
   .btn-outline{background:#fff;border:1px solid var(--border) !important;color:var(--text);}
   .btn-green{background:var(--green);color:#fff;}
   #selCount{font-size:12px;color:var(--muted);}
 
-  #tableWrap{flex:1;overflow:auto;padding:0 16px;}
-  table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;}
-  thead th{position:sticky;top:0;background:var(--navy);color:#fff;padding:8px;text-align:left;z-index:2;}
-  tbody td{padding:7px 8px;border-bottom:1px solid var(--border);}
-  tbody tr:hover{background:#F7F5EA;cursor:pointer;}
-  .rolPill{padding:2px 8px;border-radius:10px;font-size:11px;color:#fff;}
+  #tableWrap{flex:1;overflow:auto;padding:0 18px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border-radius:10px;overflow:hidden;}
+  thead th{position:sticky;top:0;background:var(--navy);color:#fff;padding:10px 8px;text-align:left;z-index:2;font-weight:600;letter-spacing:.2px;}
+  tbody td{padding:9px 8px;border-bottom:1px solid var(--border);}
+  tbody tr:hover{background:#FAF6E8;cursor:pointer;}
+  .rolPill{padding:3px 9px;border-radius:10px;font-size:10.5px;color:#fff;font-weight:600;}
   .noEmail,.noTel{color:var(--muted);opacity:.4;}
-  #pager{display:flex;justify-content:center;gap:8px;padding:10px;font-size:12px;align-items:center;}
-  #pager button{padding:4px 10px;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;}
+  #pager{display:flex;justify-content:center;gap:10px;padding:12px;font-size:12px;align-items:center;}
+  #pager button{padding:5px 12px;border:1px solid var(--border);background:#fff;border-radius:7px;cursor:pointer;font-family:inherit;}
 
-  #overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10;}
+  #overlay{display:none;position:fixed;inset:0;background:rgba(13,21,38,.45);z-index:10;}
   #drawer{display:none;position:fixed;right:0;top:0;bottom:0;width:420px;max-width:92vw;background:#fff;z-index:11;box-shadow:-8px 0 24px rgba(0,0,0,.15);overflow-y:auto;}
-  #drawer .dhead{background:var(--navy);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}
-  #drawer .dhead h2{margin:0;font-size:16px;}
+  #drawer .dhead{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;}
+  #drawer .dhead h2{margin:0;font-size:16px;font-weight:700;}
   #drawer .dhead button{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;}
   #drawer .section{padding:16px 20px;border-bottom:1px solid var(--border);}
-  #drawer .section h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.5px;}
+  #drawer .section h4{margin:0 0 8px;font-size:10.5px;text-transform:uppercase;color:var(--muted);letter-spacing:.6px;font-weight:700;}
   #drawer label{font-size:11px;color:var(--muted);display:block;margin-top:8px;}
-  #drawer input,#drawer select,#drawer textarea{width:100%;padding:7px;border:1px solid var(--border);border-radius:6px;font-size:13px;margin-top:2px;}
+  #drawer input,#drawer select,#drawer textarea{width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;margin-top:2px;font-family:inherit;}
   #drawer iframe{width:100%;height:180px;border:0;border-radius:8px;}
   .actionRow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
-  .actionRow button{flex:1;padding:8px;border-radius:6px;border:none;font-size:12px;cursor:pointer;font-weight:600;}
-  #notaList{max-height:140px;overflow-y:auto;font-size:11.5px;color:var(--muted);margin-top:8px;white-space:pre-wrap;background:#FAFAFA;padding:8px;border-radius:6px;}
+  .actionRow button{flex:1;padding:9px;border-radius:7px;border:none;font-size:12px;cursor:pointer;font-weight:700;font-family:inherit;}
+  #notaList{max-height:140px;overflow-y:auto;font-size:11.5px;color:var(--muted);margin-top:8px;white-space:pre-wrap;background:#FAFAFA;padding:8px;border-radius:7px;}
 
-  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;align-items:center;justify-content:center;}
-  #modal{background:#fff;border-radius:10px;width:480px;max-width:92vw;max-height:85vh;overflow-y:auto;}
-  #modal .mhead{background:var(--navy);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;border-radius:10px 10px 0 0;}
+  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(13,21,38,.55);z-index:20;align-items:center;justify-content:center;}
+  #modal{background:#fff;border-radius:12px;width:480px;max-width:92vw;max-height:85vh;overflow-y:auto;}
+  #modal .mhead{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:16px 20px;display:flex;justify-content:space-between;border-radius:12px 12px 0 0;}
   #modal .mbody{padding:20px;}
   #modal label{font-size:11px;color:var(--muted);display:block;margin-top:10px;}
-  #modal input,#modal select,#modal textarea{width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;margin-top:3px;}
+  #modal input,#modal select,#modal textarea{width:100%;padding:9px;border:1px solid var(--border);border-radius:7px;font-size:13px;margin-top:3px;font-family:inherit;}
   #modal textarea{min-height:120px;}
   #modal .mfoot{padding:14px 20px;text-align:right;border-top:1px solid var(--border);}
-  #toast{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:30;}
-  #loadingOverlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.6);z-index:40;align-items:center;justify-content:center;font-size:13px;color:var(--navy);}
+  #toast{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 20px;border-radius:9px;font-size:13px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.25);}
+  #loadingOverlay{display:none;position:fixed;inset:0;background:rgba(238,240,244,.75);z-index:40;align-items:center;justify-content:center;font-size:13px;color:var(--navy);font-weight:600;}
+
+  /* KPI VIEW */
+  #kpiView{display:none;flex:1;overflow-y:auto;padding:22px 26px;background:var(--bg);}
+  #kpiView .kpiHead{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;}
+  #kpiView .kpiHead h1{font-size:20px;margin:0 0 2px;color:var(--navy);font-weight:800;}
+  #kpiView .kpiHead p{margin:0;color:var(--muted);font-size:12.5px;}
+  .kpiCards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px;}
+  .kpiCard{background:var(--card);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);border-left:4px solid var(--gold);}
+  .kpiCard .num{font-size:26px;font-weight:800;color:var(--navy);}
+  .kpiCard .lbl{font-size:11.5px;color:var(--muted);margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+  .chartsGrid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:18px;}
+  .chartCard{background:var(--card);border-radius:12px;padding:18px;box-shadow:var(--shadow);}
+  .chartCard h4{margin:0 0 12px;font-size:13px;color:var(--navy);font-weight:700;}
+  .chartCard canvas{max-height:240px;}
+  @media (max-width:900px){ .chartsGrid{grid-template-columns:1fr;} }
+
+  @media print{
+    body *{visibility:hidden;}
+    #kpiView, #kpiView *{visibility:visible;}
+    #kpiView{position:absolute;left:0;top:0;width:100%;padding:20px;display:block !important;}
+    #btnDescargarInforme, #kpiView .no-print{display:none !important;}
+  }
 </style>
 </head>
 <body>
 
-<!-- CONFIG (primera vez: URL de la API) -->
 <div id="configScreen">
   <div id="configBox">
     <h1>PRYSMA</h1>
@@ -94,7 +122,6 @@
   </div>
 </div>
 
-<!-- LOGIN -->
 <div id="loginScreen" style="display:none;">
   <div id="loginBox">
     <h1>PRYSMA</h1>
@@ -106,14 +133,19 @@
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <header>
-    <div class="brand">PRYSMA <span>· Distrito 12</span></div>
+    <div style="display:flex;align-items:center;">
+      <div class="brand">PRYSMA <span>· Distrito 12</span></div>
+      <nav>
+        <button id="tabMilitantes" class="active" onclick="cambiarTab('militantes')">Militantes</button>
+        <button id="tabKpi" onclick="cambiarTab('kpi')">Panel de KPIs</button>
+      </nav>
+    </div>
     <div class="userinfo">
       <span id="totalBadge"></span>
       <span class="badge" id="rolBadge"></span>
-      <button onclick="cerrarSesion()">Salir</button>
+      <button class="exit" onclick="cerrarSesion()">Salir</button>
     </div>
   </header>
   <div id="body">
@@ -129,6 +161,16 @@
       <input type="number" id="fEdadMax" placeholder="Máx" onkeyup="aplicarFiltros()">
       <h3>Rol</h3>
       <select id="fRol" onchange="aplicarFiltros()"><option value="">Todos</option></select>
+      <h3>Fechas especiales</h3>
+      <select id="fFechaEspecial" onchange="aplicarFiltros()">
+        <option value="">Ninguno</option>
+        <option value="cumple_hoy">Cumpleaños hoy</option>
+        <option value="cumple_semana">Cumpleaños esta semana</option>
+        <option value="cumple_mes">Cumpleaños este mes</option>
+        <option value="aniv_hoy">Aniversario hoy</option>
+        <option value="aniv_semana">Aniversario esta semana</option>
+        <option value="aniv_mes">Aniversario este mes</option>
+      </select>
       <h3>Contacto</h3>
       <label><input type="checkbox" id="fConEmail" onchange="aplicarFiltros()"> Solo con email</label>
       <label><input type="checkbox" id="fConTel" onchange="aplicarFiltros()"> Solo con teléfono</label>
@@ -152,6 +194,26 @@
         </table>
       </div>
       <div id="pager"></div>
+    </div>
+
+    <!-- PANEL DE KPIs -->
+    <div id="kpiView">
+      <div class="kpiHead">
+        <div>
+          <h1>Informe Ejecutivo · Distrito 12</h1>
+          <p id="kpiFecha"></p>
+        </div>
+        <button id="btnDescargarInforme" class="btn-gold" style="padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="window.print()">Descargar informe (PDF)</button>
+      </div>
+      <div class="kpiCards" id="kpiCards"></div>
+      <div class="chartsGrid">
+        <div class="chartCard"><h4>Militantes por comuna</h4><canvas id="chartComuna"></canvas></div>
+        <div class="chartCard"><h4>Distribución por rol</h4><canvas id="chartRol"></canvas></div>
+      </div>
+      <div class="chartsGrid">
+        <div class="chartCard"><h4>Distribución por sexo</h4><canvas id="chartSexo"></canvas></div>
+        <div class="chartCard"><h4>Cobertura de datos de contacto</h4><canvas id="chartContacto"></canvas></div>
+      </div>
     </div>
   </div>
 </div>
@@ -212,7 +274,7 @@
       <div id="mDestinatarios" style="font-size:12px;color:var(--muted);margin-top:10px;"></div>
     </div>
     <div class="mfoot">
-      <button class="btn-gold" style="padding:8px 16px;border-radius:6px;border:none;cursor:pointer;" onclick="enviarDesdeModal()">Enviar</button>
+      <button class="btn-gold" style="padding:8px 16px;border-radius:8px;border:none;cursor:pointer;" onclick="enviarDesdeModal()">Enviar</button>
     </div>
   </div>
 </div>
@@ -222,8 +284,8 @@
 
 <script>
 let API_URL = localStorage.getItem('prysma_api_url') || '';
-let CLAVE = sessionStorage.getItem('prysma_clave') || '';
-let SESSION = { rol: sessionStorage.getItem('prysma_rol') || null };
+let CLAVE = localStorage.getItem('prysma_clave') || '';
+let SESSION = { rol: localStorage.getItem('prysma_rol') || null };
 let MILITANTES = [];
 let ROLES = [];
 let PLANTILLAS = [];
@@ -233,6 +295,18 @@ let pagina = 1;
 const PORPAGINA = 50;
 let modalEsMasivo = false;
 let cedulaActiva = null;
+let charts = {};
+
+// ---------- UTILIDADES ----------
+function norm(str){ return (str||'').toString().trim().toUpperCase(); }
+function titleCase(str){
+  return (str||'').toString().trim().toLowerCase().replace(/\p{L}+/gu, w => w.charAt(0).toUpperCase()+w.slice(1));
+}
+function parseFechaDDMMYYYY(str){
+  const p = String(str||'').split('-');
+  if(p.length!==3) return null;
+  return new Date(Number(p[2]), Number(p[1])-1, Number(p[0]));
+}
 
 // ---------- ARRANQUE ----------
 window.onload = function(){
@@ -267,12 +341,8 @@ async function _parsearRespuesta(res){
   if(!res.ok){
     throw new Error(`La API respondió con error HTTP ${res.status}. Revisa que la implementación esté publicada con acceso "Cualquier usuario".`);
   }
-  try{
-    return JSON.parse(texto);
-  } catch(err){
-    // Si Apps Script devuelve HTML (ej. pantalla de login de Google), esto lo detecta
-    throw new Error('La API no devolvió JSON válido (probablemente un problema de permisos en la implementación de Apps Script). Respuesta recibida: ' + texto.slice(0,150));
-  }
+  try{ return JSON.parse(texto); }
+  catch(err){ throw new Error('La API no devolvió JSON válido. Respuesta recibida: ' + texto.slice(0,150)); }
 }
 async function apiGet(params){
   const qs = new URLSearchParams({...params, clave: CLAVE}).toString();
@@ -287,10 +357,9 @@ async function apiPost(payload){
   });
   return _parsearRespuesta(res);
 }
-
 function mostrarCargando(v){ document.getElementById('loadingOverlay').style.display = v ? 'flex':'none'; }
 
-// ---------- LOGIN ----------
+// ---------- LOGIN (persistente: no se vuelve a pedir hasta que hagas "Salir") ----------
 async function hacerLogin(){
   const clave = document.getElementById('passInput').value;
   mostrarCargando(true);
@@ -304,8 +373,8 @@ async function hacerLogin(){
     mostrarCargando(false);
     if(data.ok){
       CLAVE = clave; SESSION.rol = data.rol;
-      sessionStorage.setItem('prysma_clave', clave);
-      sessionStorage.setItem('prysma_rol', data.rol);
+      localStorage.setItem('prysma_clave', clave);
+      localStorage.setItem('prysma_rol', data.rol);
       document.getElementById('loginScreen').style.display='none';
       entrarApp();
     } else {
@@ -317,7 +386,8 @@ async function hacerLogin(){
   }
 }
 function cerrarSesion(){
-  sessionStorage.clear();
+  localStorage.removeItem('prysma_clave');
+  localStorage.removeItem('prysma_rol');
   location.reload();
 }
 
@@ -338,15 +408,10 @@ async function entrarApp(){
   try{
     const data = await apiGet({action:'getAll'});
     mostrarCargando(false);
-    if(!data.ok){ toast(data.error || 'Error cargando datos'); return; }
+    if(!data.ok){ toast(data.error || 'Error cargando datos', 6000); return; }
     MILITANTES = data.militantes; ROLES = data.roles; PLANTILLAS = data.plantillas;
     document.getElementById('totalBadge').innerText = MILITANTES.length + ' militantes';
     poblarFiltros();
-    const fRol = document.getElementById('fRol'), dRol = document.getElementById('dRol');
-    ROLES.forEach(r=>{
-      fRol.innerHTML += `<option value="${r.rol}">${r.rol}</option>`;
-      dRol.innerHTML += `<option value="${r.rol}">${r.rol}</option>`;
-    });
     const selP = document.getElementById('mPlantilla');
     PLANTILLAS.forEach(p=> selP.innerHTML += `<option value="${p.id}">${p.nombre}</option>`);
     aplicarFiltros();
@@ -357,10 +422,41 @@ async function entrarApp(){
   }
 }
 
+// ---------- FILTROS (sin duplicados, normalizados) ----------
 function poblarFiltros(){
-  const comunas = [...new Set(MILITANTES.map(m=>m.COMUNA))].sort();
+  const mapaComunas = new Map();
+  MILITANTES.forEach(m=>{ const k = norm(m.COMUNA); if(k && !mapaComunas.has(k)) mapaComunas.set(k, titleCase(m.COMUNA)); });
   const fComuna = document.getElementById('fComuna');
-  comunas.forEach(c=> fComuna.innerHTML += `<option value="${c}">${c}</option>`);
+  fComuna.innerHTML = '<option value="">Todas</option>';
+  [...mapaComunas.entries()].sort((a,b)=>a[1].localeCompare(b[1])).forEach(([k,label])=>{
+    fComuna.innerHTML += `<option value="${k}">${label}</option>`;
+  });
+
+  const mapaRoles = new Map();
+  ROLES.forEach(r=>{ const k = norm(r.rol); if(k && !mapaRoles.has(k)) mapaRoles.set(k, {label:r.rol.trim(), color:r.color}); });
+  const fRol = document.getElementById('fRol'), dRol = document.getElementById('dRol');
+  fRol.innerHTML = '<option value="">Todos</option>';
+  dRol.innerHTML = '<option value="">Sin rol</option>';
+  [...mapaRoles.entries()].forEach(([k,info])=>{
+    fRol.innerHTML += `<option value="${k}">${info.label}</option>`;
+    dRol.innerHTML += `<option value="${k}">${info.label}</option>`;
+  });
+}
+
+function coincideFechaEspecial(m, tipo){
+  if(!tipo) return true;
+  const hoy = new Date();
+  const [campo, rango] = tipo.split('_'); // cumple|aniv , hoy|semana|mes
+  const fechaStr = campo==='cumple' ? m.FECHA_NACIMIENTO : m.FECHA_AFILIACION;
+  const f = parseFechaDDMMYYYY(fechaStr);
+  if(!f) return false;
+  // Comparamos día/mes, ignorando el año, con una fecha "proyectada" al año actual
+  const proyectada = new Date(hoy.getFullYear(), f.getMonth(), f.getDate());
+  const diffDias = Math.round((proyectada - new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate())) / 86400000);
+  if(rango==='hoy') return diffDias===0;
+  if(rango==='semana') return diffDias>=0 && diffDias<=7;
+  if(rango==='mes') return proyectada.getMonth()===hoy.getMonth();
+  return false;
 }
 
 function aplicarFiltros(){
@@ -369,18 +465,20 @@ function aplicarFiltros(){
   const rol = document.getElementById('fRol').value;
   const edadMin = document.getElementById('fEdadMin').value;
   const edadMax = document.getElementById('fEdadMax').value;
+  const fechaEspecial = document.getElementById('fFechaEspecial').value;
   const conEmail = document.getElementById('fConEmail').checked;
   const conTel = document.getElementById('fConTel').checked;
   const q = document.getElementById('buscar').value.toLowerCase();
 
   filtrados = MILITANTES.filter(m=>{
-    if(comuna && m.COMUNA!==comuna) return false;
+    if(comuna && norm(m.COMUNA)!==comuna) return false;
     if(sexo && m.SEXO!==sexo) return false;
-    if(rol && m.ROL!==rol) return false;
+    if(rol && norm(m.ROL)!==rol) return false;
     if(edadMin && Number(m.EDAD)<Number(edadMin)) return false;
     if(edadMax && Number(m.EDAD)>Number(edadMax)) return false;
     if(conEmail && !m.EMAIL) return false;
     if(conTel && !m.TELEFONO) return false;
+    if(fechaEspecial && !coincideFechaEspecial(m, fechaEspecial)) return false;
     if(q && !(String(m.NOMBRE).toLowerCase().includes(q) || String(m.CEDULA).includes(q) || String(m.DOMICILIO).toLowerCase().includes(q))) return false;
     return true;
   });
@@ -394,6 +492,7 @@ function limpiarFiltros(){
   document.getElementById('fRol').value='';
   document.getElementById('fEdadMin').value='';
   document.getElementById('fEdadMax').value='';
+  document.getElementById('fFechaEspecial').value='';
   document.getElementById('fConEmail').checked=false;
   document.getElementById('fConTel').checked=false;
   document.getElementById('buscar').value='';
@@ -401,7 +500,7 @@ function limpiarFiltros(){
 }
 
 function rolColor(rol){
-  const r = ROLES.find(x=>x.rol===rol);
+  const r = ROLES.find(x=>norm(x.rol)===norm(rol));
   return r ? r.color : '#7F8C8D';
 }
 
@@ -412,11 +511,11 @@ function renderTabla(){
   tbody.innerHTML = pageItems.map(m=>`
     <tr onclick="abrirDrawer('${m.CEDULA}')">
       <td onclick="event.stopPropagation()"><input type="checkbox" ${seleccionados.has(String(m.CEDULA))?'checked':''} onchange="toggleSel('${m.CEDULA}', this)"></td>
-      <td>${m.NOMBRE} ${m.EMAIL? '' : '<span class="noEmail" title="Sin email">✉</span>'} ${m.TELEFONO? '' : '<span class="noTel" title="Sin teléfono">☎</span>'}</td>
-      <td>${m.COMUNA}</td>
+      <td>${titleCase(m.NOMBRE)} ${m.EMAIL? '' : '<span class="noEmail" title="Sin email">✉</span>'} ${m.TELEFONO? '' : '<span class="noTel" title="Sin teléfono">☎</span>'}</td>
+      <td>${titleCase(m.COMUNA)}</td>
       <td>${m.SEXO==='M'?'Mujer':'Varón'}</td>
       <td>${m.EDAD||'-'}</td>
-      <td>${m.ROL? `<span class="rolPill" style="background:${rolColor(m.ROL)}">${m.ROL}</span>` : '-'}</td>
+      <td>${m.ROL? `<span class="rolPill" style="background:${rolColor(m.ROL)}">${m.ROL.trim()}</span>` : '-'}</td>
       <td>${m.ESTADO||'-'}</td>
       <td>›</td>
     </tr>`).join('');
@@ -444,16 +543,73 @@ function toggleAll(el){
   renderTabla();
 }
 
+// ---------- TABS ----------
+function cambiarTab(tab){
+  document.getElementById('tabMilitantes').classList.toggle('active', tab==='militantes');
+  document.getElementById('tabKpi').classList.toggle('active', tab==='kpi');
+  document.getElementById('sidebar').style.display = tab==='militantes' ? 'block':'none';
+  document.getElementById('main').style.display = tab==='militantes' ? 'flex':'none';
+  document.getElementById('kpiView').style.display = tab==='kpi' ? 'block':'none';
+  if(tab==='kpi') renderKPIs();
+}
+
+// ---------- PANEL DE KPIs ----------
+function renderKPIs(){
+  const total = MILITANTES.length;
+  const conEmail = MILITANTES.filter(m=>m.EMAIL).length;
+  const conTel = MILITANTES.filter(m=>m.TELEFONO).length;
+  const conRol = MILITANTES.filter(m=>m.ROL).length;
+  const cumpleMes = MILITANTES.filter(m=>coincideFechaEspecial(m,'cumple_mes')).length;
+  const anivMes = MILITANTES.filter(m=>coincideFechaEspecial(m,'aniv_mes')).length;
+
+  document.getElementById('kpiFecha').innerText = 'Generado el ' + new Date().toLocaleDateString('es-CL', {day:'numeric',month:'long',year:'numeric'});
+
+  document.getElementById('kpiCards').innerHTML = `
+    <div class="kpiCard"><div class="num">${total.toLocaleString('es-CL')}</div><div class="lbl">Total militantes</div></div>
+    <div class="kpiCard"><div class="num">${Math.round(conEmail/total*100)}%</div><div class="lbl">Con email registrado</div></div>
+    <div class="kpiCard"><div class="num">${Math.round(conTel/total*100)}%</div><div class="lbl">Con teléfono registrado</div></div>
+    <div class="kpiCard"><div class="num">${conRol.toLocaleString('es-CL')}</div><div class="lbl">Con rol asignado</div></div>
+    <div class="kpiCard"><div class="num">${cumpleMes}</div><div class="lbl">Cumpleaños este mes</div></div>
+    <div class="kpiCard"><div class="num">${anivMes}</div><div class="lbl">Aniversarios este mes</div></div>`;
+
+  const porComuna = {};
+  MILITANTES.forEach(m=>{ const k = titleCase(m.COMUNA)||'Sin comuna'; porComuna[k]=(porComuna[k]||0)+1; });
+  const porRol = {};
+  MILITANTES.forEach(m=>{ const k = m.ROL ? m.ROL.trim() : 'Sin rol asignado'; porRol[k]=(porRol[k]||0)+1; });
+  const porSexo = { 'Mujer': MILITANTES.filter(m=>m.SEXO==='M').length, 'Varón': MILITANTES.filter(m=>m.SEXO==='V').length };
+
+  _dibujarChart('chartComuna','bar', Object.keys(porComuna), Object.values(porComuna), ['#16233F']);
+  _dibujarChart('chartRol','doughnut', Object.keys(porRol), Object.values(porRol),
+    Object.keys(porRol).map(r=>rolColor(r)));
+  _dibujarChart('chartSexo','doughnut', Object.keys(porSexo), Object.values(porSexo), ['#C9A227','#16233F']);
+  _dibujarChart('chartContacto','bar', ['Con email','Sin email','Con teléfono','Sin teléfono'],
+    [conEmail, total-conEmail, conTel, total-conTel], ['#1E8E5A','#C0392B','#1E8E5A','#C0392B']);
+}
+
+function _dibujarChart(canvasId, tipo, labels, data, colores){
+  if(charts[canvasId]) charts[canvasId].destroy();
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  charts[canvasId] = new Chart(ctx, {
+    type: tipo,
+    data: { labels, datasets: [{ data, backgroundColor: colores.length>=labels.length ? colores : labels.map((_,i)=>colores[i%colores.length]) }] },
+    options: {
+      responsive:true,
+      plugins:{ legend:{ display: tipo==='doughnut', position:'bottom', labels:{boxWidth:12,font:{size:11}} } },
+      scales: tipo==='bar' ? { y:{beginAtZero:true, ticks:{precision:0}} } : {}
+    }
+  });
+}
+
 // ---------- DRAWER ----------
 function abrirDrawer(cedula){
   cedulaActiva = cedula;
   const m = MILITANTES.find(x=>String(x.CEDULA)===String(cedula));
-  document.getElementById('dNombre').innerText = m.NOMBRE;
+  document.getElementById('dNombre').innerText = titleCase(m.NOMBRE);
   document.getElementById('dEmail').value = m.EMAIL||'';
   document.getElementById('dTelefono').value = m.TELEFONO||'';
   document.getElementById('dDomicilio').value = m.DOMICILIO||'';
   document.getElementById('dComuna').value = m.COMUNA||'';
-  document.getElementById('dRol').value = m.ROL||'';
+  document.getElementById('dRol').value = norm(m.ROL);
   document.getElementById('dEstado').value = m.ESTADO||'';
   document.getElementById('dNotaNueva').value = '';
   document.getElementById('notaList').innerText = m.NOTAS || 'Sin notas registradas.';
@@ -486,10 +642,12 @@ async function guardarDatos(){
   };
   const res = await apiPost({action:'actualizarMilitante', cedula: cedulaActiva, campos});
   toast(res.ok ? 'Datos guardados' : (res.error||'Error'));
-  if(res.ok) refrescarLocal(campos);
+  if(res.ok){ refrescarLocal(campos); }
 }
 async function guardarRolEstado(){
-  const campos = { ROL: document.getElementById('dRol').value, ESTADO: document.getElementById('dEstado').value };
+  const rolSel = document.getElementById('dRol');
+  const rolInfo = ROLES.find(r=>norm(r.rol)===rolSel.value);
+  const campos = { ROL: rolInfo ? rolInfo.rol.trim() : '', ESTADO: document.getElementById('dEstado').value };
   const res = await apiPost({action:'actualizarMilitante', cedula: cedulaActiva, campos});
   toast(res.ok ? 'Rol/estado actualizado' : (res.error||'Error'));
   if(res.ok) refrescarLocal(campos);
@@ -497,6 +655,7 @@ async function guardarRolEstado(){
 function refrescarLocal(campos){
   const m = MILITANTES.find(x=>String(x.CEDULA)===String(cedulaActiva));
   Object.assign(m, campos);
+  poblarFiltros();
   renderTabla();
 }
 async function guardarNota(){
@@ -507,7 +666,7 @@ async function guardarNota(){
   else toast(res.error||'Error');
 }
 
-// ---------- WHATSAPP (cálculo 100% en el navegador, sin llamada a la API) ----------
+// ---------- WHATSAPP (cálculo en el navegador) ----------
 function normalizarTelefono(tel){
   let t = String(tel).replace(/[^0-9]/g,'');
   if(t.length===9) t = '56'+t;
@@ -519,7 +678,7 @@ function whatsappIndividual(){
   if(!m.TELEFONO){ toast('Sin teléfono registrado'); return; }
   const mensaje = prompt('Mensaje de WhatsApp (puedes usar {NOMBRE}):', 'Hola {NOMBRE}, te escribimos del Distrito 12…');
   if(!mensaje) return;
-  const texto = mensaje.replace(/{NOMBRE}/g, m.NOMBRE||'');
+  const texto = mensaje.replace(/{NOMBRE}/g, titleCase(m.NOMBRE)||'');
   window.open(`https://wa.me/${normalizarTelefono(m.TELEFONO)}?text=${encodeURIComponent(texto)}`, '_blank');
 }
 async function enviarBienvenidaInd(){
@@ -538,7 +697,7 @@ function abrirWhatsAppMasivo(){
   function siguiente(){
     if(i>=conTel.length) return;
     const m = conTel[i];
-    const texto = mensaje.replace(/{NOMBRE}/g, m.NOMBRE||'');
+    const texto = mensaje.replace(/{NOMBRE}/g, titleCase(m.NOMBRE)||'');
     window.open(`https://wa.me/${normalizarTelefono(m.TELEFONO)}?text=${encodeURIComponent(texto)}`, '_blank');
     i++;
     if(i<conTel.length && confirm(`Abierto ${i} de ${conTel.length}. ¿Continuar con el siguiente?`)) siguiente();
