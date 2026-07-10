@@ -14,7 +14,7 @@
      ====================================================================== */
 </style>
 <script>
-  const API_URL_FIJA = "https://script.google.com/macros/s/AKfycbxVBjGQMwddkiSobDb39Ccbvk5lUYX3hZYQbi5X0qNx-75SoAtq2mfHXxpZeeQ8uxi-/exec";
+  const API_URL_FIJA = "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT_TERMINADA_EN_/exec";
 </script>
 <style>
   :root{
@@ -138,6 +138,12 @@
   #campanasCard{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:18px;}
   #campanasCard table{box-shadow:none;font-size:12px;}
   #campanasCard thead th{background:#F4F5F7;color:var(--text);font-size:10.5px;}
+  #informeNarrativo h3{font-size:14px;color:var(--navy);margin:18px 0 8px;font-weight:800;}
+  #informeNarrativo h3:first-child{margin-top:0;}
+  #informeNarrativo p{font-size:12.5px;line-height:1.6;color:var(--text);margin:0 0 10px;}
+  #informeNarrativo ul{margin:0 0 10px;padding-left:20px;}
+  #informeNarrativo li{font-size:12.5px;line-height:1.6;color:var(--text);margin-bottom:5px;}
+  #informeNarrativo .destacado{color:var(--navy);font-weight:700;}
   @media (max-width:900px){ .chartsGrid{grid-template-columns:1fr;} }
 
   @media print{
@@ -211,6 +217,14 @@
           <option value="aniv_semana">Aniversario esta semana</option>
           <option value="aniv_mes">Aniversario este mes</option>
         </select>
+        <select id="fFechaIngreso" onchange="aplicarFiltros()">
+          <option value="">Fecha de ingreso</option>
+          <option value="1m">Último mes</option>
+          <option value="3m">Últimos 3 meses</option>
+          <option value="6m">Últimos 6 meses</option>
+          <option value="12m">Último año</option>
+          <option value="mas1a">Más de 1 año</option>
+        </select>
         <button class="togglePill" id="pillEmail" onclick="togglePill('pillEmail')">Con email</button>
         <button class="togglePill" id="pillTel" onclick="togglePill('pillTel')">Con teléfono</button>
       </div>
@@ -252,8 +266,13 @@
       </div>
       <div class="chartsGrid">
         <div class="chartCard"><h4>Distribución por sexo</h4><canvas id="chartSexo"></canvas></div>
-        <div class="chartCard"><h4>Cobertura de datos de contacto</h4><canvas id="chartContacto"></canvas></div>
+        <div class="chartCard"><h4>Distribución por estado</h4><canvas id="chartEstado"></canvas></div>
       </div>
+      <div class="chartsGrid">
+        <div class="chartCard"><h4>Cobertura de datos de contacto</h4><canvas id="chartContacto"></canvas></div>
+        <div class="chartCard"><h4>Ingresos por período</h4><canvas id="chartIngresos"></canvas></div>
+      </div>
+      <div class="chartCard" id="informeNarrativo" style="margin-bottom:18px;"></div>
       <div id="campanasCard" class="no-print">
         <h4 style="margin:0 0 12px;font-size:13px;color:var(--navy);font-weight:700;">Estado de campañas por lotes (BCC)</h4>
         <table>
@@ -578,6 +597,16 @@ function coincideFechaEspecial(m, tipo){
   return false;
 }
 
+function coincideFechaIngreso(m, valor){
+  if(!valor) return true;
+  const f = parseFechaDDMMYYYY(m.FECHA_AFILIACION);
+  if(!f) return false;
+  const diasTranscurridos = Math.round((new Date() - f) / 86400000);
+  const limites = { '1m':30, '3m':90, '6m':180, '12m':365 };
+  if(valor === 'mas1a') return diasTranscurridos > 365;
+  return diasTranscurridos <= limites[valor];
+}
+
 function aplicarFiltros(){
   const comuna = document.getElementById('fComuna').value;
   const estado = document.getElementById('fEstado').value;
@@ -586,6 +615,7 @@ function aplicarFiltros(){
   const edadMin = document.getElementById('fEdadMin').value;
   const edadMax = document.getElementById('fEdadMax').value;
   const fechaEspecial = document.getElementById('fFechaEspecial').value;
+  const fechaIngreso = document.getElementById('fFechaIngreso').value;
   const conEmail = document.getElementById('pillEmail').classList.contains('on');
   const conTel = document.getElementById('pillTel').classList.contains('on');
   const q = document.getElementById('buscar').value.toLowerCase();
@@ -600,6 +630,7 @@ function aplicarFiltros(){
     if(conEmail && !m.EMAIL) return false;
     if(conTel && !m.TELEFONO) return false;
     if(fechaEspecial && !coincideFechaEspecial(m, fechaEspecial)) return false;
+    if(fechaIngreso && !coincideFechaIngreso(m, fechaIngreso)) return false;
     if(q && !(String(m.NOMBRE).toLowerCase().includes(q) || String(m.CEDULA).includes(q))) return false;
     return true;
   });
@@ -615,6 +646,7 @@ function limpiarFiltros(){
   document.getElementById('fEdadMin').value='';
   document.getElementById('fEdadMax').value='';
   document.getElementById('fFechaEspecial').value='';
+  document.getElementById('fFechaIngreso').value='';
   document.getElementById('pillEmail').classList.remove('on');
   document.getElementById('pillTel').classList.remove('on');
   document.getElementById('buscar').value='';
@@ -693,6 +725,16 @@ function renderKPIs(){
   const conRol = MILITANTES.filter(m=>m.ROL).length;
   const cumpleMes = MILITANTES.filter(m=>coincideFechaEspecial(m,'cumple_mes')).length;
   const anivMes = MILITANTES.filter(m=>coincideFechaEspecial(m,'aniv_mes')).length;
+  const ingresosMes = MILITANTES.filter(m=>coincideFechaIngreso(m,'1m')).length;
+  const ingresosTrimestre = MILITANTES.filter(m=>coincideFechaIngreso(m,'3m')).length;
+  const edades = MILITANTES.map(m=>Number(m.EDAD)).filter(e=>!isNaN(e)&&e>0);
+  const edadProm = edades.length ? Math.round(edades.reduce((a,b)=>a+b,0)/edades.length) : 0;
+  const mujeres = MILITANTES.filter(m=>m.SEXO==='M').length;
+  const varones = MILITANTES.filter(m=>m.SEXO==='V').length;
+  const renunciados = MILITANTES.filter(m=>m.ESTADO==='Renunciado').length;
+
+  const porComuna = {}; MILITANTES.forEach(m=>{ const k = titleCase(m.COMUNA)||'Sin comuna'; porComuna[k]=(porComuna[k]||0)+1; });
+  const comunaTop = Object.entries(porComuna).sort((a,b)=>b[1]-a[1])[0] || ['-',0];
 
   document.getElementById('kpiFecha').innerText = 'Generado el ' + new Date().toLocaleDateString('es-CL', {day:'numeric',month:'long',year:'numeric'});
   document.getElementById('kpiCards').innerHTML = `
@@ -701,19 +743,83 @@ function renderKPIs(){
     <div class="kpiCard"><div class="num">${total?Math.round(conTel/total*100):0}%</div><div class="lbl">Con teléfono registrado</div></div>
     <div class="kpiCard"><div class="num">${conRol.toLocaleString('es-CL')}</div><div class="lbl">Con rol asignado</div></div>
     <div class="kpiCard"><div class="num">${cumpleMes}</div><div class="lbl">Cumpleaños este mes</div></div>
-    <div class="kpiCard"><div class="num">${anivMes}</div><div class="lbl">Aniversarios este mes</div></div>`;
+    <div class="kpiCard"><div class="num">${anivMes}</div><div class="lbl">Aniversarios este mes</div></div>
+    <div class="kpiCard"><div class="num">${ingresosMes}</div><div class="lbl">Ingresos último mes</div></div>
+    <div class="kpiCard"><div class="num">${ingresosTrimestre}</div><div class="lbl">Ingresos último trimestre</div></div>
+    <div class="kpiCard"><div class="num">${edadProm || '-'}</div><div class="lbl">Edad promedio</div></div>
+    <div class="kpiCard"><div class="num">${comunaTop[0]}</div><div class="lbl">Comuna con más militantes</div></div>
+    <div class="kpiCard"><div class="num">${total?Math.round(renunciados/total*100):0}%</div><div class="lbl">Renunciados</div></div>
+    <div class="kpiCard"><div class="num">${total?Math.round(mujeres/total*100):0}% / ${total?Math.round(varones/total*100):0}%</div><div class="lbl">Mujeres / Varones</div></div>`;
 
-  const porComuna = {}; MILITANTES.forEach(m=>{ const k = titleCase(m.COMUNA)||'Sin comuna'; porComuna[k]=(porComuna[k]||0)+1; });
   const porRol = {}; MILITANTES.forEach(m=>{ const k = m.ROL ? m.ROL.trim() : 'Sin rol asignado'; porRol[k]=(porRol[k]||0)+1; });
-  const porSexo = { 'Mujer': MILITANTES.filter(m=>m.SEXO==='M').length, 'Varón': MILITANTES.filter(m=>m.SEXO==='V').length };
+  const porSexo = { 'Mujer': mujeres, 'Varón': varones };
+  const porEstado = {}; ESTADOS_FIJOS.forEach(e=> porEstado[e] = MILITANTES.filter(m=>m.ESTADO===e).length);
+  porEstado['Sin estado'] = MILITANTES.filter(m=>!m.ESTADO || !ESTADOS_FIJOS.includes(m.ESTADO)).length;
+  const porIngreso = {
+    'Último mes': ingresosMes,
+    '1-3 meses': MILITANTES.filter(m=>coincideFechaIngreso(m,'3m') && !coincideFechaIngreso(m,'1m')).length,
+    '3-6 meses': MILITANTES.filter(m=>coincideFechaIngreso(m,'6m') && !coincideFechaIngreso(m,'3m')).length,
+    '6-12 meses': MILITANTES.filter(m=>coincideFechaIngreso(m,'12m') && !coincideFechaIngreso(m,'6m')).length,
+    'Más de 1 año': MILITANTES.filter(m=>coincideFechaIngreso(m,'mas1a')).length
+  };
 
   _dibujarChart('chartComuna','bar', Object.keys(porComuna), Object.values(porComuna), ['#16233F']);
   _dibujarChart('chartRol','doughnut', Object.keys(porRol), Object.values(porRol), Object.keys(porRol).map(r=>rolColor(r)));
   _dibujarChart('chartSexo','doughnut', Object.keys(porSexo), Object.values(porSexo), ['#C9A227','#16233F']);
+  _dibujarChart('chartEstado','doughnut', Object.keys(porEstado), Object.values(porEstado), ['#2563A6','#1E8E5A','#C9A227','#C0392B','#6B7280']);
   _dibujarChart('chartContacto','bar', ['Con email','Sin email','Con teléfono','Sin teléfono'],
     [conEmail, total-conEmail, conTel, total-conTel], ['#1E8E5A','#C0392B','#1E8E5A','#C0392B']);
+  _dibujarChart('chartIngresos','bar', Object.keys(porIngreso), Object.values(porIngreso), ['#16233F']);
 
+  generarInformeEjecutivo({
+    total, conEmail, conTel, conRol, cumpleMes, anivMes, ingresosMes, ingresosTrimestre,
+    edadProm, comunaTop, renunciados, mujeres, varones, porComuna, porEstado
+  });
   cargarEstadoCampanas();
+}
+
+function generarInformeEjecutivo(k){
+  const pctEmail = k.total ? Math.round(k.conEmail/k.total*100) : 0;
+  const pctTel = k.total ? Math.round(k.conTel/k.total*100) : 0;
+  const pctRol = k.total ? Math.round(k.conRol/k.total*100) : 0;
+  const pctRenuncia = k.total ? Math.round(k.renunciados/k.total*100) : 0;
+  const pctComunaTop = k.total ? Math.round(k.comunaTop[1]/k.total*100) : 0;
+  const pctMujeres = k.total ? Math.round(k.mujeres/k.total*100) : 0;
+
+  const sugerencias = [];
+  if(pctEmail < 60) sugerencias.push(`Solo el <span class="destacado">${pctEmail}%</span> tiene email registrado. Priorizar una campaña territorial (WhatsApp o visitas) para completar este dato antes de planificar envíos masivos por correo.`);
+  if(pctTel < 60) sugerencias.push(`El <span class="destacado">${pctTel}%</span> tiene teléfono registrado, lo que limita el alcance de campañas de WhatsApp. Conviene priorizar el levantamiento de este dato en las comunas con menor cobertura.`);
+  if(pctRol < 30) sugerencias.push(`Solo el <span class="destacado">${pctRol}%</span> de la base tiene un rol asignado. Asignar roles (coordinador, embajador, líder barrial, etc.) ayuda a activar la estructura territorial y no depender solo del equipo central.`);
+  if(pctRenuncia > 5) sugerencias.push(`La tasa de renuncia (<span class="destacado">${pctRenuncia}%</span>) amerita revisar causas y reforzar seguimiento de militantes en estado "Sin Contacto" antes de que pasen a renuncia.`);
+  if(pctComunaTop > 45) sugerencias.push(`<span class="destacado">${k.comunaTop[0]}</span> concentra el ${pctComunaTop}% del padrón. Conviene evaluar una estrategia de expansión territorial hacia las comunas con menor presencia para equilibrar la base.`);
+  if(k.ingresosMes === 0) sugerencias.push('No se registraron nuevos ingresos en el último mes. Vale la pena revisar si el trabajo de captación territorial sigue activo.');
+  else sugerencias.push(`Se registraron <span class="destacado">${k.ingresosMes}</span> nuevos ingresos en el último mes — mantener el correo de bienvenida activo para todos ellos.`);
+  if(!sugerencias.length) sugerencias.push('Los indicadores generales se encuentran en rangos saludables. Mantener el monitoreo mensual de cobertura de contacto y roles asignados.');
+
+  document.getElementById('informeNarrativo').innerHTML = `
+    <h3>Resumen ejecutivo</h3>
+    <p>El Distrito 12 cuenta actualmente con <span class="destacado">${k.total.toLocaleString('es-CL')}</span> militantes
+    registrados, con una edad promedio de <span class="destacado">${k.edadProm || 'sin datos'}</span> años y una
+    composición de <span class="destacado">${pctMujeres}%</span> mujeres y <span class="destacado">${100-pctMujeres}%</span> varones.
+    La comuna con mayor presencia es <span class="destacado">${k.comunaTop[0]}</span>, con ${pctComunaTop}% del total.
+    Actualmente <span class="destacado">${pctEmail}%</span> de la base tiene email registrado y
+    <span class="destacado">${pctTel}%</span> tiene teléfono, mientras que <span class="destacado">${pctRol}%</span>
+    tiene un rol asignado dentro de la estructura territorial.</p>
+
+    <h3>Análisis</h3>
+    <ul>
+      <li>La cobertura de datos de contacto (email/teléfono) ${pctEmail>=60&&pctTel>=60?'es sólida, lo que permite ejecutar campañas masivas con buen alcance':'es limitada, lo que reduce el alcance real de cualquier campaña de correo o WhatsApp'}.</li>
+      <li>La asignación de roles ${pctRol>=30?'muestra una estructura territorial en desarrollo':'es baja, lo que sugiere una base todavía poco activada más allá del registro inicial'}.</li>
+      <li>La concentración territorial en ${k.comunaTop[0]} (${pctComunaTop}%) ${pctComunaTop>45?'es alta y debiera monitorearse para evitar dependencia de una sola comuna':'está en un rango razonable respecto del resto del distrito'}.</li>
+      <li>La tasa de renuncia (${pctRenuncia}%) ${pctRenuncia>5?'es un punto de atención':'se mantiene en un nivel bajo'}.</li>
+    </ul>
+
+    <h3>Conclusión</h3>
+    <p>La base del Distrito 12 ${pctEmail>=60&&pctRol>=30 ? 'está en buenas condiciones operativas, con datos de contacto y estructura de roles razonablemente desarrollados' : 'tiene potencial de crecimiento en calidad de datos y activación territorial, más allá del volumen total de militantes registrados'}.
+    El foco de gestión de las próximas semanas debiera estar en cerrar las brechas de datos de contacto y roles, que son las que más limitan la capacidad de ejecutar campañas efectivas.</p>
+
+    <h3>Sugerencias</h3>
+    <ul>${sugerencias.map(s=>`<li>${s}</li>`).join('')}</ul>`;
 }
 
 function _dibujarChart(canvasId, tipo, labels, data, colores){
