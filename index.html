@@ -7,6 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <style>
   /* ======================================================================
      CONFIGURACIÓN: pega aquí UNA vez la URL de tu API de Apps Script.
@@ -18,13 +24,16 @@
 </script>
 <style>
   :root{
-    --navy:#0B1220; --navy2:#152340; --navy3:#1E2F55; --gold:#C9A227; --gold-light:#EAD27A;
-    --bg:#F1F3F7; --card:#FFFFFF; --text:#1B2330; --muted:#6B7280; --border:#E6E8EE;
-    --green:#1E8E5A; --red:#C0392B; --blue:#2563A6;
-    --radius:14px; --shadow:0 3px 14px rgba(16,24,40,.07);
+    --navy:#0A101E; --navy2:#111C33; --navy3:#1A2C50; --gold:#C6A24D; --gold-light:#E6C878;
+    --bg:#F4F5F9; --card:#FFFFFF; --text:#1C2333; --muted:#6B7280; --border:#E9EAF0;
+    --green:#1E8E5A; --red:#C0392B; --blue:#2563A6; --teal:#1F7A6C;
+    --radius:14px; --radius-sm:9px; --shadow:0 4px 16px rgba(14,20,38,.06); --shadow-lg:0 10px 32px rgba(14,20,38,.12);
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--bg);color:var(--text);}
+  body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
+  button{transition:filter .15s ease,transform .1s ease;}
+  button:hover{filter:brightness(1.06);}
+  button:active{transform:scale(.98);}
 
   #avisoConfig{display:none;height:100vh;align-items:center;justify-content:center;background:var(--navy);color:#fff;text-align:center;padding:30px;}
   #avisoConfig .box{max-width:480px;}
@@ -144,6 +153,17 @@
   #informeNarrativo ul{margin:0 0 10px;padding-left:20px;}
   #informeNarrativo li{font-size:12.5px;line-height:1.6;color:var(--text);margin-bottom:5px;}
   #informeNarrativo .destacado{color:var(--navy);font-weight:700;}
+
+  /* NOTICIAS */
+  #noticiasView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:var(--bg);}
+  #mapaView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:var(--bg);}
+  #mapaFiltros select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:inherit;background:#fff;}
+  .noticiaCard{background:var(--card);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:14px;border-left:4px solid var(--teal);}
+  .noticiaCard h3{margin:0 0 6px;font-size:14.5px;color:var(--navy);font-weight:700;}
+  .noticiaCard .meta{font-size:11px;color:var(--muted);margin-bottom:8px;}
+  .noticiaCard p{font-size:12.5px;color:var(--text);line-height:1.55;margin:0 0 12px;}
+  .noticiaCard .acciones{display:flex;gap:8px;}
+  .noticiaCard .acciones a{font-size:12px;color:var(--blue);text-decoration:none;font-weight:600;align-self:center;}
   @media (max-width:900px){ .chartsGrid{grid-template-columns:1fr;} }
 
   @media print{
@@ -183,6 +203,8 @@
       <nav>
         <button id="tabMilitantes" class="active" onclick="cambiarTab('militantes')">Militantes</button>
         <button id="tabKpi" onclick="cambiarTab('kpi')">Panel de KPIs</button>
+        <button id="tabNoticias" onclick="cambiarTab('noticias')">Noticias PDG</button>
+        <button id="tabMapa" onclick="cambiarTab('mapa')" style="display:none;">Mapa</button>
       </nav>
     </div>
     <div class="userinfo">
@@ -281,6 +303,47 @@
         </table>
         <button class="btn btn-outline" style="margin-top:12px;" onclick="forzarEnvioLote()">Forzar envío del próximo lote ahora</button>
       </div>
+    </div>
+
+    <!-- PESTAÑA DE NOTICIAS -->
+    <div id="noticiasView">
+      <div class="kpiHead">
+        <div>
+          <h1>Noticias del Partido de la Gente</h1>
+          <p>Se actualizan automáticamente todos los días a las 7:00 AM (fuente: Google Noticias)</p>
+        </div>
+        <button class="btn btn-outline" id="btnActualizarNoticias" onclick="forzarActualizarNoticias()">Actualizar noticias ahora</button>
+      </div>
+      <div id="listaNoticias"></div>
+    </div>
+
+    <!-- PESTAÑA DE MAPA (solo admin) -->
+    <div id="mapaView">
+      <div class="kpiHead">
+        <div>
+          <h1>Mapa de militantes</h1>
+          <p id="mapaProgreso">Cargando…</p>
+        </div>
+        <div class="btnRow">
+          <button class="btn btn-outline" onclick="forzarGeocodificacion()">Geocodificar más ahora</button>
+          <button class="btn btn-outline" onclick="cargarMapa()">Actualizar mapa</button>
+        </div>
+      </div>
+      <div id="mapaFiltros" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <select id="mComuna" onchange="renderCapaMapa()"><option value="">Todas las comunas</option></select>
+        <select id="mRol" onchange="renderCapaMapa()"><option value="">Todos los roles</option></select>
+        <select id="mEstado" onchange="renderCapaMapa()"><option value="">Todos los estados</option></select>
+        <div class="modoTabs" style="width:280px;">
+          <div class="modoTab active" id="modoPuntos" onclick="cambiarModoMapa('puntos')">Ubicaciones</div>
+          <div class="modoTab" id="modoCalor" onclick="cambiarModoMapa('calor')">Mapa de calor</div>
+        </div>
+      </div>
+      <div id="mapaDiv" style="height:62vh;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);"></div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px;">
+        Las direcciones se geocodifican progresivamente en segundo plano (aproximadamente 50 cada 10 minutos)
+        para no exceder los límites de Google. Los resultados dependen de la calidad y precisión del domicilio
+        registrado — algunas direcciones incompletas pueden no ubicarse con exactitud.
+      </p>
     </div>
   </div>
 </div>
@@ -522,6 +585,8 @@ async function entrarApp(){
   document.getElementById('rolBadge').innerText = SESSION.rol==='admin' ? 'ADMIN' : 'SOLO VER';
   if(SESSION.rol==='viewer'){
     ['btnEmailMasivo','btnWspMasivo','btnAgregar'].forEach(id=>document.getElementById(id).style.display='none');
+  } else {
+    document.getElementById('tabMapa').style.display='inline-block';
   }
   mostrarCargando(true);
   try{
@@ -709,16 +774,22 @@ function accionRapidaWhatsApp(cedula){ cedulaActiva = cedula; whatsappIndividual
 function cambiarTab(tab){
   document.getElementById('tabMilitantes').classList.toggle('active', tab==='militantes');
   document.getElementById('tabKpi').classList.toggle('active', tab==='kpi');
+  document.getElementById('tabNoticias').classList.toggle('active', tab==='noticias');
+  document.getElementById('tabMapa').classList.toggle('active', tab==='mapa');
   document.getElementById('filterBar').style.display = tab==='militantes' ? 'block':'none';
   document.getElementById('toolbar2').style.display = tab==='militantes' ? 'flex':'none';
   document.getElementById('tableWrap').style.display = tab==='militantes' ? 'block':'none';
   document.getElementById('pager').style.display = tab==='militantes' ? 'flex':'none';
   document.getElementById('kpiView').style.display = tab==='kpi' ? 'block':'none';
+  document.getElementById('noticiasView').style.display = tab==='noticias' ? 'block':'none';
+  document.getElementById('mapaView').style.display = tab==='mapa' ? 'block':'none';
   if(tab==='kpi') renderKPIs();
+  if(tab==='noticias') cargarNoticias();
+  if(tab==='mapa') cargarMapa();
 }
 
 // ---------- KPIs ----------
-function renderKPIs(){
+async function renderKPIs(){
   const total = MILITANTES.length;
   const conEmail = MILITANTES.filter(m=>m.EMAIL).length;
   const conTel = MILITANTES.filter(m=>m.TELEFONO).length;
@@ -732,6 +803,12 @@ function renderKPIs(){
   const mujeres = MILITANTES.filter(m=>m.SEXO==='M').length;
   const varones = MILITANTES.filter(m=>m.SEXO==='V').length;
   const renunciados = MILITANTES.filter(m=>m.ESTADO==='Renunciado').length;
+
+  let hoy = { cumpleanos:0, aniversarios:0, individuales:0, masivosPersonalizados:0, lotesBCC:0, total:0 };
+  try{
+    const res = await apiGet({action:'getEstadisticasHoy'});
+    if(res.ok) hoy = res.datos;
+  } catch(err){ /* si falla, se muestran en 0 */ }
 
   const porComuna = {}; MILITANTES.forEach(m=>{ const k = titleCase(m.COMUNA)||'Sin comuna'; porComuna[k]=(porComuna[k]||0)+1; });
   const comunaTop = Object.entries(porComuna).sort((a,b)=>b[1]-a[1])[0] || ['-',0];
@@ -749,7 +826,10 @@ function renderKPIs(){
     <div class="kpiCard"><div class="num">${edadProm || '-'}</div><div class="lbl">Edad promedio</div></div>
     <div class="kpiCard"><div class="num">${comunaTop[0]}</div><div class="lbl">Comuna con más militantes</div></div>
     <div class="kpiCard"><div class="num">${total?Math.round(renunciados/total*100):0}%</div><div class="lbl">Renunciados</div></div>
-    <div class="kpiCard"><div class="num">${total?Math.round(mujeres/total*100):0}% / ${total?Math.round(varones/total*100):0}%</div><div class="lbl">Mujeres / Varones</div></div>`;
+    <div class="kpiCard"><div class="num">${total?Math.round(mujeres/total*100):0}% / ${total?Math.round(varones/total*100):0}%</div><div class="lbl">Mujeres / Varones</div></div>
+    <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.cumpleanos}</div><div class="lbl">Cumpleaños enviados hoy</div></div>
+    <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.aniversarios}</div><div class="lbl">Aniversarios enviados hoy</div></div>
+    <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.total}</div><div class="lbl">Total correos enviados hoy</div></div>`;
 
   const porRol = {}; MILITANTES.forEach(m=>{ const k = m.ROL ? m.ROL.trim() : 'Sin rol asignado'; porRol[k]=(porRol[k]||0)+1; });
   const porSexo = { 'Mujer': mujeres, 'Varón': varones };
@@ -849,6 +929,130 @@ async function forzarEnvioLote(){
   mostrarCargando(false);
   toast(res.enviado ? `Lote enviado a ${res.destinatarios} personas` : (res.mensaje || res.error || 'Sin lotes pendientes'));
   cargarEstadoCampanas();
+}
+
+// ---------- NOTICIAS DEL PDG ----------
+async function cargarNoticias(){
+  document.getElementById('listaNoticias').innerHTML = '<p style="color:var(--muted);font-size:13px;">Cargando noticias…</p>';
+  if(SESSION.rol!=='admin') document.getElementById('btnActualizarNoticias').style.display='none';
+  try{
+    const res = await apiGet({action:'getNoticias'});
+    renderNoticias(res.datos || []);
+  } catch(err){
+    document.getElementById('listaNoticias').innerHTML = '<p style="color:var(--muted);font-size:13px;">No se pudieron cargar las noticias.</p>';
+  }
+}
+function renderNoticias(lista){
+  if(!lista.length){
+    document.getElementById('listaNoticias').innerHTML = '<p style="color:var(--muted);font-size:13px;">Aún no hay noticias cargadas. Si eres administrador, presiona "Actualizar noticias ahora".</p>';
+    return;
+  }
+  document.getElementById('listaNoticias').innerHTML = lista.map(n=>`
+    <div class="noticiaCard">
+      <h3>${n.titulo}</h3>
+      <div class="meta">${n.fuente ? n.fuente + ' · ' : ''}${new Date(n.fecha).toLocaleDateString('es-CL', {day:'numeric',month:'long',year:'numeric'})}</div>
+      <p>${n.resumen || ''}</p>
+      <div class="acciones">
+        <a href="${n.link}" target="_blank" rel="noopener">Leer noticia completa ↗</a>
+        ${SESSION.rol==='admin' ? `<button class="btn btn-gold" style="margin-left:auto;" onclick='prepararEnvioNoticia(${JSON.stringify(n).replace(/'/g,"&apos;")})'>Enviar a militantes</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+function prepararEnvioNoticia(n){
+  cambiarTab('militantes');
+  seleccionados.clear();
+  abrirModalCorreo(true);
+  document.getElementById('mAsunto').value = n.titulo;
+  document.getElementById('mCuerpo').value = `${n.resumen}\n\nLee la noticia completa aquí: ${n.link}`;
+  document.getElementById('mPlantilla').value = '';
+}
+async function forzarActualizarNoticias(){
+  mostrarCargando(true);
+  const res = await apiPost({action:'actualizarNoticiasAhora'});
+  mostrarCargando(false);
+  toast(res.ok ? `Se agregaron ${res.agregadas} noticias nuevas` : (res.error||'Error al actualizar'));
+  cargarNoticias();
+}
+
+// ---------- MAPA DE MILITANTES ----------
+let UBICACIONES = [];
+let mapaInstancia = null;
+let capaActual = null;
+let modoMapaActual = 'puntos';
+let filtrosMapaListos = false;
+
+async function cargarMapa(){
+  document.getElementById('mapaProgreso').innerText = 'Cargando ubicaciones…';
+  try{
+    const res = await apiGet({action:'getUbicaciones'});
+    if(!res.ok){ document.getElementById('mapaProgreso').innerText = res.error||'Error'; return; }
+    UBICACIONES = res.puntos;
+    const pct = res.totalMilitantes ? Math.round(res.totalGeocodificados/res.totalMilitantes*100) : 0;
+    document.getElementById('mapaProgreso').innerText = `${res.totalGeocodificados} de ${res.totalMilitantes} direcciones geocodificadas (${pct}%) — se completa automáticamente unas 50 cada 10 minutos`;
+    if(!filtrosMapaListos) poblarFiltrosMapa();
+    if(!mapaInstancia){
+      mapaInstancia = L.map('mapaDiv').setView([-33.58,-70.62], 11);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
+      }).addTo(mapaInstancia);
+    }
+    setTimeout(()=>mapaInstancia.invalidateSize(), 150);
+    renderCapaMapa();
+  } catch(err){
+    document.getElementById('mapaProgreso').innerText = 'No se pudo cargar el mapa: ' + err.message;
+  }
+}
+
+function poblarFiltrosMapa(){
+  const comunas = [...new Set(UBICACIONES.map(p=>titleCase(p.comuna)))].sort();
+  const mComuna = document.getElementById('mComuna');
+  comunas.forEach(c=> mComuna.innerHTML += `<option value="${c}">${c}</option>`);
+  const mRol = document.getElementById('mRol'), mEstado = document.getElementById('mEstado');
+  ROLES.forEach(r=> mRol.innerHTML += `<option value="${r.rol.trim()}">${r.rol.trim()}</option>`);
+  ESTADOS_FIJOS.forEach(e=> mEstado.innerHTML += `<option value="${e}">${e}</option>`);
+  filtrosMapaListos = true;
+}
+
+function cambiarModoMapa(modo){
+  modoMapaActual = modo;
+  document.getElementById('modoPuntos').classList.toggle('active', modo==='puntos');
+  document.getElementById('modoCalor').classList.toggle('active', modo==='calor');
+  renderCapaMapa();
+}
+
+function renderCapaMapa(){
+  if(!mapaInstancia) return;
+  if(capaActual){ mapaInstancia.removeLayer(capaActual); capaActual = null; }
+  const comuna = document.getElementById('mComuna').value;
+  const rol = document.getElementById('mRol').value;
+  const estado = document.getElementById('mEstado').value;
+  const puntos = UBICACIONES.filter(p=>{
+    if(comuna && titleCase(p.comuna)!==comuna) return false;
+    if(rol && (p.rol||'').trim()!==rol) return false;
+    if(estado && p.estado!==estado) return false;
+    return true;
+  });
+
+  if(modoMapaActual==='calor'){
+    const datosCalor = puntos.map(p=>[p.lat, p.lng, 0.5]);
+    capaActual = L.heatLayer(datosCalor, {radius: 22, blur: 18, maxZoom: 14}).addTo(mapaInstancia);
+  } else {
+    capaActual = L.markerClusterGroup();
+    puntos.forEach(p=>{
+      const marker = L.marker([p.lat, p.lng]);
+      marker.bindPopup(`<b>${titleCase(p.nombre)}</b><br>${titleCase(p.comuna)}<br>${p.rol ? 'Rol: '+p.rol.trim()+'<br>' : ''}Estado: ${p.estado||'-'}`);
+      capaActual.addLayer(marker);
+    });
+    mapaInstancia.addLayer(capaActual);
+  }
+}
+
+async function forzarGeocodificacion(){
+  mostrarCargando(true);
+  const res = await apiPost({action:'procesarGeocodificacionAhora'});
+  mostrarCargando(false);
+  toast(res.ok ? `Se geocodificaron ${res.procesados} direcciones nuevas` : (res.error||'Error'));
+  cargarMapa();
 }
 
 // ---------- DRAWER ----------
