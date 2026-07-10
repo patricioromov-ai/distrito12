@@ -8,135 +8,172 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
+  /* ======================================================================
+     CONFIGURACIÓN: pega aquí UNA vez la URL de tu API de Apps Script.
+     Los usuarios finales del dashboard NUNCA verán ni tendrán que tocar esto.
+     ====================================================================== */
+</style>
+<script>
+  const API_URL_FIJA = "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT_TERMINADA_EN_/exec";
+</script>
+<style>
   :root{
-    --navy:#0D1526; --navy2:#16233F; --navy3:#1E2E52; --gold:#C9A227; --gold-light:#E8CE6B;
-    --bg:#EEF0F4; --card:#FFFFFF; --text:#1B2330; --muted:#6B7280; --border:#E3E6EA;
-    --green:#1E8E5A; --red:#C0392B; --shadow:0 2px 10px rgba(16,24,40,.06);
+    --navy:#0B1220; --navy2:#152340; --navy3:#1E2F55; --gold:#C9A227; --gold-light:#EAD27A;
+    --bg:#F1F3F7; --card:#FFFFFF; --text:#1B2330; --muted:#6B7280; --border:#E6E8EE;
+    --green:#1E8E5A; --red:#C0392B; --blue:#2563A6;
+    --radius:14px; --shadow:0 3px 14px rgba(16,24,40,.07);
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--bg);color:var(--text);}
 
-  #configScreen,#loginScreen{height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%, var(--navy3), var(--navy) 70%);}
-  #configBox,#loginBox{background:var(--card);padding:44px;border-radius:14px;width:340px;box-shadow:0 24px 60px rgba(0,0,0,.35);text-align:center;}
-  #configBox h1,#loginBox h1{font-size:22px;color:var(--navy);margin-bottom:2px;letter-spacing:.5px;font-weight:800;}
-  #configBox p,#loginBox p{color:var(--muted);font-size:13px;margin-top:0;margin-bottom:22px;}
-  #configBox input,#loginBox input{width:100%;padding:11px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;font-size:14px;font-family:inherit;}
-  #configBox button,#loginBox button{width:100%;padding:11px;background:linear-gradient(135deg,var(--gold-light),var(--gold));border:none;border-radius:8px;font-weight:700;color:var(--navy);cursor:pointer;font-size:14px;}
-  #loginError,#configError{color:var(--red);font-size:12px;min-height:16px;}
+  #avisoConfig{display:none;height:100vh;align-items:center;justify-content:center;background:var(--navy);color:#fff;text-align:center;padding:30px;}
+  #avisoConfig .box{max-width:480px;}
+  #avisoConfig code{background:#0006;padding:2px 8px;border-radius:6px;}
+
+  #loginScreen{height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 25% 15%, var(--navy3), var(--navy) 70%);}
+  #loginBox{background:var(--card);padding:46px 44px;border-radius:18px;width:340px;box-shadow:0 30px 70px rgba(0,0,0,.4);text-align:center;}
+  #loginBox .logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--gold-light),var(--gold));margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--navy);font-size:20px;}
+  #loginBox h1{font-size:21px;color:var(--navy);margin-bottom:2px;letter-spacing:.3px;font-weight:800;}
+  #loginBox p{color:var(--muted);font-size:13px;margin-top:0;margin-bottom:22px;}
+  #loginBox input{width:100%;padding:12px;border:1px solid var(--border);border-radius:9px;margin-bottom:12px;font-size:14px;font-family:inherit;}
+  #loginBox button{width:100%;padding:12px;background:linear-gradient(135deg,var(--gold-light),var(--gold));border:none;border-radius:9px;font-weight:700;color:var(--navy);cursor:pointer;font-size:14px;font-family:inherit;}
+  #loginError{color:var(--red);font-size:12px;min-height:16px;}
 
   #app{display:none;height:100vh;flex-direction:column;}
-  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:0 22px;display:flex;align-items:center;justify-content:space-between;height:58px;box-shadow:0 2px 10px rgba(0,0,0,.15);z-index:5;}
-  header .brand{font-weight:800;font-size:17px;letter-spacing:.3px;display:flex;align-items:center;gap:10px;}
-  header .brand span{color:var(--gold);}
-  header nav{display:flex;gap:4px;margin-left:24px;}
-  header nav button{background:none;border:none;color:#B9C2D4;padding:8px 16px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;}
-  header nav button.active{background:rgba(255,255,255,.12);color:#fff;}
-  header .userinfo{font-size:12px;color:#cfd4dd;display:flex;align-items:center;gap:12px;}
-  header .badge{background:var(--gold);color:var(--navy);padding:3px 10px;border-radius:10px;font-weight:700;font-size:11px;letter-spacing:.4px;}
-  header button.exit{background:transparent;border:1px solid #3d4b6b;color:#fff;padding:6px 14px;border-radius:7px;cursor:pointer;font-size:12px;font-family:inherit;}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:0 22px;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 2px 12px rgba(0,0,0,.18);z-index:5;flex-shrink:0;}
+  header .left{display:flex;align-items:center;gap:22px;}
+  header .brand{font-weight:800;font-size:17px;letter-spacing:.3px;display:flex;align-items:center;gap:9px;}
+  header .brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--gold-light),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--navy);font-size:13px;}
+  header .brand span{color:var(--gold-light);font-weight:600;}
+  header nav{display:flex;gap:4px;}
+  header nav button{background:none;border:none;color:#B9C2D4;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;}
+  header nav button.active{background:rgba(255,255,255,.14);color:#fff;}
+  header .userinfo{font-size:12px;color:#cfd4dd;display:flex;align-items:center;gap:14px;}
+  header .badge{background:var(--gold);color:var(--navy);padding:4px 11px;border-radius:20px;font-weight:700;font-size:11px;letter-spacing:.4px;}
+  header button.exit{background:transparent;border:1px solid #3d4b6b;color:#fff;padding:7px 15px;border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit;}
 
-  #body{display:flex;flex:1;overflow:hidden;}
-  #sidebar{width:240px;background:var(--card);border-right:1px solid var(--border);padding:18px;overflow-y:auto;}
-  #sidebar h3{font-size:10.5px;text-transform:uppercase;color:var(--muted);margin:18px 0 7px;letter-spacing:.7px;font-weight:700;}
-  #sidebar h3:first-child{margin-top:0;}
-  #sidebar select, #sidebar input{width:100%;padding:7px;border:1px solid var(--border);border-radius:7px;font-size:12.5px;margin-bottom:6px;font-family:inherit;}
-  #sidebar label{display:flex;align-items:center;gap:6px;font-size:12.5px;padding:2px 0;color:var(--text);}
-  #clearFilters{background:none;border:none;color:var(--gold);font-size:11.5px;cursor:pointer;padding:0;margin-top:10px;font-weight:600;}
+  #main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
 
-  #main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-  #toolbar{padding:12px 18px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;}
-  #toolbar input[type=text]{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;}
-  #toolbar button{padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit;}
+  /* BARRA DE FILTROS (arriba de la tabla) */
+  #filterBar{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;}
+  #filterRow1{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  #filterRow1 input[type=text]{flex:1;min-width:220px;padding:10px 14px;border:1px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;}
+  #filterRow1 select{padding:10px 12px;border:1px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;background:#fff;min-width:150px;}
+  #toggleMasFiltros{background:none;border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:9px;cursor:pointer;font-size:12.5px;font-weight:600;font-family:inherit;}
+  #filterRow2{display:none;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
+  #filterRow2.visible{display:flex;}
+  #filterRow2 select,#filterRow2 input{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:inherit;width:90px;}
+  #filterRow2 select{width:auto;}
+  .togglePill{padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--muted);}
+  .togglePill.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  #limpiarFiltros{background:none;border:none;color:var(--blue);font-size:12px;cursor:pointer;font-weight:600;font-family:inherit;}
+
+  #toolbar2{padding:12px 20px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;justify-content:space-between;}
+  #selCount{font-size:12.5px;color:var(--muted);font-weight:500;}
+  .btnRow{display:flex;gap:8px;}
+  .btn{padding:10px 16px;border-radius:9px;border:none;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit;display:inline-flex;align-items:center;gap:6px;}
   .btn-gold{background:linear-gradient(135deg,var(--gold-light),var(--gold));color:var(--navy);}
   .btn-outline{background:#fff;border:1px solid var(--border) !important;color:var(--text);}
   .btn-green{background:var(--green);color:#fff;}
-  #selCount{font-size:12px;color:var(--muted);}
+  .btn-navy{background:var(--navy);color:#fff;}
+  .btn-red{background:var(--red);color:#fff;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
 
-  #tableWrap{flex:1;overflow:auto;padding:0 18px;}
-  table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border-radius:10px;overflow:hidden;}
-  thead th{position:sticky;top:0;background:var(--navy);color:#fff;padding:10px 8px;text-align:left;z-index:2;font-weight:600;letter-spacing:.2px;}
-  tbody td{padding:9px 8px;border-bottom:1px solid var(--border);}
-  tbody tr:hover{background:#FAF6E8;cursor:pointer;}
-  .rolPill{padding:3px 9px;border-radius:10px;font-size:10.5px;color:#fff;font-weight:600;}
-  .noEmail,.noTel{color:var(--muted);opacity:.4;}
-  #pager{display:flex;justify-content:center;gap:10px;padding:12px;font-size:12px;align-items:center;}
-  #pager button{padding:5px 12px;border:1px solid var(--border);background:#fff;border-radius:7px;cursor:pointer;font-family:inherit;}
+  #tableWrap{flex:1;overflow:auto;padding:16px 20px;}
+  table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+  thead th{position:sticky;top:0;background:var(--navy);color:#fff;padding:12px 10px;text-align:left;z-index:2;font-weight:600;letter-spacing:.2px;font-size:11.5px;text-transform:uppercase;}
+  tbody td{padding:11px 10px;border-bottom:1px solid var(--border);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FBF8ED;}
+  .nombreCell{font-weight:600;cursor:pointer;}
+  .rolPill{padding:3px 10px;border-radius:20px;font-size:10.5px;color:#fff;font-weight:600;}
+  .iconBtn{width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-right:4px;}
+  .iconBtn.email{background:#E7F0FA;color:var(--blue);}
+  .iconBtn.wsp{background:#E4F5EC;color:var(--green);}
+  .iconBtn:disabled{background:#F1F1F1;color:#C4C7CC;cursor:not-allowed;}
+  #pager{display:flex;justify-content:center;gap:10px;padding:14px;font-size:12.5px;align-items:center;color:var(--muted);}
+  #pager button{padding:6px 14px;border:1px solid var(--border);background:#fff;border-radius:8px;cursor:pointer;font-family:inherit;}
 
-  #overlay{display:none;position:fixed;inset:0;background:rgba(13,21,38,.45);z-index:10;}
-  #drawer{display:none;position:fixed;right:0;top:0;bottom:0;width:420px;max-width:92vw;background:#fff;z-index:11;box-shadow:-8px 0 24px rgba(0,0,0,.15);overflow-y:auto;}
-  #drawer .dhead{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;}
-  #drawer .dhead h2{margin:0;font-size:16px;font-weight:700;}
-  #drawer .dhead button{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;}
-  #drawer .section{padding:16px 20px;border-bottom:1px solid var(--border);}
-  #drawer .section h4{margin:0 0 8px;font-size:10.5px;text-transform:uppercase;color:var(--muted);letter-spacing:.6px;font-weight:700;}
-  #drawer label{font-size:11px;color:var(--muted);display:block;margin-top:8px;}
-  #drawer input,#drawer select,#drawer textarea{width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;margin-top:2px;font-family:inherit;}
-  #drawer iframe{width:100%;height:180px;border:0;border-radius:8px;}
-  .actionRow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
-  .actionRow button{flex:1;padding:9px;border-radius:7px;border:none;font-size:12px;cursor:pointer;font-weight:700;font-family:inherit;}
-  #notaList{max-height:140px;overflow-y:auto;font-size:11.5px;color:var(--muted);margin-top:8px;white-space:pre-wrap;background:#FAFAFA;padding:8px;border-radius:7px;}
+  #overlay{display:none;position:fixed;inset:0;background:rgba(11,18,32,.5);z-index:10;}
+  #drawer{display:none;position:fixed;right:0;top:0;bottom:0;width:430px;max-width:92vw;background:#fff;z-index:11;box-shadow:-10px 0 30px rgba(0,0,0,.2);overflow-y:auto;}
+  #drawer .dhead{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:20px;display:flex;justify-content:space-between;align-items:center;}
+  #drawer .dhead h2{margin:0;font-size:17px;font-weight:700;}
+  #drawer .section{padding:18px 20px;border-bottom:1px solid var(--border);}
+  #drawer .section h4{margin:0 0 10px;font-size:10.5px;text-transform:uppercase;color:var(--muted);letter-spacing:.6px;font-weight:700;}
+  #drawer label{font-size:11px;color:var(--muted);display:block;margin-top:9px;font-weight:600;}
+  #drawer input,#drawer select,#drawer textarea{width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-top:3px;font-family:inherit;}
+  #drawer iframe{width:100%;height:180px;border:0;border-radius:10px;}
+  .actionRow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .actionRow button{flex:1;padding:10px;border-radius:8px;border:none;font-size:12.5px;cursor:pointer;font-weight:700;font-family:inherit;}
+  #notaList{max-height:140px;overflow-y:auto;font-size:11.5px;color:var(--muted);margin-top:8px;white-space:pre-wrap;background:#FAFAFA;padding:10px;border-radius:8px;}
 
-  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(13,21,38,.55);z-index:20;align-items:center;justify-content:center;}
-  #modal{background:#fff;border-radius:12px;width:480px;max-width:92vw;max-height:85vh;overflow-y:auto;}
-  #modal .mhead{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:16px 20px;display:flex;justify-content:space-between;border-radius:12px 12px 0 0;}
-  #modal .mbody{padding:20px;}
-  #modal label{font-size:11px;color:var(--muted);display:block;margin-top:10px;}
-  #modal input,#modal select,#modal textarea{width:100%;padding:9px;border:1px solid var(--border);border-radius:7px;font-size:13px;margin-top:3px;font-family:inherit;}
-  #modal textarea{min-height:120px;}
-  #modal .mfoot{padding:14px 20px;text-align:right;border-top:1px solid var(--border);}
-  #toast{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 20px;border-radius:9px;font-size:13px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.25);}
-  #loadingOverlay{display:none;position:fixed;inset:0;background:rgba(238,240,244,.75);z-index:40;align-items:center;justify-content:center;font-size:13px;color:var(--navy);font-weight:600;}
+  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;align-items:center;justify-content:center;}
+  #modal{background:#fff;border-radius:14px;width:520px;max-width:92vw;max-height:88vh;overflow-y:auto;}
+  #modal .mhead{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;}
+  #modal .mbody{padding:22px;}
+  #modal label{font-size:11px;color:var(--muted);display:block;margin-top:11px;font-weight:600;}
+  #modal input,#modal select,#modal textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-top:3px;font-family:inherit;}
+  #modal textarea{min-height:110px;}
+  #modal .mfoot{padding:16px 22px;text-align:right;border-top:1px solid var(--border);}
+  #toast{display:none;position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;z-index:30;box-shadow:0 10px 28px rgba(0,0,0,.3);max-width:80vw;}
+  #loadingOverlay{display:none;position:fixed;inset:0;background:rgba(241,243,247,.8);z-index:40;align-items:center;justify-content:center;font-size:13px;color:var(--navy);font-weight:700;}
+
+  .modoTabs{display:flex;gap:8px;margin-top:6px;}
+  .modoTab{flex:1;padding:9px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:700;text-align:center;color:var(--muted);font-family:inherit;}
+  .modoTab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
 
   /* KPI VIEW */
-  #kpiView{display:none;flex:1;overflow-y:auto;padding:22px 26px;background:var(--bg);}
+  #kpiView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:var(--bg);}
   #kpiView .kpiHead{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;}
-  #kpiView .kpiHead h1{font-size:20px;margin:0 0 2px;color:var(--navy);font-weight:800;}
+  #kpiView .kpiHead h1{font-size:21px;margin:0 0 2px;color:var(--navy);font-weight:800;}
   #kpiView .kpiHead p{margin:0;color:var(--muted);font-size:12.5px;}
   .kpiCards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px;}
-  .kpiCard{background:var(--card);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);border-left:4px solid var(--gold);}
-  .kpiCard .num{font-size:26px;font-weight:800;color:var(--navy);}
+  .kpiCard{background:var(--card);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid var(--gold);}
+  .kpiCard .num{font-size:27px;font-weight:800;color:var(--navy);}
   .kpiCard .lbl{font-size:11.5px;color:var(--muted);margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
   .chartsGrid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:18px;}
-  .chartCard{background:var(--card);border-radius:12px;padding:18px;box-shadow:var(--shadow);}
+  .chartCard{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
   .chartCard h4{margin:0 0 12px;font-size:13px;color:var(--navy);font-weight:700;}
   .chartCard canvas{max-height:240px;}
+  #campanasCard{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:18px;}
+  #campanasCard table{box-shadow:none;font-size:12px;}
+  #campanasCard thead th{background:#F4F5F7;color:var(--text);font-size:10.5px;}
   @media (max-width:900px){ .chartsGrid{grid-template-columns:1fr;} }
 
   @media print{
     body *{visibility:hidden;}
     #kpiView, #kpiView *{visibility:visible;}
     #kpiView{position:absolute;left:0;top:0;width:100%;padding:20px;display:block !important;}
-    #btnDescargarInforme, #kpiView .no-print{display:none !important;}
+    .no-print{display:none !important;}
   }
 </style>
 </head>
 <body>
 
-<div id="configScreen">
-  <div id="configBox">
-    <h1>PRYSMA</h1>
-    <p>Configura la URL de tu API de Apps Script (una sola vez, se guarda en este navegador)</p>
-    <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
-    <button onclick="guardarApiUrl()">Continuar</button>
-    <div id="configError"></div>
+<div id="avisoConfig">
+  <div class="box">
+    <h2>Falta configurar la URL de la API</h2>
+    <p>Edita el archivo <code>index.html</code>, busca la línea que dice
+    <code>API_URL_FIJA</code> cerca del inicio del archivo, y pega ahí la URL
+    de tu implementación de Apps Script (termina en <code>/exec</code>).</p>
   </div>
 </div>
 
 <div id="loginScreen" style="display:none;">
   <div id="loginBox">
+    <div class="logo">P</div>
     <h1>PRYSMA</h1>
     <p>Gestión Distrital · Distrito 12</p>
     <input type="password" id="passInput" placeholder="Clave de acceso" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:16px;"><a href="#" onclick="cambiarApiUrl();return false;" style="color:var(--muted);font-size:11px;">Cambiar URL de la API</a></p>
   </div>
 </div>
 
 <div id="app">
   <header>
-    <div style="display:flex;align-items:center;">
-      <div class="brand">PRYSMA <span>· Distrito 12</span></div>
+    <div class="left">
+      <div class="brand"><div class="logo">P</div>PRYSMA <span>Distrito 12</span></div>
       <nav>
         <button id="tabMilitantes" class="active" onclick="cambiarTab('militantes')">Militantes</button>
         <button id="tabKpi" onclick="cambiarTab('kpi')">Panel de KPIs</button>
@@ -148,62 +185,65 @@
       <button class="exit" onclick="cerrarSesion()">Salir</button>
     </div>
   </header>
-  <div id="body">
-    <div id="sidebar">
-      <h3>Comuna</h3>
-      <select id="fComuna" onchange="aplicarFiltros()"><option value="">Todas</option></select>
-      <h3>Sexo</h3>
-      <select id="fSexo" onchange="aplicarFiltros()">
-        <option value="">Todos</option><option value="M">Mujer</option><option value="V">Varón</option>
-      </select>
-      <h3>Rango de edad</h3>
-      <input type="number" id="fEdadMin" placeholder="Mín" onkeyup="aplicarFiltros()">
-      <input type="number" id="fEdadMax" placeholder="Máx" onkeyup="aplicarFiltros()">
-      <h3>Rol</h3>
-      <select id="fRol" onchange="aplicarFiltros()"><option value="">Todos</option></select>
-      <h3>Fechas especiales</h3>
-      <select id="fFechaEspecial" onchange="aplicarFiltros()">
-        <option value="">Ninguno</option>
-        <option value="cumple_hoy">Cumpleaños hoy</option>
-        <option value="cumple_semana">Cumpleaños esta semana</option>
-        <option value="cumple_mes">Cumpleaños este mes</option>
-        <option value="aniv_hoy">Aniversario hoy</option>
-        <option value="aniv_semana">Aniversario esta semana</option>
-        <option value="aniv_mes">Aniversario este mes</option>
-      </select>
-      <h3>Contacto</h3>
-      <label><input type="checkbox" id="fConEmail" onchange="aplicarFiltros()"> Solo con email</label>
-      <label><input type="checkbox" id="fConTel" onchange="aplicarFiltros()"> Solo con teléfono</label>
-      <button id="clearFilters" onclick="limpiarFiltros()">Limpiar filtros</button>
-    </div>
-    <div id="main">
-      <div id="toolbar">
-        <input type="text" id="buscar" placeholder="Buscar por nombre, cédula o domicilio…" onkeyup="aplicarFiltros()">
-        <span id="selCount">0 seleccionados</span>
-        <button class="btn-outline" onclick="exportarCSV()">Exportar CSV</button>
-        <button class="btn-green" id="btnWspMasivo" onclick="abrirWhatsAppMasivo()">WhatsApp</button>
-        <button class="btn-gold" id="btnEmailMasivo" onclick="abrirModalCorreo(true)">Enviar correo</button>
+
+  <div id="main">
+    <div id="filterBar">
+      <div id="filterRow1">
+        <input type="text" id="buscar" placeholder="Buscar por nombre o cédula…" onkeyup="aplicarFiltros()">
+        <select id="fComuna" onchange="aplicarFiltros()"><option value="">Todas las comunas</option></select>
+        <select id="fEstado" onchange="aplicarFiltros()"><option value="">Todos los estados</option></select>
+        <select id="fRol" onchange="aplicarFiltros()"><option value="">Todos los roles</option></select>
+        <button id="toggleMasFiltros" onclick="toggleMasFiltros()">Más filtros ▾</button>
+        <button id="limpiarFiltros" onclick="limpiarFiltros()">Limpiar filtros</button>
       </div>
-      <div id="tableWrap">
-        <table>
-          <thead><tr>
-            <th><input type="checkbox" id="chkAll" onchange="toggleAll(this)"></th>
-            <th>Nombre</th><th>Comuna</th><th>Sexo</th><th>Edad</th><th>Rol</th><th>Estado</th><th></th>
-          </tr></thead>
-          <tbody id="tbody"></tbody>
-        </table>
+      <div id="filterRow2">
+        <select id="fSexo" onchange="aplicarFiltros()">
+          <option value="">Sexo: todos</option><option value="M">Mujer</option><option value="V">Varón</option>
+        </select>
+        <input type="number" id="fEdadMin" placeholder="Edad mín" onkeyup="aplicarFiltros()">
+        <input type="number" id="fEdadMax" placeholder="Edad máx" onkeyup="aplicarFiltros()">
+        <select id="fFechaEspecial" onchange="aplicarFiltros()">
+          <option value="">Fecha especial</option>
+          <option value="cumple_hoy">Cumpleaños hoy</option>
+          <option value="cumple_semana">Cumpleaños esta semana</option>
+          <option value="cumple_mes">Cumpleaños este mes</option>
+          <option value="aniv_hoy">Aniversario hoy</option>
+          <option value="aniv_semana">Aniversario esta semana</option>
+          <option value="aniv_mes">Aniversario este mes</option>
+        </select>
+        <button class="togglePill" id="pillEmail" onclick="togglePill('pillEmail')">Con email</button>
+        <button class="togglePill" id="pillTel" onclick="togglePill('pillTel')">Con teléfono</button>
       </div>
-      <div id="pager"></div>
     </div>
 
-    <!-- PANEL DE KPIs -->
+    <div id="toolbar2">
+      <span id="selCount">0 seleccionados</span>
+      <div class="btnRow">
+        <button class="btn btn-outline" onclick="exportarCSV()">Exportar CSV</button>
+        <button class="btn btn-outline" id="btnAgregar" onclick="abrirModalAgregar()">+ Agregar militante</button>
+        <button class="btn btn-green" id="btnWspMasivo" onclick="abrirWhatsAppMasivo()">WhatsApp</button>
+        <button class="btn btn-gold" id="btnEmailMasivo" onclick="abrirModalCorreo(true)">Enviar correo</button>
+      </div>
+    </div>
+
+    <div id="tableWrap">
+      <table>
+        <thead><tr>
+          <th style="width:34px;"><input type="checkbox" id="chkAll" onchange="toggleAll(this)"></th>
+          <th>Nombre</th><th>Comuna</th><th>Sexo</th><th>Edad</th><th>Rol</th><th>Teléfono</th><th style="width:90px;">Acciones</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div id="pager"></div>
+
     <div id="kpiView">
       <div class="kpiHead">
         <div>
           <h1>Informe Ejecutivo · Distrito 12</h1>
           <p id="kpiFecha"></p>
         </div>
-        <button id="btnDescargarInforme" class="btn-gold" style="padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="window.print()">Descargar informe (PDF)</button>
+        <button class="btn btn-gold no-print" onclick="window.print()">Descargar informe (PDF)</button>
       </div>
       <div class="kpiCards" id="kpiCards"></div>
       <div class="chartsGrid">
@@ -214,13 +254,21 @@
         <div class="chartCard"><h4>Distribución por sexo</h4><canvas id="chartSexo"></canvas></div>
         <div class="chartCard"><h4>Cobertura de datos de contacto</h4><canvas id="chartContacto"></canvas></div>
       </div>
+      <div id="campanasCard" class="no-print">
+        <h4 style="margin:0 0 12px;font-size:13px;color:var(--navy);font-weight:700;">Estado de campañas por lotes (BCC)</h4>
+        <table>
+          <thead><tr><th>Fecha creación</th><th>Asunto</th><th>Destinatarios</th><th>Estado</th><th>Fecha envío</th></tr></thead>
+          <tbody id="tbodyCampanas"></tbody>
+        </table>
+        <button class="btn btn-outline" style="margin-top:12px;" onclick="forzarEnvioLote()">Forzar envío del próximo lote ahora</button>
+      </div>
     </div>
   </div>
 </div>
 
 <div id="overlay" onclick="cerrarDrawer()"></div>
 <div id="drawer">
-  <div class="dhead"><h2 id="dNombre">—</h2><button onclick="cerrarDrawer()">✕</button></div>
+  <div class="dhead"><h2 id="dNombre">—</h2><button onclick="cerrarDrawer()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button></div>
   <div class="section">
     <h4>Datos de contacto</h4>
     <label>Email</label><input id="dEmail">
@@ -238,16 +286,16 @@
     <label>Rol asignado</label>
     <select id="dRol"></select>
     <label>Estado</label>
-    <input id="dEstado">
+    <select id="dEstado"></select>
     <div class="actionRow"><button class="btn-gold" onclick="guardarRolEstado()">Guardar</button></div>
   </div>
   <div class="section">
     <h4>Acciones rápidas</h4>
     <div class="actionRow">
       <button class="btn-gold" onclick="abrirModalCorreo(false)">Enviar correo</button>
-      <button class="btn-green" onclick="whatsappIndividual()">WhatsApp</button>
+      <button class="btn-green" style="color:#fff;" onclick="whatsappIndividual()">WhatsApp</button>
     </div>
-    <div class="actionRow"><button class="btn-outline" onclick="enviarBienvenidaInd()">Enviar bienvenida</button></div>
+    <div class="actionRow"><button class="btn-outline" style="border:1px solid var(--border);" onclick="enviarBienvenidaInd()">Enviar bienvenida</button></div>
   </div>
   <div class="section">
     <h4>Notas</h4>
@@ -259,22 +307,96 @@
     <h4>Historial de contacto</h4>
     <div id="histList" style="font-size:11.5px;color:var(--muted);"></div>
   </div>
+  <div class="section">
+    <button class="btn-red" style="width:100%;padding:10px;border-radius:8px;border:none;color:#fff;font-weight:700;cursor:pointer;" onclick="eliminarMilitanteActivo()">Eliminar militante de la base</button>
+  </div>
 </div>
 
+<!-- MODAL CORREO -->
 <div id="modalOverlay">
   <div id="modal">
     <div class="mhead"><strong id="modalTitle">Enviar correo</strong><button onclick="cerrarModal()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button></div>
     <div class="mbody">
+      <div id="modoEnvioWrap" style="display:none;">
+        <label>Modo de envío</label>
+        <div class="modoTabs">
+          <div class="modoTab active" id="modoPersonalizado" onclick="elegirModoEnvio('personalizado')">Personalizado (uno por uno)</div>
+          <div class="modoTab" id="modoLotes" onclick="elegirModoEnvio('lotes')">Consulta por lotes (BCC)</div>
+        </div>
+        <p id="explicacionModo" style="font-size:11.5px;color:var(--muted);margin:8px 0 0;"></p>
+      </div>
       <label>Plantilla</label>
       <select id="mPlantilla" onchange="cargarPlantilla()"><option value="">— Personalizado —</option></select>
       <label>Asunto</label>
       <input id="mAsunto">
-      <label>Cuerpo (usa {NOMBRE}, {COMUNA}, {ANIOS})</label>
+      <label id="lblCuerpo">Cuerpo (usa {NOMBRE}, {COMUNA}, {ANIOS})</label>
       <textarea id="mCuerpo"></textarea>
       <div id="mDestinatarios" style="font-size:12px;color:var(--muted);margin-top:10px;"></div>
     </div>
     <div class="mfoot">
-      <button class="btn-gold" style="padding:8px 16px;border-radius:8px;border:none;cursor:pointer;" onclick="enviarDesdeModal()">Enviar</button>
+      <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="enviarDesdeModal()">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AGREGAR MILITANTE -->
+<div id="modalAgregarOverlay" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;align-items:center;justify-content:center;">
+  <div id="modalAgregar" style="background:#fff;border-radius:14px;width:520px;max-width:92vw;max-height:88vh;overflow-y:auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
+      <strong>Agregar militante</strong><button onclick="cerrarModalAgregar()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <label style="font-size:11px;color:var(--muted);font-weight:600;">Nombre completo *</label>
+      <input id="nNombre" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Cédula *</label>
+      <input id="nCedula" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Sexo</label>
+          <select id="nSexo" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+            <option value="">—</option><option value="M">Mujer</option><option value="V">Varón</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Comuna</label>
+          <input id="nComuna" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+        </div>
+      </div>
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Domicilio</label>
+      <input id="nDomicilio" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Email</label>
+          <input id="nEmail" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Teléfono</label>
+          <input id="nTelefono" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Fecha nacimiento (dd-mm-aaaa)</label>
+          <input id="nFechaNac" placeholder="15-03-1990" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Fecha afiliación (dd-mm-aaaa)</label>
+          <input id="nFechaAfil" placeholder="01-06-2024" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Rol</label>
+          <select id="nRol" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;"><option value="">Sin rol</option></select>
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Estado</label>
+          <select id="nEstado" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;"></select>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);">
+      <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="guardarNuevoMilitante()">Guardar militante</button>
     </div>
   </div>
 </div>
@@ -283,21 +405,20 @@
 <div id="loadingOverlay">Cargando…</div>
 
 <script>
-let API_URL = localStorage.getItem('prysma_api_url') || '';
+const ESTADOS_FIJOS = ["Nuevo Militante","Vigente","Activo","Sin Contacto","Renunciado"];
+
 let CLAVE = localStorage.getItem('prysma_clave') || '';
 let SESSION = { rol: localStorage.getItem('prysma_rol') || null };
-let MILITANTES = [];
-let ROLES = [];
-let PLANTILLAS = [];
+let MILITANTES = [], ROLES = [], PLANTILLAS = [];
 let filtrados = [];
 let seleccionados = new Set();
 let pagina = 1;
 const PORPAGINA = 50;
 let modalEsMasivo = false;
+let modoEnvioActual = 'personalizado';
 let cedulaActiva = null;
 let charts = {};
 
-// ---------- UTILIDADES ----------
 function norm(str){ return (str||'').toString().trim().toUpperCase(); }
 function titleCase(str){
   return (str||'').toString().trim().toLowerCase().replace(/\p{L}+/gu, w => w.charAt(0).toUpperCase()+w.slice(1));
@@ -310,63 +431,44 @@ function parseFechaDDMMYYYY(str){
 
 // ---------- ARRANQUE ----------
 window.onload = function(){
-  if(!API_URL){
-    document.getElementById('configScreen').style.display='flex';
-  } else if(!CLAVE || !SESSION.rol){
+  if(!API_URL_FIJA || API_URL_FIJA.indexOf('PEGA_AQUI') !== -1){
+    document.getElementById('avisoConfig').style.display='flex';
+    return;
+  }
+  if(!CLAVE || !SESSION.rol){
     document.getElementById('loginScreen').style.display='flex';
   } else {
     entrarApp();
   }
 };
 
-function guardarApiUrl(){
-  const url = document.getElementById('apiUrlInput').value.trim();
-  if(!url.startsWith('https://script.google.com/')){
-    document.getElementById('configError').innerText = 'Pega la URL /exec que te entregó Apps Script';
-    return;
-  }
-  API_URL = url;
-  localStorage.setItem('prysma_api_url', url);
-  document.getElementById('configScreen').style.display='none';
-  document.getElementById('loginScreen').style.display='flex';
-}
-function cambiarApiUrl(){
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('configScreen').style.display='flex';
-}
-
 // ---------- LLAMADAS A LA API ----------
 async function _parsearRespuesta(res){
   const texto = await res.text();
-  if(!res.ok){
-    throw new Error(`La API respondió con error HTTP ${res.status}. Revisa que la implementación esté publicada con acceso "Cualquier usuario".`);
-  }
+  if(!res.ok) throw new Error(`Error HTTP ${res.status} en la API.`);
   try{ return JSON.parse(texto); }
-  catch(err){ throw new Error('La API no devolvió JSON válido. Respuesta recibida: ' + texto.slice(0,150)); }
+  catch(err){ throw new Error('La API no devolvió JSON válido: ' + texto.slice(0,150)); }
 }
 async function apiGet(params){
   const qs = new URLSearchParams({...params, clave: CLAVE}).toString();
-  const res = await fetch(`${API_URL}?${qs}`);
+  const res = await fetch(`${API_URL_FIJA}?${qs}`);
   return _parsearRespuesta(res);
 }
 async function apiPost(payload){
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+  const res = await fetch(API_URL_FIJA, {
+    method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'},
     body: JSON.stringify({...payload, clave: CLAVE})
   });
   return _parsearRespuesta(res);
 }
 function mostrarCargando(v){ document.getElementById('loadingOverlay').style.display = v ? 'flex':'none'; }
 
-// ---------- LOGIN (persistente: no se vuelve a pedir hasta que hagas "Salir") ----------
 async function hacerLogin(){
   const clave = document.getElementById('passInput').value;
   mostrarCargando(true);
   try{
-    const res = await fetch(API_URL, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
+    const res = await fetch(API_URL_FIJA, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
       body: JSON.stringify({action:'login', clave})
     });
     const data = await res.json();
@@ -382,7 +484,7 @@ async function hacerLogin(){
     }
   } catch(err){
     mostrarCargando(false);
-    document.getElementById('loginError').innerText = 'No se pudo conectar a la API. Revisa la URL.';
+    document.getElementById('loginError').innerText = 'No se pudo conectar a la API.';
   }
 }
 function cerrarSesion(){
@@ -390,19 +492,17 @@ function cerrarSesion(){
   localStorage.removeItem('prysma_rol');
   location.reload();
 }
-
 function toast(msg, duracionMs){
   const t = document.getElementById('toast');
   t.innerText = msg; t.style.display='block';
-  setTimeout(()=>t.style.display='none', duracionMs || 2500);
+  setTimeout(()=>t.style.display='none', duracionMs || 2800);
 }
 
 async function entrarApp(){
   document.getElementById('app').style.display='flex';
   document.getElementById('rolBadge').innerText = SESSION.rol==='admin' ? 'ADMIN' : 'SOLO VER';
   if(SESSION.rol==='viewer'){
-    document.getElementById('btnEmailMasivo').style.display='none';
-    document.getElementById('btnWspMasivo').style.display='none';
+    ['btnEmailMasivo','btnWspMasivo','btnAgregar'].forEach(id=>document.getElementById(id).style.display='none');
   }
   mostrarCargando(true);
   try{
@@ -418,39 +518,58 @@ async function entrarApp(){
   } catch(err){
     mostrarCargando(false);
     toast('No se pudo cargar la base: ' + err.message, 8000);
-    console.error(err);
   }
 }
 
-// ---------- FILTROS (sin duplicados, normalizados) ----------
+// ---------- FILTROS ----------
 function poblarFiltros(){
   const mapaComunas = new Map();
   MILITANTES.forEach(m=>{ const k = norm(m.COMUNA); if(k && !mapaComunas.has(k)) mapaComunas.set(k, titleCase(m.COMUNA)); });
   const fComuna = document.getElementById('fComuna');
-  fComuna.innerHTML = '<option value="">Todas</option>';
+  fComuna.innerHTML = '<option value="">Todas las comunas</option>';
   [...mapaComunas.entries()].sort((a,b)=>a[1].localeCompare(b[1])).forEach(([k,label])=>{
     fComuna.innerHTML += `<option value="${k}">${label}</option>`;
   });
 
+  const fEstado = document.getElementById('fEstado');
+  fEstado.innerHTML = '<option value="">Todos los estados</option>';
+  ESTADOS_FIJOS.forEach(e=> fEstado.innerHTML += `<option value="${e}">${e}</option>`);
+
   const mapaRoles = new Map();
   ROLES.forEach(r=>{ const k = norm(r.rol); if(k && !mapaRoles.has(k)) mapaRoles.set(k, {label:r.rol.trim(), color:r.color}); });
-  const fRol = document.getElementById('fRol'), dRol = document.getElementById('dRol');
-  fRol.innerHTML = '<option value="">Todos</option>';
+  const fRol = document.getElementById('fRol'), dRol = document.getElementById('dRol'), nRol = document.getElementById('nRol');
+  fRol.innerHTML = '<option value="">Todos los roles</option>';
   dRol.innerHTML = '<option value="">Sin rol</option>';
+  nRol.innerHTML = '<option value="">Sin rol</option>';
   [...mapaRoles.entries()].forEach(([k,info])=>{
     fRol.innerHTML += `<option value="${k}">${info.label}</option>`;
     dRol.innerHTML += `<option value="${k}">${info.label}</option>`;
+    nRol.innerHTML += `<option value="${info.label}">${info.label}</option>`;
   });
+
+  const dEstado = document.getElementById('dEstado'), nEstado = document.getElementById('nEstado');
+  dEstado.innerHTML = ''; nEstado.innerHTML = '';
+  ESTADOS_FIJOS.forEach(e=>{
+    dEstado.innerHTML += `<option value="${e}">${e}</option>`;
+    nEstado.innerHTML += `<option value="${e}">${e}</option>`;
+  });
+}
+
+function toggleMasFiltros(){
+  document.getElementById('filterRow2').classList.toggle('visible');
+}
+function togglePill(id){
+  document.getElementById(id).classList.toggle('on');
+  aplicarFiltros();
 }
 
 function coincideFechaEspecial(m, tipo){
   if(!tipo) return true;
   const hoy = new Date();
-  const [campo, rango] = tipo.split('_'); // cumple|aniv , hoy|semana|mes
+  const [campo, rango] = tipo.split('_');
   const fechaStr = campo==='cumple' ? m.FECHA_NACIMIENTO : m.FECHA_AFILIACION;
   const f = parseFechaDDMMYYYY(fechaStr);
   if(!f) return false;
-  // Comparamos día/mes, ignorando el año, con una fecha "proyectada" al año actual
   const proyectada = new Date(hoy.getFullYear(), f.getMonth(), f.getDate());
   const diffDias = Math.round((proyectada - new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate())) / 86400000);
   if(rango==='hoy') return diffDias===0;
@@ -461,17 +580,19 @@ function coincideFechaEspecial(m, tipo){
 
 function aplicarFiltros(){
   const comuna = document.getElementById('fComuna').value;
-  const sexo = document.getElementById('fSexo').value;
+  const estado = document.getElementById('fEstado').value;
   const rol = document.getElementById('fRol').value;
+  const sexo = document.getElementById('fSexo').value;
   const edadMin = document.getElementById('fEdadMin').value;
   const edadMax = document.getElementById('fEdadMax').value;
   const fechaEspecial = document.getElementById('fFechaEspecial').value;
-  const conEmail = document.getElementById('fConEmail').checked;
-  const conTel = document.getElementById('fConTel').checked;
+  const conEmail = document.getElementById('pillEmail').classList.contains('on');
+  const conTel = document.getElementById('pillTel').classList.contains('on');
   const q = document.getElementById('buscar').value.toLowerCase();
 
   filtrados = MILITANTES.filter(m=>{
     if(comuna && norm(m.COMUNA)!==comuna) return false;
+    if(estado && m.ESTADO!==estado) return false;
     if(sexo && m.SEXO!==sexo) return false;
     if(rol && norm(m.ROL)!==rol) return false;
     if(edadMin && Number(m.EDAD)<Number(edadMin)) return false;
@@ -479,7 +600,7 @@ function aplicarFiltros(){
     if(conEmail && !m.EMAIL) return false;
     if(conTel && !m.TELEFONO) return false;
     if(fechaEspecial && !coincideFechaEspecial(m, fechaEspecial)) return false;
-    if(q && !(String(m.NOMBRE).toLowerCase().includes(q) || String(m.CEDULA).includes(q) || String(m.DOMICILIO).toLowerCase().includes(q))) return false;
+    if(q && !(String(m.NOMBRE).toLowerCase().includes(q) || String(m.CEDULA).includes(q))) return false;
     return true;
   });
   pagina = 1;
@@ -488,13 +609,14 @@ function aplicarFiltros(){
 
 function limpiarFiltros(){
   document.getElementById('fComuna').value='';
-  document.getElementById('fSexo').value='';
+  document.getElementById('fEstado').value='';
   document.getElementById('fRol').value='';
+  document.getElementById('fSexo').value='';
   document.getElementById('fEdadMin').value='';
   document.getElementById('fEdadMax').value='';
   document.getElementById('fFechaEspecial').value='';
-  document.getElementById('fConEmail').checked=false;
-  document.getElementById('fConTel').checked=false;
+  document.getElementById('pillEmail').classList.remove('on');
+  document.getElementById('pillTel').classList.remove('on');
   document.getElementById('buscar').value='';
   aplicarFiltros();
 }
@@ -504,25 +626,32 @@ function rolColor(rol){
   return r ? r.color : '#7F8C8D';
 }
 
+// ---------- ICONOS ----------
+const ICONO_EMAIL = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>`;
+const ICONO_WSP = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15L2 22l5.2-1.4A10 10 0 1012 2zm5.6 14.3c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.6-2.6-1.1-4.3-3.8-4.5-4-.1-.2-1.1-1.4-1.1-2.7s.7-1.9 1-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.7.8 1.8.1.2.1.3 0 .5-.1.2-.1.3-.3.5-.1.2-.3.3-.4.5-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.5 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1.2.1 1.5.7 1.7.8.2.1.4.2.4.3.1.2.1.7-.1 1.2z"/></svg>`;
+const ICONO_MAS = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>`;
+
 function renderTabla(){
   const tbody = document.getElementById('tbody');
   const inicio = (pagina-1)*PORPAGINA;
   const pageItems = filtrados.slice(inicio, inicio+PORPAGINA);
   tbody.innerHTML = pageItems.map(m=>`
-    <tr onclick="abrirDrawer('${m.CEDULA}')">
+    <tr>
       <td onclick="event.stopPropagation()"><input type="checkbox" ${seleccionados.has(String(m.CEDULA))?'checked':''} onchange="toggleSel('${m.CEDULA}', this)"></td>
-      <td>${titleCase(m.NOMBRE)} ${m.EMAIL? '' : '<span class="noEmail" title="Sin email">✉</span>'} ${m.TELEFONO? '' : '<span class="noTel" title="Sin teléfono">☎</span>'}</td>
-      <td>${titleCase(m.COMUNA)}</td>
-      <td>${m.SEXO==='M'?'Mujer':'Varón'}</td>
-      <td>${m.EDAD||'-'}</td>
-      <td>${m.ROL? `<span class="rolPill" style="background:${rolColor(m.ROL)}">${m.ROL.trim()}</span>` : '-'}</td>
-      <td>${m.ESTADO||'-'}</td>
-      <td>›</td>
+      <td class="nombreCell" onclick="abrirDrawer('${m.CEDULA}')">${titleCase(m.NOMBRE)}</td>
+      <td onclick="abrirDrawer('${m.CEDULA}')">${titleCase(m.COMUNA)}</td>
+      <td onclick="abrirDrawer('${m.CEDULA}')">${m.SEXO==='M'?'Mujer':'Varón'}</td>
+      <td onclick="abrirDrawer('${m.CEDULA}')">${m.EDAD||'-'}</td>
+      <td onclick="abrirDrawer('${m.CEDULA}')">${m.ROL? `<span class="rolPill" style="background:${rolColor(m.ROL)}">${m.ROL.trim()}</span>` : '-'}</td>
+      <td onclick="abrirDrawer('${m.CEDULA}')">${m.TELEFONO||'-'}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="iconBtn email" title="${m.EMAIL?'Enviar correo':'Sin email registrado'}" ${m.EMAIL?'':'disabled'} onclick="accionRapidaEmail('${m.CEDULA}')">${ICONO_EMAIL}</button>
+        <button class="iconBtn wsp" title="${m.TELEFONO?'Abrir WhatsApp':'Sin teléfono registrado'}" ${m.TELEFONO?'':'disabled'} onclick="accionRapidaWhatsApp('${m.CEDULA}')">${ICONO_WSP}</button>
+      </td>
     </tr>`).join('');
   renderPager();
   document.getElementById('selCount').innerText = seleccionados.size + ' seleccionados';
 }
-
 function renderPager(){
   const totalPag = Math.max(1, Math.ceil(filtrados.length/PORPAGINA));
   document.getElementById('pager').innerHTML = `
@@ -531,29 +660,32 @@ function renderPager(){
     <button onclick="cambiarPagina(1)" ${pagina>=totalPag?'disabled':''}>Siguiente ›</button>`;
 }
 function cambiarPagina(delta){ pagina += delta; renderTabla(); }
-
 function toggleSel(cedula, el){
   if(el.checked) seleccionados.add(String(cedula)); else seleccionados.delete(String(cedula));
   document.getElementById('selCount').innerText = seleccionados.size + ' seleccionados';
 }
 function toggleAll(el){
-  filtrados.forEach(m=>{
-    if(el.checked) seleccionados.add(String(m.CEDULA)); else seleccionados.delete(String(m.CEDULA));
-  });
+  filtrados.forEach(m=>{ if(el.checked) seleccionados.add(String(m.CEDULA)); else seleccionados.delete(String(m.CEDULA)); });
   renderTabla();
 }
+
+// ---------- ACCIONES RÁPIDAS DESDE LA TABLA ----------
+function accionRapidaEmail(cedula){ cedulaActiva = cedula; abrirModalCorreo(false); }
+function accionRapidaWhatsApp(cedula){ cedulaActiva = cedula; whatsappIndividual(); }
 
 // ---------- TABS ----------
 function cambiarTab(tab){
   document.getElementById('tabMilitantes').classList.toggle('active', tab==='militantes');
   document.getElementById('tabKpi').classList.toggle('active', tab==='kpi');
-  document.getElementById('sidebar').style.display = tab==='militantes' ? 'block':'none';
-  document.getElementById('main').style.display = tab==='militantes' ? 'flex':'none';
+  document.getElementById('filterBar').style.display = tab==='militantes' ? 'block':'none';
+  document.getElementById('toolbar2').style.display = tab==='militantes' ? 'flex':'none';
+  document.getElementById('tableWrap').style.display = tab==='militantes' ? 'block':'none';
+  document.getElementById('pager').style.display = tab==='militantes' ? 'flex':'none';
   document.getElementById('kpiView').style.display = tab==='kpi' ? 'block':'none';
   if(tab==='kpi') renderKPIs();
 }
 
-// ---------- PANEL DE KPIs ----------
+// ---------- KPIs ----------
 function renderKPIs(){
   const total = MILITANTES.length;
   const conEmail = MILITANTES.filter(m=>m.EMAIL).length;
@@ -563,27 +695,25 @@ function renderKPIs(){
   const anivMes = MILITANTES.filter(m=>coincideFechaEspecial(m,'aniv_mes')).length;
 
   document.getElementById('kpiFecha').innerText = 'Generado el ' + new Date().toLocaleDateString('es-CL', {day:'numeric',month:'long',year:'numeric'});
-
   document.getElementById('kpiCards').innerHTML = `
     <div class="kpiCard"><div class="num">${total.toLocaleString('es-CL')}</div><div class="lbl">Total militantes</div></div>
-    <div class="kpiCard"><div class="num">${Math.round(conEmail/total*100)}%</div><div class="lbl">Con email registrado</div></div>
-    <div class="kpiCard"><div class="num">${Math.round(conTel/total*100)}%</div><div class="lbl">Con teléfono registrado</div></div>
+    <div class="kpiCard"><div class="num">${total?Math.round(conEmail/total*100):0}%</div><div class="lbl">Con email registrado</div></div>
+    <div class="kpiCard"><div class="num">${total?Math.round(conTel/total*100):0}%</div><div class="lbl">Con teléfono registrado</div></div>
     <div class="kpiCard"><div class="num">${conRol.toLocaleString('es-CL')}</div><div class="lbl">Con rol asignado</div></div>
     <div class="kpiCard"><div class="num">${cumpleMes}</div><div class="lbl">Cumpleaños este mes</div></div>
     <div class="kpiCard"><div class="num">${anivMes}</div><div class="lbl">Aniversarios este mes</div></div>`;
 
-  const porComuna = {};
-  MILITANTES.forEach(m=>{ const k = titleCase(m.COMUNA)||'Sin comuna'; porComuna[k]=(porComuna[k]||0)+1; });
-  const porRol = {};
-  MILITANTES.forEach(m=>{ const k = m.ROL ? m.ROL.trim() : 'Sin rol asignado'; porRol[k]=(porRol[k]||0)+1; });
+  const porComuna = {}; MILITANTES.forEach(m=>{ const k = titleCase(m.COMUNA)||'Sin comuna'; porComuna[k]=(porComuna[k]||0)+1; });
+  const porRol = {}; MILITANTES.forEach(m=>{ const k = m.ROL ? m.ROL.trim() : 'Sin rol asignado'; porRol[k]=(porRol[k]||0)+1; });
   const porSexo = { 'Mujer': MILITANTES.filter(m=>m.SEXO==='M').length, 'Varón': MILITANTES.filter(m=>m.SEXO==='V').length };
 
   _dibujarChart('chartComuna','bar', Object.keys(porComuna), Object.values(porComuna), ['#16233F']);
-  _dibujarChart('chartRol','doughnut', Object.keys(porRol), Object.values(porRol),
-    Object.keys(porRol).map(r=>rolColor(r)));
+  _dibujarChart('chartRol','doughnut', Object.keys(porRol), Object.values(porRol), Object.keys(porRol).map(r=>rolColor(r)));
   _dibujarChart('chartSexo','doughnut', Object.keys(porSexo), Object.values(porSexo), ['#C9A227','#16233F']);
   _dibujarChart('chartContacto','bar', ['Con email','Sin email','Con teléfono','Sin teléfono'],
     [conEmail, total-conEmail, conTel, total-conTel], ['#1E8E5A','#C0392B','#1E8E5A','#C0392B']);
+
+  cargarEstadoCampanas();
 }
 
 function _dibujarChart(canvasId, tipo, labels, data, colores){
@@ -592,12 +722,27 @@ function _dibujarChart(canvasId, tipo, labels, data, colores){
   charts[canvasId] = new Chart(ctx, {
     type: tipo,
     data: { labels, datasets: [{ data, backgroundColor: colores.length>=labels.length ? colores : labels.map((_,i)=>colores[i%colores.length]) }] },
-    options: {
-      responsive:true,
-      plugins:{ legend:{ display: tipo==='doughnut', position:'bottom', labels:{boxWidth:12,font:{size:11}} } },
-      scales: tipo==='bar' ? { y:{beginAtZero:true, ticks:{precision:0}} } : {}
-    }
+    options: { responsive:true, plugins:{ legend:{ display: tipo==='doughnut', position:'bottom', labels:{boxWidth:12,font:{size:11}} } },
+      scales: tipo==='bar' ? { y:{beginAtZero:true, ticks:{precision:0}} } : {} }
   });
+}
+
+async function cargarEstadoCampanas(){
+  try{
+    const res = await apiGet({action:'getColaEnvios'});
+    const filas = (res.datos||[]).slice(0,15);
+    document.getElementById('tbodyCampanas').innerHTML = filas.length ? filas.map(f=>`
+      <tr><td>${new Date(f.fechaCreacion).toLocaleString('es-CL')}</td><td>${f.asunto}</td><td>${f.cantidad}</td>
+      <td>${f.estado}</td><td>${f.fechaEnvio ? new Date(f.fechaEnvio).toLocaleString('es-CL') : '-'}</td></tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Sin campañas por lotes registradas</td></tr>';
+  } catch(err){ /* silencioso, no es crítico */ }
+}
+async function forzarEnvioLote(){
+  mostrarCargando(true);
+  const res = await apiPost({action:'procesarLoteAhora'});
+  mostrarCargando(false);
+  toast(res.enviado ? `Lote enviado a ${res.destinatarios} personas` : (res.mensaje || res.error || 'Sin lotes pendientes'));
+  cargarEstadoCampanas();
 }
 
 // ---------- DRAWER ----------
@@ -610,7 +755,7 @@ function abrirDrawer(cedula){
   document.getElementById('dDomicilio').value = m.DOMICILIO||'';
   document.getElementById('dComuna').value = m.COMUNA||'';
   document.getElementById('dRol').value = norm(m.ROL);
-  document.getElementById('dEstado').value = m.ESTADO||'';
+  document.getElementById('dEstado').value = m.ESTADO || 'Nuevo Militante';
   document.getElementById('dNotaNueva').value = '';
   document.getElementById('notaList').innerText = m.NOTAS || 'Sin notas registradas.';
   const query = encodeURIComponent(`${m.DOMICILIO}, ${m.COMUNA}, Chile`);
@@ -622,9 +767,8 @@ function abrirDrawer(cedula){
       ? hist.map(h=>`<div style="margin-bottom:6px;">${new Date(h.fecha).toLocaleString('es-CL')} · <b>${h.tipo}</b> · ${h.detalle}</div>`).join('')
       : 'Sin contactos registrados.';
   });
-  if(SESSION.rol==='viewer'){
-    ['dEmail','dTelefono','dDomicilio','dComuna','dRol','dEstado','dNotaNueva'].forEach(id=>document.getElementById(id).disabled=true);
-  }
+  const soloView = SESSION.rol==='viewer';
+  ['dEmail','dTelefono','dDomicilio','dComuna','dRol','dEstado','dNotaNueva'].forEach(id=>document.getElementById(id).disabled=soloView);
   document.getElementById('overlay').style.display='block';
   document.getElementById('drawer').style.display='block';
 }
@@ -632,17 +776,14 @@ function cerrarDrawer(){
   document.getElementById('overlay').style.display='none';
   document.getElementById('drawer').style.display='none';
 }
-
 async function guardarDatos(){
   const campos = {
-    EMAIL: document.getElementById('dEmail').value,
-    TELEFONO: document.getElementById('dTelefono').value,
-    DOMICILIO: document.getElementById('dDomicilio').value,
-    COMUNA: document.getElementById('dComuna').value
+    EMAIL: document.getElementById('dEmail').value, TELEFONO: document.getElementById('dTelefono').value,
+    DOMICILIO: document.getElementById('dDomicilio').value, COMUNA: document.getElementById('dComuna').value
   };
   const res = await apiPost({action:'actualizarMilitante', cedula: cedulaActiva, campos});
   toast(res.ok ? 'Datos guardados' : (res.error||'Error'));
-  if(res.ok){ refrescarLocal(campos); }
+  if(res.ok) refrescarLocal(campos);
 }
 async function guardarRolEstado(){
   const rolSel = document.getElementById('dRol');
@@ -655,8 +796,7 @@ async function guardarRolEstado(){
 function refrescarLocal(campos){
   const m = MILITANTES.find(x=>String(x.CEDULA)===String(cedulaActiva));
   Object.assign(m, campos);
-  poblarFiltros();
-  renderTabla();
+  poblarFiltros(); renderTabla();
 }
 async function guardarNota(){
   const nota = document.getElementById('dNotaNueva').value.trim();
@@ -665,12 +805,56 @@ async function guardarNota(){
   if(res.ok){ toast('Nota agregada'); document.getElementById('dNotaNueva').value=''; abrirDrawer(cedulaActiva); }
   else toast(res.error||'Error');
 }
+async function eliminarMilitanteActivo(){
+  const m = MILITANTES.find(x=>String(x.CEDULA)===String(cedulaActiva));
+  if(!confirm(`¿Eliminar a ${titleCase(m.NOMBRE)} de la base? Esta acción no se puede deshacer.`)) return;
+  const res = await apiPost({action:'eliminarMilitante', cedula: cedulaActiva});
+  if(res.ok){
+    MILITANTES = MILITANTES.filter(x=>String(x.CEDULA)!==String(cedulaActiva));
+    document.getElementById('totalBadge').innerText = MILITANTES.length + ' militantes';
+    cerrarDrawer(); aplicarFiltros();
+    toast('Militante eliminado');
+  } else toast(res.error||'Error');
+}
 
-// ---------- WHATSAPP (cálculo en el navegador) ----------
+// ---------- AGREGAR MILITANTE ----------
+function abrirModalAgregar(){
+  ['nNombre','nCedula','nComuna','nDomicilio','nEmail','nTelefono','nFechaNac','nFechaAfil'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nSexo').value='';
+  document.getElementById('nRol').value='';
+  document.getElementById('nEstado').value='Nuevo Militante';
+  document.getElementById('modalAgregarOverlay').style.display='flex';
+}
+function cerrarModalAgregar(){ document.getElementById('modalAgregarOverlay').style.display='none'; }
+async function guardarNuevoMilitante(){
+  const datos = {
+    NOMBRE: document.getElementById('nNombre').value.trim(),
+    CEDULA: document.getElementById('nCedula').value.trim(),
+    SEXO: document.getElementById('nSexo').value,
+    COMUNA: document.getElementById('nComuna').value.trim(),
+    DOMICILIO: document.getElementById('nDomicilio').value.trim(),
+    EMAIL: document.getElementById('nEmail').value.trim(),
+    TELEFONO: document.getElementById('nTelefono').value.trim(),
+    FECHA_NACIMIENTO: document.getElementById('nFechaNac').value.trim(),
+    FECHA_AFILIACION: document.getElementById('nFechaAfil').value.trim(),
+    ROL: document.getElementById('nRol').value,
+    ESTADO: document.getElementById('nEstado').value
+  };
+  if(!datos.NOMBRE || !datos.CEDULA){ toast('Nombre y cédula son obligatorios'); return; }
+  mostrarCargando(true);
+  const res = await apiPost({action:'agregarMilitante', datos});
+  mostrarCargando(false);
+  if(res.ok){
+    toast('Militante agregado');
+    cerrarModalAgregar();
+    await entrarApp();
+  } else toast(res.error||'Error');
+}
+
+// ---------- WHATSAPP ----------
 function normalizarTelefono(tel){
   let t = String(tel).replace(/[^0-9]/g,'');
-  if(t.length===9) t = '56'+t;
-  else if(t.length===8) t = '569'+t;
+  if(t.length===9) t = '56'+t; else if(t.length===8) t = '569'+t;
   return t;
 }
 function whatsappIndividual(){
@@ -686,7 +870,6 @@ async function enviarBienvenidaInd(){
   const res = await apiPost({action:'enviarBienvenida', cedula: cedulaActiva, usuario: SESSION.rol});
   toast(res.ok ? 'Bienvenida enviada' : (res.error||'Error'));
 }
-
 function abrirWhatsAppMasivo(){
   const objetivo = seleccionados.size ? [...seleccionados] : filtrados.map(m=>String(m.CEDULA));
   const conTel = objetivo.map(c=>MILITANTES.find(m=>String(m.CEDULA)===c)).filter(m=>m && m.TELEFONO);
@@ -712,14 +895,39 @@ function abrirModalCorreo(masivo){
   document.getElementById('mAsunto').value='';
   document.getElementById('mCuerpo').value='';
   document.getElementById('mPlantilla').value='';
+  document.getElementById('modoEnvioWrap').style.display = masivo ? 'block':'none';
   if(masivo){
-    const objetivo = seleccionados.size ? [...seleccionados] : filtrados.map(m=>String(m.CEDULA));
-    const conEmail = objetivo.map(c=>MILITANTES.find(m=>String(m.CEDULA)===c)).filter(m=>m && m.EMAIL);
-    document.getElementById('mDestinatarios').innerText = `Destinatarios: ${conEmail.length} de ${objetivo.length} seleccionados tienen email registrado.`;
+    elegirModoEnvio('personalizado');
+    actualizarConteoDestinatarios();
   } else {
     document.getElementById('mDestinatarios').innerText = '';
+    document.getElementById('lblCuerpo').innerText = 'Cuerpo (usa {NOMBRE}, {COMUNA}, {ANIOS})';
   }
   document.getElementById('modalOverlay').style.display='flex';
+}
+function elegirModoEnvio(modo){
+  modoEnvioActual = modo;
+  document.getElementById('modoPersonalizado').classList.toggle('active', modo==='personalizado');
+  document.getElementById('modoLotes').classList.toggle('active', modo==='lotes');
+  const exp = document.getElementById('explicacionModo');
+  if(modo==='personalizado'){
+    exp.innerText = 'Se envía un correo individual a cada persona (permite personalizar con {NOMBRE}, {COMUNA}, {ANIOS}).';
+    document.getElementById('lblCuerpo').innerText = 'Cuerpo (usa {NOMBRE}, {COMUNA}, {ANIOS})';
+  } else {
+    exp.innerText = 'Se agrupan los destinatarios en tandas de hasta 90 personas en copia oculta (BCC) — nadie ve el correo de los demás. Se envía aproximadamente 1 tanda por día para respetar el límite diario de Gmail. No se personaliza por persona.';
+    document.getElementById('lblCuerpo').innerText = 'Cuerpo del mensaje (igual para todos en cada tanda)';
+  }
+  actualizarConteoDestinatarios();
+}
+function actualizarConteoDestinatarios(){
+  const objetivo = seleccionados.size ? [...seleccionados] : filtrados.map(m=>String(m.CEDULA));
+  const conEmail = objetivo.map(c=>MILITANTES.find(m=>String(m.CEDULA)===c)).filter(m=>m && m.EMAIL);
+  let txt = `Destinatarios: ${conEmail.length} de ${objetivo.length} tienen email registrado.`;
+  if(modoEnvioActual==='lotes'){
+    const tandas = Math.ceil(conEmail.length/90);
+    txt += ` Se crearán ${tandas} tanda(s) de hasta 90 destinatarios.`;
+  }
+  document.getElementById('mDestinatarios').innerText = txt;
 }
 function cerrarModal(){ document.getElementById('modalOverlay').style.display='none'; }
 function cargarPlantilla(){
@@ -734,34 +942,43 @@ async function enviarDesdeModal(){
   const cuerpo = document.getElementById('mCuerpo').value;
   if(!asunto || !cuerpo){ toast('Completa asunto y cuerpo'); return; }
   mostrarCargando(true);
-  if(modalEsMasivo){
-    if(seleccionados.size){
-      const objetivo = [...seleccionados];
-      let enviados = 0;
-      for(const c of objetivo){
-        const r = await apiPost({action:'enviarCorreoIndividual', cedula:c, asunto, cuerpo, usuario: SESSION.rol});
-        if(r.ok) enviados++;
-      }
-      mostrarCargando(false);
-      toast(`Enviado a ${enviados} de ${objetivo.length} seleccionados`);
-      cerrarModal();
-    } else {
-      const filtros = {
-        comuna: document.getElementById('fComuna').value,
-        sexo: document.getElementById('fSexo').value,
-        rol: document.getElementById('fRol').value,
-        edadMin: document.getElementById('fEdadMin').value,
-        edadMax: document.getElementById('fEdadMax').value
-      };
-      const res = await apiPost({action:'enviarCorreoMasivo', filtros, asunto, cuerpo, usuario: SESSION.rol});
-      mostrarCargando(false);
-      toast(res.ok ? `Enviado a ${res.enviados} de ${res.totalCoincidencias} coincidencias` : (res.error||'Error'));
-      cerrarModal();
-    }
-  } else {
+
+  if(!modalEsMasivo){
     const res = await apiPost({action:'enviarCorreoIndividual', cedula: cedulaActiva, asunto, cuerpo, usuario: SESSION.rol});
     mostrarCargando(false);
     toast(res.ok ? 'Correo enviado' : (res.error||'Error'));
+    cerrarModal();
+    return;
+  }
+
+  const objetivo = seleccionados.size ? [...seleccionados] : filtrados.map(m=>String(m.CEDULA));
+
+  if(modoEnvioActual==='lotes'){
+    const res = await apiPost({action:'programarEnvioLotes', cedulas: objetivo, asunto, cuerpo, usuario: SESSION.rol, tamanoLote: 90});
+    mostrarCargando(false);
+    toast(res.ok ? `Campaña programada: ${res.lotes} tanda(s), ${res.totalDestinatarios} destinatarios en total` : (res.error||'Error'));
+    cerrarModal();
+    return;
+  }
+
+  if(seleccionados.size){
+    let enviados = 0;
+    for(const c of objetivo){
+      const r = await apiPost({action:'enviarCorreoIndividual', cedula:c, asunto, cuerpo, usuario: SESSION.rol});
+      if(r.ok) enviados++;
+    }
+    mostrarCargando(false);
+    toast(`Enviado a ${enviados} de ${objetivo.length} seleccionados`);
+    cerrarModal();
+  } else {
+    const filtros = {
+      comuna: document.getElementById('fComuna').value, sexo: document.getElementById('fSexo').value,
+      rol: document.getElementById('fRol').value, edadMin: document.getElementById('fEdadMin').value,
+      edadMax: document.getElementById('fEdadMax').value
+    };
+    const res = await apiPost({action:'enviarCorreoMasivo', filtros, asunto, cuerpo, usuario: SESSION.rol});
+    mostrarCargando(false);
+    toast(res.ok ? `Enviado a ${res.enviados} de ${res.totalCoincidencias} coincidencias` : (res.error||'Error'));
     cerrarModal();
   }
 }
