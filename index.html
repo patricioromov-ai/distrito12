@@ -116,12 +116,12 @@
   .actionRow button{flex:1;padding:10px;border-radius:8px;border:none;font-size:12.5px;cursor:pointer;font-weight:700;font-family:inherit;}
   #notaList{max-height:140px;overflow-y:auto;font-size:11.5px;color:var(--muted);margin-top:8px;white-space:pre-wrap;background:#FAFAFA;padding:10px;border-radius:8px;}
 
-  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:auto;}
+  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:scroll;-webkit-overflow-scrolling:touch;}
   #modalOverlay #modal{margin:40px auto;}
-  #modal{background:#fff;border-radius:14px;width:520px;max-width:92vw;max-height:88vh;display:flex;flex-direction:column;}
-  #modal .mhead{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;flex-shrink:0;}
-  #modal .mbody{padding:22px;overflow-y:auto;flex:1;min-height:0;}
-  #modal .mfoot{padding:14px 20px;text-align:right;border-top:1px solid var(--border);flex-shrink:0;}
+  #modal{background:#fff;border-radius:14px;width:520px;max-width:92vw;}
+  #modal .mhead{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;}
+  #modal .mbody{padding:22px;}
+  #modal .mfoot{padding:14px 20px;text-align:right;border-top:1px solid var(--border);}
   #modal label{font-size:11px;color:var(--muted);display:block;margin-top:11px;font-weight:600;}
   #modal input,#modal select,#modal textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-top:3px;font-family:inherit;}
   #modal textarea{min-height:110px;}
@@ -195,6 +195,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-1</p>
   </div>
 </div>
 
@@ -457,12 +458,12 @@
 </div>
 
 <!-- MODAL AGREGAR MILITANTE -->
-<div id="modalAgregarOverlay" onclick="if(event.target===this) cerrarModalAgregar()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:auto;">
-  <div id="modalAgregar" style="background:#fff;border-radius:14px;width:520px;max-width:92vw;max-height:88vh;display:flex;flex-direction:column;margin:40px auto;">
-    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;flex-shrink:0;">
+<div id="modalAgregarOverlay" onclick="if(event.target===this) cerrarModalAgregar()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div id="modalAgregar" style="background:#fff;border-radius:14px;width:520px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
       <strong>Agregar militante</strong><button onclick="cerrarModalAgregar()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
     </div>
-    <div class="mbody" style="padding:22px;overflow-y:auto;flex:1;min-height:0;">
+    <div class="mbody" style="padding:22px;">
       <label style="font-size:11px;color:var(--muted);font-weight:600;">Nombre completo *</label>
       <input id="nNombre" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
       <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Cédula *</label>
@@ -512,19 +513,19 @@
         </div>
       </div>
     </div>
-    <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);flex-shrink:0;">
+    <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);">
       <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="guardarNuevoMilitante()">Guardar militante</button>
     </div>
   </div>
 </div>
 
 <!-- MODAL GESTIÓN DE USUARIOS (solo admin) -->
-<div id="modalUsuariosOverlay" onclick="if(event.target===this) cerrarModalUsuarios()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:auto;">
-  <div style="background:#fff;border-radius:14px;width:560px;max-width:92vw;max-height:88vh;display:flex;flex-direction:column;margin:40px auto;">
-    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;flex-shrink:0;">
+<div id="modalUsuariosOverlay" onclick="if(event.target===this) cerrarModalUsuarios()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:#fff;border-radius:14px;width:560px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
       <strong>Gestionar usuarios</strong><button onclick="cerrarModalUsuarios()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
     </div>
-    <div class="mbody" style="padding:22px;overflow-y:auto;flex:1;min-height:0;">
+    <div class="mbody" style="padding:22px;">
       <div id="listaUsuarios" style="margin-bottom:20px;"></div>
       <h4 style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Agregar nuevo usuario</h4>
       <div style="display:flex;gap:10px;">
@@ -552,19 +553,19 @@
         </div>
       </div>
     </div>
-    <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);flex-shrink:0;">
+    <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);">
       <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="guardarNuevoUsuario()">Agregar usuario</button>
     </div>
   </div>
 </div>
 
 <!-- MODAL DETALLE DE CARTERA (solo admin) -->
-<div id="modalDetalleCarteraOverlay" onclick="if(event.target===this) cerrarModalDetalleCartera()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:auto;">
-  <div style="background:#fff;border-radius:14px;width:560px;max-width:92vw;max-height:88vh;display:flex;flex-direction:column;margin:40px auto;">
-    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;flex-shrink:0;">
+<div id="modalDetalleCarteraOverlay" onclick="if(event.target===this) cerrarModalDetalleCartera()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:#fff;border-radius:14px;width:560px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
       <strong id="tituloDetalleCartera">Cartera de...</strong><button onclick="cerrarModalDetalleCartera()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">✕</button>
     </div>
-    <div class="mbody" style="padding:22px;overflow-y:auto;flex:1;min-height:0;">
+    <div class="mbody" style="padding:22px;">
       <div id="listaDetalleCartera"></div>
     </div>
   </div>
