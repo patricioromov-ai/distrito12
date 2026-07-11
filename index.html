@@ -335,6 +335,7 @@
         <select id="mComuna" onchange="renderCapaMapa()"><option value="">Todas las comunas</option></select>
         <select id="mRol" onchange="renderCapaMapa()"><option value="">Todos los roles</option></select>
         <select id="mEstado" onchange="renderCapaMapa()"><option value="">Todos los estados</option></select>
+        <select id="mCoordinador" onchange="renderCapaMapa()"><option value="">Todos los coordinadores</option><option value="__sin_asignar__">Sin asignar</option></select>
         <div class="modoTabs" style="width:280px;">
           <div class="modoTab active" id="modoPuntos" onclick="cambiarModoMapa('puntos')">Ubicaciones</div>
           <div class="modoTab" id="modoCalor" onclick="cambiarModoMapa('calor')">Mapa de calor</div>
@@ -373,7 +374,7 @@
       <div class="chartCard" style="margin-top:18px;">
         <h4>Cobertura por coordinador</h4>
         <table style="box-shadow:none;font-size:12px;">
-          <thead><tr><th>Coordinador</th><th>Militantes en su cartera</th><th>% Activos/Vigentes</th><th>Sin contacto</th><th>Renunciados</th></tr></thead>
+          <thead><tr><th>Coordinador</th><th>Militantes en su cartera</th><th>% Activos/Vigentes</th><th>Sin contacto</th><th>Renunciados</th><th></th></tr></thead>
           <tbody id="tbodyCarteras"></tbody>
         </table>
       </div>
@@ -404,13 +405,13 @@
     <select id="dEstado"></select>
     <div class="actionRow"><button class="btn-gold" onclick="guardarRolEstado()">Guardar</button></div>
   </div>
-  <div class="section">
+  <div class="section" id="seccionAccionesRapidas">
     <h4>Acciones rápidas</h4>
     <div class="actionRow">
-      <button class="btn-gold" onclick="abrirModalCorreo(false)">Enviar correo</button>
-      <button class="btn-green" style="color:#fff;" onclick="whatsappIndividual()">WhatsApp</button>
+      <button class="btn-gold" id="btnDrawerCorreo" onclick="abrirModalCorreo(false)">Enviar correo</button>
+      <button class="btn-green" id="btnDrawerWsp" style="color:#fff;" onclick="whatsappIndividual()">WhatsApp</button>
     </div>
-    <div class="actionRow"><button class="btn-outline" style="border:1px solid var(--border);" onclick="enviarBienvenidaInd()">Enviar bienvenida</button></div>
+    <div class="actionRow"><button class="btn-outline" id="btnDrawerBienvenida" style="border:1px solid var(--border);" onclick="enviarBienvenidaInd()">Enviar bienvenida</button></div>
   </div>
   <div class="section">
     <h4>Notas</h4>
@@ -552,6 +553,18 @@
     </div>
     <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);">
       <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="guardarNuevoUsuario()">Agregar usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE DE CARTERA (solo admin) -->
+<div id="modalDetalleCarteraOverlay" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;width:560px;max-width:92vw;max-height:88vh;overflow-y:auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
+      <strong id="tituloDetalleCartera">Cartera de...</strong><button onclick="cerrarModalDetalleCartera()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <div id="listaDetalleCartera"></div>
     </div>
   </div>
 </div>
@@ -829,8 +842,9 @@ function renderTabla(){
       <td onclick="abrirDrawer('${m.CEDULA}')">${m.ROL? `<span class="rolPill" style="background:${rolColor(m.ROL)}">${m.ROL.trim()}</span>` : '-'}</td>
       <td onclick="abrirDrawer('${m.CEDULA}')">${m.TELEFONO||'-'}</td>
       <td onclick="event.stopPropagation()">
+        ${SESSION.rol==='admin' ? `
         <button class="iconBtn email" title="${m.EMAIL?'Enviar correo':'Sin email registrado'}" ${m.EMAIL?'':'disabled'} onclick="accionRapidaEmail('${m.CEDULA}')">${ICONO_EMAIL}</button>
-        <button class="iconBtn wsp" title="${m.TELEFONO?'Abrir WhatsApp':'Sin teléfono registrado'}" ${m.TELEFONO?'':'disabled'} onclick="accionRapidaWhatsApp('${m.CEDULA}')">${ICONO_WSP}</button>
+        <button class="iconBtn wsp" title="${m.TELEFONO?'Abrir WhatsApp':'Sin teléfono registrado'}" ${m.TELEFONO?'':'disabled'} onclick="accionRapidaWhatsApp('${m.CEDULA}')">${ICONO_WSP}</button>` : ''}
       </td>
     </tr>`).join('');
   renderPager();
@@ -1041,7 +1055,7 @@ function renderNoticias(lista){
       <p>${n.resumen || ''}</p>
       <div class="acciones">
         <a href="${n.link}" target="_blank" rel="noopener">Leer noticia completa ↗</a>
-        ${['admin','coordinador'].includes(SESSION.rol) ? `<button class="btn btn-gold" style="margin-left:auto;" onclick='prepararEnvioNoticia(${JSON.stringify(n).replace(/'/g,"&apos;")})'>Enviar a militantes</button>` : ''}
+        ${SESSION.rol==='admin' ? `<button class="btn btn-gold" style="margin-left:auto;" onclick='prepararEnvioNoticia(${JSON.stringify(n).replace(/'/g,"&apos;")})'>Enviar a militantes</button>` : ''}
       </div>
     </div>`).join('');
 }
@@ -1129,10 +1143,13 @@ function renderCapaMapa(){
   const comuna = document.getElementById('mComuna').value;
   const rol = document.getElementById('mRol').value;
   const estado = document.getElementById('mEstado').value;
+  const coordinadorFiltro = document.getElementById('mCoordinador').value;
   const puntos = UBICACIONES.filter(p=>{
     if(comuna && titleCase(p.comuna)!==comuna) return false;
     if(rol && (p.rol||'').trim()!==rol) return false;
     if(estado && p.estado!==estado) return false;
+    if(coordinadorFiltro==='__sin_asignar__' && p.carteras && p.carteras.length) return false;
+    if(coordinadorFiltro && coordinadorFiltro!=='__sin_asignar__' && !(p.carteras||[]).includes(coordinadorFiltro)) return false;
     return true;
   });
 
@@ -1166,6 +1183,8 @@ async function cargarCoordinadoresParaCartera(){
     ? coordinadores.map(u=>`<option value="${u.usuario}">${u.nombre} (${u.usuario})</option>`).join('')
     : '<option value="">Crea un coordinador primero en "Usuarios"</option>';
   sel.dataset.cargado = '1';
+  const mCoord = document.getElementById('mCoordinador');
+  coordinadores.forEach(u=> mCoord.innerHTML += `<option value="${u.usuario}">${u.nombre}</option>`);
 }
 async function confirmarAsignacionCartera(){
   if(!centroElegido){ toast('Primero haz clic en el mapa para elegir el centro del sector'); return; }
@@ -1183,8 +1202,33 @@ async function cargarResumenCarteras(){
   if(!res.ok){ return; }
   document.getElementById('tbodyCarteras').innerHTML = res.datos.length ? res.datos.map(c=>`
     <tr><td><b>${c.nombre}</b> <span style="color:var(--muted);">(${c.usuario})</span></td><td>${c.total}</td>
-    <td>${c.pctActivos}%</td><td>${c.sinContacto}</td><td>${c.renunciados}</td></tr>`).join('')
-    : '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Aún no hay carteras asignadas</td></tr>';
+    <td>${c.pctActivos}%</td><td>${c.sinContacto}</td><td>${c.renunciados}</td>
+    <td><button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="verDetalleCartera('${c.usuario}','${c.nombre.replace(/'/g,"&apos;")}')">Ver militantes</button></td></tr>`).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Aún no hay carteras asignadas</td></tr>';
+}
+
+async function verDetalleCartera(usuarioCoordinador, nombreCoordinador){
+  document.getElementById('tituloDetalleCartera').innerText = `Cartera de ${nombreCoordinador}`;
+  document.getElementById('listaDetalleCartera').innerHTML = 'Cargando…';
+  document.getElementById('modalDetalleCarteraOverlay').style.display='flex';
+  const res = await apiGet({action:'getMilitantesDeCartera', usuarioCoordinador});
+  if(!res.ok || !res.datos.length){
+    document.getElementById('listaDetalleCartera').innerHTML = '<p style="color:var(--muted);font-size:13px;">Sin militantes asignados.</p>';
+    return;
+  }
+  document.getElementById('listaDetalleCartera').innerHTML = res.datos.map(m=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;">
+      <div>
+        <b>${titleCase(m.nombre)}</b> <span style="color:var(--muted);">· ${titleCase(m.comuna)} · ${m.estado||'-'}</span>
+      </div>
+      <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="quitarDeCarteraFrontend('${usuarioCoordinador}','${m.cedula}','${nombreCoordinador}')">Quitar</button>
+    </div>`).join('');
+}
+function cerrarModalDetalleCartera(){ document.getElementById('modalDetalleCarteraOverlay').style.display='none'; }
+async function quitarDeCarteraFrontend(usuarioCoordinador, cedula, nombreCoordinador){
+  const res = await apiPost({action:'quitarDeCartera', usuarioCoordinador, cedula});
+  if(res.ok){ toast('Quitado de la cartera'); verDetalleCartera(usuarioCoordinador, nombreCoordinador); cargarResumenCarteras(); }
+  else toast(res.error||'Error');
 }
 
 async function forzarGeocodificacion(){
@@ -1254,7 +1298,9 @@ function abrirDrawer(cedula){
       : 'Sin contactos registrados.';
   });
   const soloView = SESSION.rol==='viewer';
-  ['dEmail','dTelefono','dDomicilio','dComuna','dRol','dEstado','dNotaNueva'].forEach(id=>document.getElementById(id).disabled=soloView);
+  ['dEmail','dTelefono','dDomicilio','dComuna','dEstado','dNotaNueva'].forEach(id=>document.getElementById(id).disabled=soloView);
+  document.getElementById('dRol').disabled = SESSION.rol!=='admin';
+  document.getElementById('seccionAccionesRapidas').style.display = SESSION.rol==='admin' ? 'block':'none';
   document.getElementById('btnEliminarMilitante').style.display = SESSION.rol==='admin' ? 'block':'none';
   document.getElementById('overlay').style.display='block';
   document.getElementById('drawer').style.display='block';
