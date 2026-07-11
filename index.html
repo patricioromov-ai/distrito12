@@ -190,7 +190,8 @@
     <div class="logo">P</div>
     <h1>PRYSMA</h1>
     <p>Gestión Distrital · Distrito 12</p>
-    <input type="password" id="passInput" placeholder="Clave de acceso" onkeydown="if(event.key==='Enter')hacerLogin()">
+    <input type="text" id="usuarioInput" placeholder="Usuario" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('passInput').focus()">
+    <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
   </div>
@@ -210,6 +211,7 @@
     <div class="userinfo">
       <span id="totalBadge"></span>
       <span class="badge" id="rolBadge"></span>
+      <button class="exit" id="btnUsuarios" style="display:none;" onclick="abrirModalUsuarios()">Usuarios</button>
       <button class="exit" onclick="cerrarSesion()">Salir</button>
     </div>
   </header>
@@ -344,6 +346,37 @@
         para no exceder los límites de Google. Los resultados dependen de la calidad y precisión del domicilio
         registrado — algunas direcciones incompletas pueden no ubicarse con exactitud.
       </p>
+
+      <div class="chartCard" style="margin-top:18px;">
+        <h4>Asignar cartera territorial</h4>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
+          Haz clic en cualquier punto del mapa de arriba para fijar el centro del sector, elige un coordinador
+          y cuántos militantes cercanos quieres asignarle (por distancia en línea recta).
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+          <div>
+            <label style="font-size:11px;color:var(--muted);font-weight:600;display:block;">Punto central elegido</label>
+            <input id="centroSeleccionado" readonly style="padding:9px;border:1px solid var(--border);border-radius:8px;width:220px;" placeholder="Haz clic en el mapa…">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--muted);font-weight:600;display:block;">Coordinador / líder</label>
+            <select id="selCoordinadorCartera" style="padding:9px;border:1px solid var(--border);border-radius:8px;min-width:180px;"></select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--muted);font-weight:600;display:block;">Cantidad de militantes</label>
+            <input id="cantidadCartera" type="number" value="50" style="padding:9px;border:1px solid var(--border);border-radius:8px;width:90px;">
+          </div>
+          <button class="btn btn-gold" onclick="confirmarAsignacionCartera()">Asignar cartera</button>
+        </div>
+      </div>
+
+      <div class="chartCard" style="margin-top:18px;">
+        <h4>Cobertura por coordinador</h4>
+        <table style="box-shadow:none;font-size:12px;">
+          <thead><tr><th>Coordinador</th><th>Militantes en su cartera</th><th>% Activos/Vigentes</th><th>Sin contacto</th><th>Renunciados</th></tr></thead>
+          <tbody id="tbodyCarteras"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -390,7 +423,7 @@
     <div id="histList" style="font-size:11.5px;color:var(--muted);"></div>
   </div>
   <div class="section">
-    <button class="btn-red" style="width:100%;padding:10px;border-radius:8px;border:none;color:#fff;font-weight:700;cursor:pointer;" onclick="eliminarMilitanteActivo()">Eliminar militante de la base</button>
+    <button class="btn-red" id="btnEliminarMilitante" style="width:100%;padding:10px;border-radius:8px;border:none;color:#fff;font-weight:700;cursor:pointer;" onclick="eliminarMilitanteActivo()">Eliminar militante de la base</button>
   </div>
 </div>
 
@@ -483,14 +516,58 @@
   </div>
 </div>
 
+<!-- MODAL GESTIÓN DE USUARIOS (solo admin) -->
+<div id="modalUsuariosOverlay" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;width:560px;max-width:92vw;max-height:88vh;overflow-y:auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
+      <strong>Gestionar usuarios</strong><button onclick="cerrarModalUsuarios()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <div id="listaUsuarios" style="margin-bottom:20px;"></div>
+      <h4 style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Agregar nuevo usuario</h4>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;">Usuario (para iniciar sesión)</label>
+          <input id="uNuevoUsuario" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;" placeholder="ej: maria.lopez">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;">Nombre completo</label>
+          <input id="uNuevoNombre" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;" placeholder="María López">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;">Clave temporal</label>
+          <input id="uNuevaClave" type="text" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;" placeholder="clave inicial">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;">Rol</label>
+          <select id="uNuevoRol" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+            <option value="coordinador">Coordinador / líder</option>
+            <option value="viewer">Solo ver</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);">
+      <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="guardarNuevoUsuario()">Agregar usuario</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 <div id="loadingOverlay">Cargando…</div>
 
 <script>
 const ESTADOS_FIJOS = ["Nuevo Militante","Vigente","Activo","Sin Contacto","Renunciado"];
 
+let USUARIO = localStorage.getItem('prysma_usuario') || '';
 let CLAVE = localStorage.getItem('prysma_clave') || '';
-let SESSION = { rol: localStorage.getItem('prysma_rol') || null };
+let SESSION = {
+  rol: localStorage.getItem('prysma_rol') || null,
+  nombre: localStorage.getItem('prysma_nombre') || ''
+};
 let MILITANTES = [], ROLES = [], PLANTILLAS = [];
 let filtrados = [];
 let seleccionados = new Set();
@@ -517,7 +594,7 @@ window.onload = function(){
     document.getElementById('avisoConfig').style.display='flex';
     return;
   }
-  if(!CLAVE || !SESSION.rol){
+  if(!USUARIO || !CLAVE || !SESSION.rol){
     document.getElementById('loginScreen').style.display='flex';
   } else {
     entrarApp();
@@ -532,37 +609,40 @@ async function _parsearRespuesta(res){
   catch(err){ throw new Error('La API no devolvió JSON válido: ' + texto.slice(0,150)); }
 }
 async function apiGet(params){
-  const qs = new URLSearchParams({...params, clave: CLAVE}).toString();
+  const qs = new URLSearchParams({...params, usuario: USUARIO, clave: CLAVE}).toString();
   const res = await fetch(`${API_URL_FIJA}?${qs}`);
   return _parsearRespuesta(res);
 }
 async function apiPost(payload){
   const res = await fetch(API_URL_FIJA, {
     method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'},
-    body: JSON.stringify({...payload, clave: CLAVE})
+    body: JSON.stringify({...payload, usuario: USUARIO, clave: CLAVE})
   });
   return _parsearRespuesta(res);
 }
 function mostrarCargando(v){ document.getElementById('loadingOverlay').style.display = v ? 'flex':'none'; }
 
 async function hacerLogin(){
+  const usuario = document.getElementById('usuarioInput').value.trim();
   const clave = document.getElementById('passInput').value;
   mostrarCargando(true);
   try{
     const res = await fetch(API_URL_FIJA, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({action:'login', clave})
+      body: JSON.stringify({action:'login', usuario, clave})
     });
     const data = await res.json();
     mostrarCargando(false);
     if(data.ok){
-      CLAVE = clave; SESSION.rol = data.rol;
+      USUARIO = usuario; CLAVE = clave; SESSION.rol = data.rol; SESSION.nombre = data.nombre || usuario;
+      localStorage.setItem('prysma_usuario', usuario);
       localStorage.setItem('prysma_clave', clave);
       localStorage.setItem('prysma_rol', data.rol);
+      localStorage.setItem('prysma_nombre', SESSION.nombre);
       document.getElementById('loginScreen').style.display='none';
       entrarApp();
     } else {
-      document.getElementById('loginError').innerText = 'Clave incorrecta';
+      document.getElementById('loginError').innerText = data.error || 'Usuario o clave incorrectos';
     }
   } catch(err){
     mostrarCargando(false);
@@ -570,8 +650,10 @@ async function hacerLogin(){
   }
 }
 function cerrarSesion(){
+  localStorage.removeItem('prysma_usuario');
   localStorage.removeItem('prysma_clave');
   localStorage.removeItem('prysma_rol');
+  localStorage.removeItem('prysma_nombre');
   location.reload();
 }
 function toast(msg, duracionMs){
@@ -582,11 +664,16 @@ function toast(msg, duracionMs){
 
 async function entrarApp(){
   document.getElementById('app').style.display='flex';
-  document.getElementById('rolBadge').innerText = SESSION.rol==='admin' ? 'ADMIN' : 'SOLO VER';
+  document.getElementById('rolBadge').innerText = (SESSION.nombre ? SESSION.nombre + ' · ' : '') + (SESSION.rol==='admin' ? 'ADMIN' : SESSION.rol==='coordinador' ? 'COORDINADOR' : 'SOLO VER');
   if(SESSION.rol==='viewer'){
     ['btnEmailMasivo','btnWspMasivo','btnAgregar'].forEach(id=>document.getElementById(id).style.display='none');
-  } else {
+  }
+  if(SESSION.rol==='coordinador'){
+    ['btnEmailMasivo','btnWspMasivo','btnAgregar'].forEach(id=>document.getElementById(id).style.display='none');
+  }
+  if(SESSION.rol==='admin'){
     document.getElementById('tabMapa').style.display='inline-block';
+    document.getElementById('btnUsuarios').style.display='inline-flex';
   }
   mostrarCargando(true);
   try{
@@ -954,7 +1041,7 @@ function renderNoticias(lista){
       <p>${n.resumen || ''}</p>
       <div class="acciones">
         <a href="${n.link}" target="_blank" rel="noopener">Leer noticia completa ↗</a>
-        ${SESSION.rol==='admin' ? `<button class="btn btn-gold" style="margin-left:auto;" onclick='prepararEnvioNoticia(${JSON.stringify(n).replace(/'/g,"&apos;")})'>Enviar a militantes</button>` : ''}
+        ${['admin','coordinador'].includes(SESSION.rol) ? `<button class="btn btn-gold" style="margin-left:auto;" onclick='prepararEnvioNoticia(${JSON.stringify(n).replace(/'/g,"&apos;")})'>Enviar a militantes</button>` : ''}
       </div>
     </div>`).join('');
 }
@@ -994,9 +1081,19 @@ async function cargarMapa(){
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
       }).addTo(mapaInstancia);
+      mapaInstancia.on('click', function(e){
+        centroElegido = { lat: e.latlng.lat, lng: e.latlng.lng };
+        document.getElementById('centroSeleccionado').value = `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+        if(marcadorCentro) mapaInstancia.removeLayer(marcadorCentro);
+        marcadorCentro = L.marker([e.latlng.lat, e.latlng.lng], {
+          icon: L.divIcon({className:'', html:'<div style="width:16px;height:16px;border-radius:50%;background:#C6A24D;border:3px solid #0A101E;"></div>'})
+        }).addTo(mapaInstancia);
+      });
     }
     setTimeout(()=>mapaInstancia.invalidateSize(), 150);
     renderCapaMapa();
+    cargarCoordinadoresParaCartera();
+    cargarResumenCarteras();
   } catch(err){
     document.getElementById('mapaProgreso').innerText = 'No se pudo cargar el mapa: ' + err.message;
   }
@@ -1019,6 +1116,13 @@ function cambiarModoMapa(modo){
   renderCapaMapa();
 }
 
+const PALETA_CARTERAS = ['#C6A24D','#2563A6','#1E8E5A','#C0392B','#8E44AD','#1F7A6C','#D68910','#7F8C8D'];
+function _colorPorUsuario(usuario){
+  let hash = 0;
+  for(let i=0;i<usuario.length;i++) hash = usuario.charCodeAt(i) + ((hash<<5)-hash);
+  return PALETA_CARTERAS[Math.abs(hash) % PALETA_CARTERAS.length];
+}
+
 function renderCapaMapa(){
   if(!mapaInstancia) return;
   if(capaActual){ mapaInstancia.removeLayer(capaActual); capaActual = null; }
@@ -1038,12 +1142,49 @@ function renderCapaMapa(){
   } else {
     capaActual = L.markerClusterGroup();
     puntos.forEach(p=>{
-      const marker = L.marker([p.lat, p.lng]);
-      marker.bindPopup(`<b>${titleCase(p.nombre)}</b><br>${titleCase(p.comuna)}<br>${p.rol ? 'Rol: '+p.rol.trim()+'<br>' : ''}Estado: ${p.estado||'-'}`);
+      const tieneCartera = p.carteras && p.carteras.length;
+      const color = tieneCartera ? _colorPorUsuario(p.carteras[0]) : '#9AA1AE';
+      const icono = L.divIcon({className:'', html:`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>`});
+      const marker = L.marker([p.lat, p.lng], {icon: icono});
+      marker.bindPopup(`<b>${titleCase(p.nombre)}</b><br>${titleCase(p.comuna)}<br>${p.rol ? 'Rol: '+p.rol.trim()+'<br>' : ''}Estado: ${p.estado||'-'}${tieneCartera ? '<br>Cartera de: '+p.carteras.join(', ') : '<br><i>Sin coordinador asignado</i>'}`);
       capaActual.addLayer(marker);
     });
     mapaInstancia.addLayer(capaActual);
   }
+}
+
+// ---------- ASIGNACIÓN DE CARTERAS TERRITORIALES ----------
+let centroElegido = null;
+let marcadorCentro = null;
+async function cargarCoordinadoresParaCartera(){
+  const sel = document.getElementById('selCoordinadorCartera');
+  if(sel.dataset.cargado) return;
+  const res = await apiGet({action:'listarUsuarios'});
+  if(!res.ok) return;
+  const coordinadores = res.datos.filter(u=>u.rol==='coordinador' && u.activo);
+  sel.innerHTML = coordinadores.length
+    ? coordinadores.map(u=>`<option value="${u.usuario}">${u.nombre} (${u.usuario})</option>`).join('')
+    : '<option value="">Crea un coordinador primero en "Usuarios"</option>';
+  sel.dataset.cargado = '1';
+}
+async function confirmarAsignacionCartera(){
+  if(!centroElegido){ toast('Primero haz clic en el mapa para elegir el centro del sector'); return; }
+  const usuarioCoordinador = document.getElementById('selCoordinadorCartera').value;
+  const cantidad = document.getElementById('cantidadCartera').value || 50;
+  if(!usuarioCoordinador){ toast('Elige un coordinador'); return; }
+  mostrarCargando(true);
+  const res = await apiPost({action:'asignarCarteraPorProximidad', usuarioCoordinador, lat: centroElegido.lat, lng: centroElegido.lng, cantidad});
+  mostrarCargando(false);
+  toast(res.ok ? `${res.asignadas} militantes nuevos asignados (total en su cartera: ${res.totalCartera})` : (res.error||'Error'));
+  if(res.ok){ cargarMapa(); }
+}
+async function cargarResumenCarteras(){
+  const res = await apiGet({action:'getResumenCarteras'});
+  if(!res.ok){ return; }
+  document.getElementById('tbodyCarteras').innerHTML = res.datos.length ? res.datos.map(c=>`
+    <tr><td><b>${c.nombre}</b> <span style="color:var(--muted);">(${c.usuario})</span></td><td>${c.total}</td>
+    <td>${c.pctActivos}%</td><td>${c.sinContacto}</td><td>${c.renunciados}</td></tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Aún no hay carteras asignadas</td></tr>';
 }
 
 async function forzarGeocodificacion(){
@@ -1052,6 +1193,42 @@ async function forzarGeocodificacion(){
   mostrarCargando(false);
   toast(res.ok ? `Se geocodificaron ${res.procesados} direcciones nuevas` : (res.error||'Error'));
   cargarMapa();
+}
+
+// ---------- GESTIÓN DE USUARIOS ----------
+async function abrirModalUsuarios(){
+  document.getElementById('modalUsuariosOverlay').style.display='flex';
+  document.getElementById('uNuevoUsuario').value='';
+  document.getElementById('uNuevoNombre').value='';
+  document.getElementById('uNuevaClave').value='';
+  document.getElementById('listaUsuarios').innerHTML = 'Cargando…';
+  const res = await apiGet({action:'listarUsuarios'});
+  if(!res.ok){ document.getElementById('listaUsuarios').innerHTML = res.error||'Error'; return; }
+  document.getElementById('listaUsuarios').innerHTML = res.datos.map(u=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;">
+      <div>
+        <b>${u.nombre}</b> <span style="color:var(--muted);">· ${u.usuario} · ${u.rol}</span>
+      </div>
+      <button class="btn ${u.activo?'btn-outline':'btn-green'}" style="padding:5px 12px;font-size:11.5px;" onclick="toggleActivoUsuario('${u.usuario}', ${!u.activo})">${u.activo ? 'Desactivar':'Activar'}</button>
+    </div>`).join('') || '<p style="color:var(--muted);font-size:13px;">Aún no hay usuarios adicionales.</p>';
+}
+function cerrarModalUsuarios(){ document.getElementById('modalUsuariosOverlay').style.display='none'; }
+async function guardarNuevoUsuario(){
+  const usuarioNuevo = document.getElementById('uNuevoUsuario').value.trim();
+  const nombreNuevo = document.getElementById('uNuevoNombre').value.trim();
+  const claveNueva = document.getElementById('uNuevaClave').value;
+  const rolNuevo = document.getElementById('uNuevoRol').value;
+  if(!usuarioNuevo || !claveNueva){ toast('Usuario y clave son obligatorios'); return; }
+  mostrarCargando(true);
+  const res = await apiPost({action:'agregarUsuario', usuarioNuevo, claveNueva, rolNuevo, nombreNuevo});
+  mostrarCargando(false);
+  toast(res.ok ? 'Usuario agregado' : (res.error||'Error'));
+  if(res.ok) abrirModalUsuarios();
+}
+async function toggleActivoUsuario(usuarioObjetivo, nuevoActivo){
+  const res = await apiPost({action:'actualizarUsuario', usuarioObjetivo, campos:{activo: nuevoActivo}});
+  toast(res.ok ? (nuevoActivo?'Usuario activado':'Usuario desactivado') : (res.error||'Error'));
+  if(res.ok) abrirModalUsuarios();
 }
 
 // ---------- DRAWER ----------
@@ -1078,6 +1255,7 @@ function abrirDrawer(cedula){
   });
   const soloView = SESSION.rol==='viewer';
   ['dEmail','dTelefono','dDomicilio','dComuna','dRol','dEstado','dNotaNueva'].forEach(id=>document.getElementById(id).disabled=soloView);
+  document.getElementById('btnEliminarMilitante').style.display = SESSION.rol==='admin' ? 'block':'none';
   document.getElementById('overlay').style.display='block';
   document.getElementById('drawer').style.display='block';
 }
@@ -1110,7 +1288,7 @@ function refrescarLocal(campos){
 async function guardarNota(){
   const nota = document.getElementById('dNotaNueva').value.trim();
   if(!nota) return;
-  const res = await apiPost({action:'agregarNota', cedula: cedulaActiva, nota, usuario: SESSION.rol});
+  const res = await apiPost({action:'agregarNota', cedula: cedulaActiva, nota, usuario: USUARIO});
   if(res.ok){ toast('Nota agregada'); document.getElementById('dNotaNueva').value=''; abrirDrawer(cedulaActiva); }
   else toast(res.error||'Error');
 }
@@ -1176,7 +1354,7 @@ function whatsappIndividual(){
 }
 async function enviarBienvenidaInd(){
   if(!confirm('¿Enviar correo de bienvenida a esta persona?')) return;
-  const res = await apiPost({action:'enviarBienvenida', cedula: cedulaActiva, usuario: SESSION.rol});
+  const res = await apiPost({action:'enviarBienvenida', cedula: cedulaActiva, usuario: USUARIO});
   toast(res.ok ? 'Bienvenida enviada' : (res.error||'Error'));
 }
 function abrirWhatsAppMasivo(){
@@ -1253,7 +1431,7 @@ async function enviarDesdeModal(){
   mostrarCargando(true);
 
   if(!modalEsMasivo){
-    const res = await apiPost({action:'enviarCorreoIndividual', cedula: cedulaActiva, asunto, cuerpo, usuario: SESSION.rol});
+    const res = await apiPost({action:'enviarCorreoIndividual', cedula: cedulaActiva, asunto, cuerpo, usuario: USUARIO});
     mostrarCargando(false);
     toast(res.ok ? 'Correo enviado' : (res.error||'Error'));
     cerrarModal();
@@ -1263,7 +1441,7 @@ async function enviarDesdeModal(){
   const objetivo = seleccionados.size ? [...seleccionados] : filtrados.map(m=>String(m.CEDULA));
 
   if(modoEnvioActual==='lotes'){
-    const res = await apiPost({action:'programarEnvioLotes', cedulas: objetivo, asunto, cuerpo, usuario: SESSION.rol, tamanoLote: 90});
+    const res = await apiPost({action:'programarEnvioLotes', cedulas: objetivo, asunto, cuerpo, usuario: USUARIO, tamanoLote: 90});
     mostrarCargando(false);
     toast(res.ok ? `Campaña programada: ${res.lotes} tanda(s), ${res.totalDestinatarios} destinatarios en total` : (res.error||'Error'));
     cerrarModal();
@@ -1273,7 +1451,7 @@ async function enviarDesdeModal(){
   if(seleccionados.size){
     let enviados = 0;
     for(const c of objetivo){
-      const r = await apiPost({action:'enviarCorreoIndividual', cedula:c, asunto, cuerpo, usuario: SESSION.rol});
+      const r = await apiPost({action:'enviarCorreoIndividual', cedula:c, asunto, cuerpo, usuario: USUARIO});
       if(r.ok) enviados++;
     }
     mostrarCargando(false);
@@ -1285,7 +1463,7 @@ async function enviarDesdeModal(){
       rol: document.getElementById('fRol').value, edadMin: document.getElementById('fEdadMin').value,
       edadMax: document.getElementById('fEdadMax').value
     };
-    const res = await apiPost({action:'enviarCorreoMasivo', filtros, asunto, cuerpo, usuario: SESSION.rol});
+    const res = await apiPost({action:'enviarCorreoMasivo', filtros, asunto, cuerpo, usuario: USUARIO});
     mostrarCargando(false);
     toast(res.ok ? `Enviado a ${res.enviados} de ${res.totalCoincidencias} coincidencias` : (res.error||'Error'));
     cerrarModal();
