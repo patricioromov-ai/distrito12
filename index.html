@@ -960,7 +960,6 @@ function renderNoticias(lista){
 }
 function prepararEnvioNoticia(n){
   cambiarTab('militantes');
-  seleccionados.clear();
   abrirModalCorreo(true);
   document.getElementById('mAsunto').value = n.titulo;
   document.getElementById('mCuerpo').value = `${n.resumen}\n\nLee la noticia completa aquí: ${n.link}`;
