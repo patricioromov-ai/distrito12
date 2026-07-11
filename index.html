@@ -103,8 +103,8 @@
   #pager{display:flex;justify-content:center;gap:10px;padding:14px;font-size:12.5px;align-items:center;color:var(--muted);}
   #pager button{padding:6px 14px;border:1px solid var(--border);background:#fff;border-radius:8px;cursor:pointer;font-family:inherit;}
 
-  #overlay{display:none;position:fixed;inset:0;background:rgba(11,18,32,.5);z-index:10;}
-  #drawer{display:none;position:fixed;right:0;top:0;bottom:0;width:430px;max-width:92vw;background:#fff;z-index:11;box-shadow:-10px 0 30px rgba(0,0,0,.2);overflow-y:auto;}
+  #overlay{display:none;position:fixed;inset:0;background:rgba(11,18,32,.5);z-index:1000;}
+  #drawer{display:none;position:fixed;right:0;top:0;bottom:0;width:430px;max-width:92vw;background:#fff;z-index:1001;box-shadow:-10px 0 30px rgba(0,0,0,.2);overflow-y:auto;}
   #drawer .dhead{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:20px;display:flex;justify-content:space-between;align-items:center;}
   #drawer .dhead h2{margin:0;font-size:17px;font-weight:700;}
   #drawer .section{padding:18px 20px;border-bottom:1px solid var(--border);}
@@ -116,7 +116,7 @@
   .actionRow button{flex:1;padding:10px;border-radius:8px;border:none;font-size:12.5px;cursor:pointer;font-weight:700;font-family:inherit;}
   #notaList{max-height:140px;overflow-y:auto;font-size:11.5px;color:var(--muted);margin-top:8px;white-space:pre-wrap;background:#FAFAFA;padding:10px;border-radius:8px;}
 
-  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:scroll;-webkit-overflow-scrolling:touch;}
+  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;}
   #modalOverlay #modal{margin:40px auto;}
   #modal{background:#fff;border-radius:14px;width:520px;max-width:92vw;}
   #modal .mhead{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;}
@@ -125,8 +125,8 @@
   #modal label{font-size:11px;color:var(--muted);display:block;margin-top:11px;font-weight:600;}
   #modal input,#modal select,#modal textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-top:3px;font-family:inherit;}
   #modal textarea{min-height:110px;}
-  #toast{display:none;position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;z-index:30;box-shadow:0 10px 28px rgba(0,0,0,.3);max-width:80vw;}
-  #loadingOverlay{display:none;position:fixed;inset:0;background:rgba(241,243,247,.8);z-index:40;align-items:center;justify-content:center;font-size:13px;color:var(--navy);font-weight:700;}
+  #toast{display:none;position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;z-index:3000;box-shadow:0 10px 28px rgba(0,0,0,.3);max-width:80vw;}
+  #loadingOverlay{display:none;position:fixed;inset:0;background:rgba(241,243,247,.8);z-index:4000;align-items:center;justify-content:center;font-size:13px;color:var(--navy);font-weight:700;}
 
   .modoTabs{display:flex;gap:8px;margin-top:6px;}
   .modoTab{flex:1;padding:9px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:700;text-align:center;color:var(--muted);font-family:inherit;}
@@ -195,7 +195,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-1</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-2</p>
   </div>
 </div>
 
@@ -458,7 +458,7 @@
 </div>
 
 <!-- MODAL AGREGAR MILITANTE -->
-<div id="modalAgregarOverlay" onclick="if(event.target===this) cerrarModalAgregar()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+<div id="modalAgregarOverlay" onclick="if(event.target===this) cerrarModalAgregar()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
   <div id="modalAgregar" style="background:#fff;border-radius:14px;width:520px;max-width:92vw;margin:40px auto;">
     <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
       <strong>Agregar militante</strong><button onclick="cerrarModalAgregar()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
@@ -520,7 +520,7 @@
 </div>
 
 <!-- MODAL GESTIÓN DE USUARIOS (solo admin) -->
-<div id="modalUsuariosOverlay" onclick="if(event.target===this) cerrarModalUsuarios()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+<div id="modalUsuariosOverlay" onclick="if(event.target===this) cerrarModalUsuarios()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
   <div style="background:#fff;border-radius:14px;width:560px;max-width:92vw;margin:40px auto;">
     <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
       <strong>Gestionar usuarios</strong><button onclick="cerrarModalUsuarios()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
@@ -560,7 +560,7 @@
 </div>
 
 <!-- MODAL DETALLE DE CARTERA (solo admin) -->
-<div id="modalDetalleCarteraOverlay" onclick="if(event.target===this) cerrarModalDetalleCartera()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:20;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+<div id="modalDetalleCarteraOverlay" onclick="if(event.target===this) cerrarModalDetalleCartera()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
   <div style="background:#fff;border-radius:14px;width:560px;max-width:92vw;margin:40px auto;">
     <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
       <strong id="tituloDetalleCartera">Cartera de...</strong><button onclick="cerrarModalDetalleCartera()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">✕</button>
