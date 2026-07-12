@@ -148,6 +148,13 @@
   #campanasCard{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:18px;}
   #campanasCard table{box-shadow:none;font-size:12px;}
   #campanasCard thead th{background:#F4F5F7;color:var(--text);font-size:10.5px;}
+  .okrObjetivo{font-size:13px;font-weight:700;color:var(--navy);margin:16px 0 8px;}
+  .okrObjetivo:first-child{margin-top:0;}
+  .okrFila{margin-bottom:12px;}
+  .okrFila .okrTop{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;}
+  .okrBarraFondo{background:#EDEEF2;border-radius:20px;height:10px;overflow:hidden;}
+  .okrBarraRelleno{height:100%;border-radius:20px;transition:width .3s ease;}
+  .okrBadge{padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;color:#fff;}
   #informeNarrativo h3{font-size:14px;color:var(--navy);margin:18px 0 8px;font-weight:800;}
   #informeNarrativo h3:first-child{margin-top:0;}
   #informeNarrativo p{font-size:12.5px;line-height:1.6;color:var(--text);margin:0 0 10px;}
@@ -195,7 +202,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-2</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-3</p>
   </div>
 </div>
 
@@ -256,6 +263,11 @@
       </div>
     </div>
 
+    <div id="bannerTareas" style="display:none;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:12px 20px;font-size:13px;cursor:pointer;" onclick="toggleBannerTareas()">
+      <b id="bannerTareasTitulo">Cargando tus tareas de hoy…</b>
+      <div id="bannerTareasLista" style="display:none;margin-top:10px;font-size:12.5px;"></div>
+    </div>
+
     <div id="toolbar2">
       <span id="selCount">0 seleccionados</span>
       <div class="btnRow">
@@ -299,6 +311,28 @@
         <div class="chartCard"><h4>Ingresos por período</h4><canvas id="chartIngresos"></canvas></div>
       </div>
       <div class="chartCard" id="informeNarrativo" style="margin-bottom:18px;"></div>
+
+      <div id="okrCard" class="chartCard" style="margin-bottom:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h4 style="margin:0;">Objetivos y Resultados Clave (OKR)</h4>
+          <button class="btn btn-outline no-print" id="btnAgregarOKR" style="display:none;" onclick="abrirModalOKR()">+ Agregar objetivo</button>
+        </div>
+        <div id="listaOKR"></div>
+      </div>
+
+      <div id="tareasCard" class="chartCard no-print" style="margin-bottom:18px;">
+        <h4>Cumplimiento de tareas de contacto</h4>
+        <div class="kpiCards" id="tareasCards" style="margin-bottom:14px;"></div>
+        <table style="box-shadow:none;font-size:12px;">
+          <thead><tr><th>Coordinador</th><th>Asignadas</th><th>Completadas</th><th>Pendientes</th><th>% Cumplimiento</th></tr></thead>
+          <tbody id="tbodyTareas"></tbody>
+        </table>
+        <div class="btnRow" style="margin-top:12px;">
+          <button class="btn btn-outline" onclick="forzarGenerarTareasHoy()">Generar tareas de hoy ahora</button>
+          <button class="btn btn-outline" onclick="forzarEnviarCandidatos()">Enviar tareas de precandidatos ahora</button>
+        </div>
+      </div>
+
       <div id="campanasCard" class="no-print">
         <h4 style="margin:0 0 12px;font-size:13px;color:var(--navy);font-weight:700;">Estado de campañas por lotes (BCC)</h4>
         <table>
@@ -405,6 +439,9 @@
     <select id="dRol"></select>
     <label>Estado</label>
     <select id="dEstado"></select>
+    <label id="lblCandidato" style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+      <input type="checkbox" id="dCandidato" style="width:auto;margin:0;"> Intención de candidatura (recibe tareas especiales por correo)
+    </label>
     <div class="actionRow"><button class="btn-gold" onclick="guardarRolEstado()">Guardar</button></div>
   </div>
   <div class="section" id="seccionAccionesRapidas">
@@ -552,6 +589,10 @@
           </select>
         </div>
       </div>
+      <div style="margin-top:10px;">
+        <label style="font-size:11px;color:var(--muted);font-weight:600;">Correo (para recibir sus tareas diarias — solo aplica a coordinadores)</label>
+        <input id="uNuevoEmail" type="email" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;" placeholder="maria.lopez@gmail.com">
+      </div>
     </div>
     <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);">
       <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="guardarNuevoUsuario()">Agregar usuario</button>
@@ -567,6 +608,56 @@
     </div>
     <div class="mbody" style="padding:22px;">
       <div id="listaDetalleCartera"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AGREGAR OKR (solo admin) -->
+<div id="modalOKROverlay" onclick="if(event.target===this) cerrarModalOKR()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:#fff;border-radius:14px;width:520px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
+      <strong>Agregar objetivo (OKR)</strong><button onclick="cerrarModalOKR()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <label style="font-size:11px;color:var(--muted);font-weight:600;">Objetivo</label>
+      <input id="okrObjetivo" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;" placeholder="Ej: Consolidar cobertura territorial">
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Key Result (resultado medible)</label>
+      <input id="okrKeyResult" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;" placeholder="Ej: Contactar al 100% del padrón">
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Tipo de seguimiento</label>
+      <select id="okrTipo" onchange="cambiarTipoOKR()" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+        <option value="automatico">Automático (calculado desde los datos)</option>
+        <option value="manual">Manual (yo actualizo el avance)</option>
+      </select>
+      <div id="okrCampoMetrica">
+        <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Métrica a seguir</label>
+        <select id="okrMetricaClave" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+          <option value="pct_contactados">% del padrón contactado</option>
+          <option value="pct_email">% con email registrado</option>
+          <option value="pct_telefono">% con teléfono registrado</option>
+          <option value="pct_rol_asignado">% con rol asignado</option>
+          <option value="pct_cartera_asignada">% con cartera territorial asignada</option>
+          <option value="pct_activos_vigentes">% en estado Activo/Vigente</option>
+          <option value="pct_renuncia">% de renuncia</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Meta (%)</label>
+          <input id="okrValorMeta" type="number" value="100" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Sentido</label>
+          <select id="okrSentido" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+            <option value="mayor_mejor">Mayor es mejor</option>
+            <option value="menor_mejor">Menor es mejor</option>
+          </select>
+        </div>
+      </div>
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Fecha límite</label>
+      <input id="okrFechaLimite" type="date" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+    </div>
+    <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);">
+      <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="guardarNuevoOKR()">Guardar objetivo</button>
     </div>
   </div>
 </div>
@@ -699,6 +790,9 @@ async function entrarApp(){
   if(SESSION.rol==='admin'){
     document.getElementById('tabMapa').style.display='inline-block';
     document.getElementById('btnUsuarios').style.display='inline-flex';
+  }
+  if(SESSION.rol==='coordinador'){
+    cargarBannerTareas();
   }
   mostrarCargando(true);
   try{
@@ -968,6 +1062,10 @@ async function renderKPIs(){
     total, conEmail, conTel, conRol, cumpleMes, anivMes, ingresosMes, ingresosTrimestre,
     edadProm, comunaTop, renunciados, mujeres, varones, porComuna, porEstado
   });
+  document.getElementById('tareasCard').style.display = SESSION.rol==='admin' ? 'block':'none';
+  if(SESSION.rol==='admin') cargarResumenTareas();
+  document.getElementById('btnAgregarOKR').style.display = SESSION.rol==='admin' ? 'inline-flex':'none';
+  cargarOKRs();
   cargarEstadoCampanas();
 }
 
@@ -1209,6 +1307,98 @@ async function confirmarAsignacionCartera(){
   toast(res.ok ? `${res.asignadas} militantes nuevos asignados (total en su cartera: ${res.totalCartera})` : (res.error||'Error'));
   if(res.ok){ cargarMapa(); }
 }
+// ---------- OKR ----------
+const COLORES_ESTADO_OKR = { 'Cumplido':'#1E8E5A', 'En progreso':'#C9A227', 'Atrasado':'#C0392B' };
+async function cargarOKRs(){
+  const res = await apiGet({action:'getOKRs'});
+  if(!res.ok){ document.getElementById('listaOKR').innerHTML = res.error||'Error'; return; }
+  if(!res.datos.length){ document.getElementById('listaOKR').innerHTML = '<p style="color:var(--muted);font-size:13px;">Aún no hay objetivos definidos.</p>'; return; }
+  const porObjetivo = {};
+  res.datos.forEach(o=>{ if(!porObjetivo[o.objetivo]) porObjetivo[o.objetivo]=[]; porObjetivo[o.objetivo].push(o); });
+  document.getElementById('listaOKR').innerHTML = Object.keys(porObjetivo).map(obj=>`
+    <div class="okrObjetivo">🎯 ${obj}</div>
+    ${porObjetivo[obj].map(kr=>`
+      <div class="okrFila">
+        <div class="okrTop">
+          <span>${kr.keyResult}</span>
+          <span><b>${kr.valorActual}${kr.tipo==='automatico'?'%':''}</b> / ${kr.valorMeta}${kr.tipo==='automatico'?'%':''}
+            <span class="okrBadge" style="background:${COLORES_ESTADO_OKR[kr.estado]};margin-left:6px;">${kr.estado}</span>
+            ${SESSION.rol==='admin' ? `<button onclick="eliminarOKRFrontend('${kr.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;margin-left:6px;" title="Eliminar">✕</button>` : ''}
+          </span>
+        </div>
+        <div class="okrBarraFondo"><div class="okrBarraRelleno" style="width:${kr.avance}%;background:${COLORES_ESTADO_OKR[kr.estado]};"></div></div>
+        ${kr.tipo==='manual' && SESSION.rol==='admin' ? `<div style="margin-top:5px;"><input type="number" value="${kr.valorActual}" style="width:70px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11.5px;" onchange="actualizarValorManualOKR('${kr.id}', this.value)"> valor actual</div>` : ''}
+      </div>`).join('')}
+  `).join('');
+}
+function abrirModalOKR(){
+  document.getElementById('okrObjetivo').value='';
+  document.getElementById('okrKeyResult').value='';
+  document.getElementById('okrTipo').value='automatico';
+  document.getElementById('okrValorMeta').value=100;
+  document.getElementById('okrSentido').value='mayor_mejor';
+  document.getElementById('okrFechaLimite').value='';
+  cambiarTipoOKR();
+  document.getElementById('modalOKROverlay').style.display='block';
+}
+function cerrarModalOKR(){ document.getElementById('modalOKROverlay').style.display='none'; }
+function cambiarTipoOKR(){
+  document.getElementById('okrCampoMetrica').style.display = document.getElementById('okrTipo').value==='automatico' ? 'block':'none';
+}
+async function guardarNuevoOKR(){
+  const datos = {
+    objetivo: document.getElementById('okrObjetivo').value.trim(),
+    keyResult: document.getElementById('okrKeyResult').value.trim(),
+    tipo: document.getElementById('okrTipo').value,
+    metricaClave: document.getElementById('okrMetricaClave').value,
+    sentido: document.getElementById('okrSentido').value,
+    valorMeta: document.getElementById('okrValorMeta').value,
+    fechaLimite: document.getElementById('okrFechaLimite').value
+  };
+  if(!datos.objetivo || !datos.keyResult){ toast('Completa objetivo y key result'); return; }
+  mostrarCargando(true);
+  const res = await apiPost({action:'agregarOKR', datos});
+  mostrarCargando(false);
+  toast(res.ok ? 'Objetivo agregado' : (res.error||'Error'));
+  if(res.ok){ cerrarModalOKR(); cargarOKRs(); }
+}
+async function actualizarValorManualOKR(id, valor){
+  const res = await apiPost({action:'actualizarOKR', id, campos:{valorManual: valor}});
+  if(res.ok) cargarOKRs(); else toast(res.error||'Error');
+}
+async function eliminarOKRFrontend(id){
+  if(!confirm('¿Eliminar este resultado clave?')) return;
+  const res = await apiPost({action:'eliminarOKR', id});
+  if(res.ok){ toast('Eliminado'); cargarOKRs(); } else toast(res.error||'Error');
+}
+
+async function cargarResumenTareas(){
+  const res = await apiGet({action:'getResumenTareas'});
+  if(!res.ok){ return; }
+  const d = res.datos;
+  document.getElementById('tareasCards').innerHTML = `
+    <div class="kpiCard"><div class="num">${d.pendientesGlobal}</div><div class="lbl">Militantes en cartera aún sin contactar</div></div>
+    <div class="kpiCard"><div class="num">${d.ritmoDiario}</div><div class="lbl">Contactos completados por día (promedio 14 días)</div></div>
+    <div class="kpiCard"><div class="num">${d.diasEstimados ?? '—'}</div><div class="lbl">Días estimados para terminar al ritmo actual</div></div>`;
+  document.getElementById('tbodyTareas').innerHTML = d.porCoordinador.length ? d.porCoordinador.map(c=>`
+    <tr><td><b>${c.nombre}</b> <span style="color:var(--muted);">(${c.usuario})</span></td>
+    <td>${c.asignadas}</td><td>${c.completadas}</td><td>${c.pendientes}</td><td>${c.pctCumplimiento}%</td></tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Aún no se han generado tareas</td></tr>';
+}
+async function forzarGenerarTareasHoy(){
+  mostrarCargando(true);
+  const res = await apiPost({action:'forzarGenerarTareas'});
+  mostrarCargando(false);
+  toast(res.ok ? `${res.tareasCreadas} tareas nuevas creadas y enviadas por correo` : (res.error||'Error'));
+  cargarResumenTareas();
+}
+async function forzarEnviarCandidatos(){
+  mostrarCargando(true);
+  const res = await apiPost({action:'forzarEnviarTareasCandidatos'});
+  mostrarCargando(false);
+  toast(res.ok ? `Enviado a ${res.enviados} precandidatos` : (res.error||'Error'));
+}
+
 async function cargarResumenCarteras(){
   const res = await apiGet({action:'getResumenCarteras'});
   if(!res.ok){ return; }
@@ -1251,19 +1441,41 @@ async function forzarGeocodificacion(){
   cargarMapa();
 }
 
+// ---------- TAREAS DE HOY (para coordinadores) ----------
+async function cargarBannerTareas(){
+  const res = await apiGet({action:'getMisTareasPendientes'});
+  const banner = document.getElementById('bannerTareas');
+  if(!res.ok || !res.datos.length){
+    document.getElementById('bannerTareasTitulo').innerText = 'No tienes tareas de contacto pendientes por ahora 🎉';
+    banner.style.display='block';
+    return;
+  }
+  document.getElementById('bannerTareasTitulo').innerText = `📋 Tienes ${res.datos.length} contacto(s) pendiente(s) — haz clic para ver el detalle`;
+  document.getElementById('bannerTareasLista').innerHTML = res.datos.map(t=>`
+    <div style="padding:6px 0;border-top:1px solid rgba(255,255,255,.15);cursor:pointer;" onclick="event.stopPropagation(); cambiarTab('militantes'); abrirDrawer('${t.cedula}');">
+      ${titleCase(t.nombre)} · ${titleCase(t.comuna)} · ${t.telefono||'sin teléfono'}
+    </div>`).join('');
+  banner.style.display='block';
+}
+function toggleBannerTareas(){
+  const lista = document.getElementById('bannerTareasLista');
+  lista.style.display = lista.style.display==='none' ? 'block' : 'none';
+}
+
 // ---------- GESTIÓN DE USUARIOS ----------
 async function abrirModalUsuarios(){
   document.getElementById('modalUsuariosOverlay').style.display='block';
   document.getElementById('uNuevoUsuario').value='';
   document.getElementById('uNuevoNombre').value='';
   document.getElementById('uNuevaClave').value='';
+  document.getElementById('uNuevoEmail').value='';
   document.getElementById('listaUsuarios').innerHTML = 'Cargando…';
   const res = await apiGet({action:'listarUsuarios'});
   if(!res.ok){ document.getElementById('listaUsuarios').innerHTML = res.error||'Error'; return; }
   document.getElementById('listaUsuarios').innerHTML = res.datos.map(u=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;">
       <div>
-        <b>${u.nombre}</b> <span style="color:var(--muted);">· ${u.usuario} · ${u.rol}</span>
+        <b>${u.nombre}</b> <span style="color:var(--muted);">· ${u.usuario} · ${u.rol}${u.email ? ' · '+u.email : ''}</span>
       </div>
       <button class="btn ${u.activo?'btn-outline':'btn-green'}" style="padding:5px 12px;font-size:11.5px;" onclick="toggleActivoUsuario('${u.usuario}', ${!u.activo})">${u.activo ? 'Desactivar':'Activar'}</button>
     </div>`).join('') || '<p style="color:var(--muted);font-size:13px;">Aún no hay usuarios adicionales.</p>';
@@ -1274,9 +1486,10 @@ async function guardarNuevoUsuario(){
   const nombreNuevo = document.getElementById('uNuevoNombre').value.trim();
   const claveNueva = document.getElementById('uNuevaClave').value;
   const rolNuevo = document.getElementById('uNuevoRol').value;
+  const emailNuevo = document.getElementById('uNuevoEmail').value.trim();
   if(!usuarioNuevo || !claveNueva){ toast('Usuario y clave son obligatorios'); return; }
   mostrarCargando(true);
-  const res = await apiPost({action:'agregarUsuario', usuarioNuevo, claveNueva, rolNuevo, nombreNuevo});
+  const res = await apiPost({action:'agregarUsuario', usuarioNuevo, claveNueva, rolNuevo, nombreNuevo, emailNuevo});
   mostrarCargando(false);
   toast(res.ok ? 'Usuario agregado' : (res.error||'Error'));
   if(res.ok) abrirModalUsuarios();
@@ -1298,6 +1511,8 @@ function abrirDrawer(cedula){
   document.getElementById('dComuna').value = m.COMUNA||'';
   document.getElementById('dRol').value = norm(m.ROL);
   document.getElementById('dEstado').value = m.ESTADO || 'Nuevo Militante';
+  document.getElementById('dCandidato').checked = String(m.CANDIDATO).toLowerCase()==='sí' || String(m.CANDIDATO).toLowerCase()==='si';
+  document.getElementById('lblCandidato').style.display = SESSION.rol==='admin' ? 'flex':'none';
   document.getElementById('dNotaNueva').value = '';
   document.getElementById('notaList').innerText = m.NOTAS || 'Sin notas registradas.';
   const query = encodeURIComponent(`${m.DOMICILIO}, ${m.COMUNA}, Chile`);
@@ -1334,6 +1549,7 @@ async function guardarRolEstado(){
   const rolSel = document.getElementById('dRol');
   const rolInfo = ROLES.find(r=>norm(r.rol)===rolSel.value);
   const campos = { ROL: rolInfo ? rolInfo.rol.trim() : '', ESTADO: document.getElementById('dEstado').value };
+  if(SESSION.rol==='admin') campos.CANDIDATO = document.getElementById('dCandidato').checked ? 'Sí' : 'No';
   const res = await apiPost({action:'actualizarMilitante', cedula: cedulaActiva, campos});
   toast(res.ok ? 'Rol/estado actualizado' : (res.error||'Error'));
   if(res.ok) refrescarLocal(campos);
