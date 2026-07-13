@@ -203,7 +203,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-6</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-7</p>
   </div>
 </div>
 
@@ -271,6 +271,7 @@
 
     <div id="toolbar2">
       <span id="selCount">0 seleccionados</span>
+      <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="seleccionados.clear(); renderTabla();">Limpiar selección</button>
       <div class="btnRow">
         <button class="btn btn-outline" onclick="exportarCSV()">Exportar CSV</button>
         <button class="btn btn-outline" id="btnAgregar" onclick="abrirModalAgregar()">+ Agregar militante</button>
@@ -1882,6 +1883,7 @@ async function enviarDesdeModal(){
     mostrarCargando(false);
     toast(res.ok ? `Campaña programada: ${res.lotes} tanda(s), ${res.totalDestinatarios} destinatarios en total` : (res.error||'Error'));
     cerrarModal();
+    if(res.ok){ seleccionados.clear(); renderTabla(); }
     return;
   }
 
@@ -1894,6 +1896,7 @@ async function enviarDesdeModal(){
     mostrarCargando(false);
     toast(`Enviado a ${enviados} de ${objetivo.length} seleccionados`);
     cerrarModal();
+    seleccionados.clear(); renderTabla();
   } else {
     const filtros = {
       comuna: document.getElementById('fComuna').value, sexo: document.getElementById('fSexo').value,
