@@ -164,6 +164,7 @@
 
   /* NOTICIAS */
   #noticiasView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:var(--bg);}
+  #misTareasView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:var(--bg);}
   #mapaView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:var(--bg);}
   #mapaFiltros select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:inherit;background:#fff;}
   .noticiaCard{background:var(--card);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:14px;border-left:4px solid var(--teal);}
@@ -202,7 +203,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-3</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-5</p>
   </div>
 </div>
 
@@ -212,7 +213,7 @@
       <div class="brand"><div class="logo">P</div>PRYSMA <span>Distrito 12</span></div>
       <nav>
         <button id="tabMilitantes" class="active" onclick="cambiarTab('militantes')">Militantes</button>
-        <button id="tabKpi" onclick="cambiarTab('kpi')">Panel de KPIs</button>
+        <button id="tabKpi" onclick="cambiarTab(SESSION.rol==='admin' ? 'kpi' : 'mistareas')">Panel de KPIs</button>
         <button id="tabNoticias" onclick="cambiarTab('noticias')">Noticias PDG</button>
         <button id="tabMapa" onclick="cambiarTab('mapa')" style="display:none;">Mapa</button>
       </nav>
@@ -324,13 +325,30 @@
         <h4>Cumplimiento de tareas de contacto</h4>
         <div class="kpiCards" id="tareasCards" style="margin-bottom:14px;"></div>
         <table style="box-shadow:none;font-size:12px;">
-          <thead><tr><th>Coordinador</th><th>Asignadas</th><th>Completadas</th><th>Pendientes</th><th>% Cumplimiento</th></tr></thead>
+          <thead><tr><th>Coordinador</th><th>Asignadas</th><th>Completadas</th><th>Pendientes</th><th>% Cumplimiento</th><th></th></tr></thead>
           <tbody id="tbodyTareas"></tbody>
         </table>
-        <div class="btnRow" style="margin-top:12px;">
-          <button class="btn btn-outline" onclick="forzarGenerarTareasHoy()">Generar tareas de hoy ahora</button>
-          <button class="btn btn-outline" onclick="forzarEnviarCandidatos()">Enviar tareas de precandidatos ahora</button>
+      </div>
+
+      <div id="sugerenciasCard" class="chartCard no-print" style="margin-bottom:18px;">
+        <h4>Asignar tareas de contacto</h4>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
+          El sistema sugiere a quién priorizar (nunca contactados primero). Elige a quiénes asignarle a cada
+          coordinador y presiona "Asignar y enviar" — recién ahí se crea la tarea y le llega el correo.
+        </p>
+        <div id="listaSugerencias"></div>
+      </div>
+
+      <div id="candidatosCard" class="chartCard no-print" style="margin-bottom:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h4 style="margin:0;">Tareas de precandidatos</h4>
+          <button class="btn btn-gold" onclick="forzarEnviarCandidatos()">Enviar tareas de la semana ahora</button>
         </div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
+          Arma, edita o elimina las tareas de cada precandidato. Se envían automáticamente todos los lunes a las
+          8 AM (o cuando presiones el botón de arriba), y quedan marcadas como enviadas.
+        </p>
+        <div id="listaCandidatos"></div>
       </div>
 
       <div id="campanasCard" class="no-print">
@@ -353,6 +371,17 @@
         <button class="btn btn-outline" id="btnActualizarNoticias" onclick="forzarActualizarNoticias()">Actualizar noticias ahora</button>
       </div>
       <div id="listaNoticias"></div>
+    </div>
+
+    <!-- MIS TAREAS (vista para coordinadores) -->
+    <div id="misTareasView">
+      <div class="kpiHead">
+        <div>
+          <h1>Mis tareas de contacto</h1>
+          <p>Personas de tu cartera que el equipo te asignó para contactar</p>
+        </div>
+      </div>
+      <div id="listaMisTareas"></div>
     </div>
 
     <!-- PESTAÑA DE MAPA (solo admin) -->
@@ -662,6 +691,18 @@
   </div>
 </div>
 
+<!-- MODAL LISTADO DE TAREAS (solo admin) -->
+<div id="modalListaTareasOverlay" onclick="if(event.target===this) cerrarModalListaTareas()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:#fff;border-radius:14px;width:560px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
+      <strong id="tituloListaTareas">Tareas de...</strong><button onclick="cerrarModalListaTareas()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <div id="listaDetalleTareas"></div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 <div id="loadingOverlay">Cargando…</div>
 
@@ -676,6 +717,8 @@ document.addEventListener('keydown', function(e){
   cerrarModalAgregar();
   cerrarModalUsuarios();
   cerrarModalDetalleCartera();
+  cerrarModalOKR();
+  cerrarModalListaTareas();
 });
 
 let USUARIO = localStorage.getItem('prysma_usuario') || '';
@@ -790,9 +833,14 @@ async function entrarApp(){
   if(SESSION.rol==='admin'){
     document.getElementById('tabMapa').style.display='inline-block';
     document.getElementById('btnUsuarios').style.display='inline-flex';
+    document.getElementById('tabKpi').innerText = 'Panel de KPIs';
   }
   if(SESSION.rol==='coordinador'){
+    document.getElementById('tabKpi').innerText = 'Mis Tareas';
     cargarBannerTareas();
+  }
+  if(SESSION.rol==='viewer'){
+    document.getElementById('tabKpi').style.display='none';
   }
   mostrarCargando(true);
   try{
@@ -822,13 +870,13 @@ function poblarFiltros(){
   });
 
   const fEstado = document.getElementById('fEstado');
-  fEstado.innerHTML = '<option value="">Todos los estados</option>';
+  fEstado.innerHTML = '<option value="">Todos los estados</option><option value="__sin_estado__">Sin estado asignado</option>';
   ESTADOS_FIJOS.forEach(e=> fEstado.innerHTML += `<option value="${e}">${e}</option>`);
 
   const mapaRoles = new Map();
   ROLES.forEach(r=>{ const k = norm(r.rol); if(k && !mapaRoles.has(k)) mapaRoles.set(k, {label:r.rol.trim(), color:r.color}); });
   const fRol = document.getElementById('fRol'), dRol = document.getElementById('dRol'), nRol = document.getElementById('nRol');
-  fRol.innerHTML = '<option value="">Todos los roles</option>';
+  fRol.innerHTML = '<option value="">Todos los roles</option><option value="__sin_rol__">Sin rol asignado</option>';
   dRol.innerHTML = '<option value="">Sin rol</option>';
   nRol.innerHTML = '<option value="">Sin rol</option>';
   [...mapaRoles.entries()].forEach(([k,info])=>{
@@ -893,9 +941,11 @@ function aplicarFiltros(){
 
   filtrados = MILITANTES.filter(m=>{
     if(comuna && norm(m.COMUNA)!==comuna) return false;
-    if(estado && m.ESTADO!==estado) return false;
+    if(estado==='__sin_estado__' && m.ESTADO) return false;
+    else if(estado && estado!=='__sin_estado__' && m.ESTADO!==estado) return false;
     if(sexo && m.SEXO!==sexo) return false;
-    if(rol && norm(m.ROL)!==rol) return false;
+    if(rol==='__sin_rol__' && m.ROL) return false;
+    else if(rol && rol!=='__sin_rol__' && norm(m.ROL)!==rol) return false;
     if(edadMin && Number(m.EDAD)<Number(edadMin)) return false;
     if(edadMax && Number(m.EDAD)>Number(edadMax)) return false;
     if(conEmail && !m.EMAIL) return false;
@@ -980,7 +1030,7 @@ function accionRapidaWhatsApp(cedula){ cedulaActiva = cedula; whatsappIndividual
 // ---------- TABS ----------
 function cambiarTab(tab){
   document.getElementById('tabMilitantes').classList.toggle('active', tab==='militantes');
-  document.getElementById('tabKpi').classList.toggle('active', tab==='kpi');
+  document.getElementById('tabKpi').classList.toggle('active', tab==='kpi' || tab==='mistareas');
   document.getElementById('tabNoticias').classList.toggle('active', tab==='noticias');
   document.getElementById('tabMapa').classList.toggle('active', tab==='mapa');
   document.getElementById('filterBar').style.display = tab==='militantes' ? 'block':'none';
@@ -990,9 +1040,11 @@ function cambiarTab(tab){
   document.getElementById('kpiView').style.display = tab==='kpi' ? 'block':'none';
   document.getElementById('noticiasView').style.display = tab==='noticias' ? 'block':'none';
   document.getElementById('mapaView').style.display = tab==='mapa' ? 'block':'none';
+  document.getElementById('misTareasView').style.display = tab==='mistareas' ? 'block':'none';
   if(tab==='kpi') renderKPIs();
   if(tab==='noticias') cargarNoticias();
   if(tab==='mapa') cargarMapa();
+  if(tab==='mistareas') cargarMisTareasVista();
 }
 
 // ---------- KPIs ----------
@@ -1063,7 +1115,9 @@ async function renderKPIs(){
     edadProm, comunaTop, renunciados, mujeres, varones, porComuna, porEstado
   });
   document.getElementById('tareasCard').style.display = SESSION.rol==='admin' ? 'block':'none';
-  if(SESSION.rol==='admin') cargarResumenTareas();
+  document.getElementById('sugerenciasCard').style.display = SESSION.rol==='admin' ? 'block':'none';
+  document.getElementById('candidatosCard').style.display = SESSION.rol==='admin' ? 'block':'none';
+  if(SESSION.rol==='admin'){ cargarResumenTareas(); cargarCandidatos(); }
   document.getElementById('btnAgregarOKR').style.display = SESSION.rol==='admin' ? 'inline-flex':'none';
   cargarOKRs();
   cargarEstadoCampanas();
@@ -1165,6 +1219,8 @@ function renderNoticias(lista){
       <p>${n.resumen || ''}</p>
       <div class="acciones">
         <a href="${n.link}" target="_blank" rel="noopener">Leer noticia completa ↗</a>
+        <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(n.link)}" target="_blank" rel="noopener" title="Compartir en Facebook" style="color:#1877F2;font-weight:700;">Facebook</a>
+        <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(n.titulo)}&url=${encodeURIComponent(n.link)}" target="_blank" rel="noopener" title="Compartir en X" style="color:#000;font-weight:700;">X</a>
         ${SESSION.rol==='admin' ? `<button class="btn btn-gold" style="margin-left:auto;" onclick='prepararEnvioNoticia(${JSON.stringify(n).replace(/'/g,"&apos;")})'>Enviar a militantes</button>` : ''}
       </div>
     </div>`).join('');
@@ -1382,21 +1438,107 @@ async function cargarResumenTareas(){
     <div class="kpiCard"><div class="num">${d.diasEstimados ?? '—'}</div><div class="lbl">Días estimados para terminar al ritmo actual</div></div>`;
   document.getElementById('tbodyTareas').innerHTML = d.porCoordinador.length ? d.porCoordinador.map(c=>`
     <tr><td><b>${c.nombre}</b> <span style="color:var(--muted);">(${c.usuario})</span></td>
-    <td>${c.asignadas}</td><td>${c.completadas}</td><td>${c.pendientes}</td><td>${c.pctCumplimiento}%</td></tr>`).join('')
-    : '<tr><td colspan="5" style="text-align:center;color:var(--muted);">Aún no se han generado tareas</td></tr>';
+    <td>${c.asignadas}</td><td>${c.completadas}</td><td>${c.pendientes}</td><td>${c.pctCumplimiento}%</td>
+    <td><button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="verListaTareas('${c.usuario}','${c.nombre.replace(/'/g,"&apos;")}')">Ver tareas</button></td></tr>`).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Aún no se han asignado tareas</td></tr>';
+  cargarSugerencias();
 }
-async function forzarGenerarTareasHoy(){
+
+async function verListaTareas(usuario, nombre){
+  document.getElementById('tituloListaTareas').innerText = `Tareas de ${nombre}`;
+  document.getElementById('listaDetalleTareas').innerHTML = 'Cargando…';
+  document.getElementById('modalListaTareasOverlay').style.display='block';
+  const res = await apiGet({action:'getListaTareas', usuarioCoordinador: usuario});
+  if(!res.ok || !res.datos.length){
+    document.getElementById('listaDetalleTareas').innerHTML = '<p style="color:var(--muted);font-size:13px;">Sin tareas registradas.</p>';
+    return;
+  }
+  document.getElementById('listaDetalleTareas').innerHTML = res.datos.map(t=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;">
+      <div><b>${titleCase(t.nombre)}</b> <span style="color:var(--muted);">· ${titleCase(t.comuna)} · asignada ${new Date(t.fechaAsignacion).toLocaleDateString('es-CL')}</span></div>
+      <span class="okrBadge" style="background:${t.estado==='Completada'?'#1E8E5A':'#C9A227'};">${t.estado}</span>
+    </div>`).join('');
+}
+function cerrarModalListaTareas(){ document.getElementById('modalListaTareasOverlay').style.display='none'; }
+
+async function cargarSugerencias(){
+  const res = await apiGet({action:'getSugerenciasTareas'});
+  if(!res.ok){ document.getElementById('listaSugerencias').innerHTML = res.error||'Error'; return; }
+  if(!res.datos.length){ document.getElementById('listaSugerencias').innerHTML = '<p style="color:var(--muted);font-size:13px;">No hay sugerencias pendientes — todas las carteras están al día o sin militantes cargados.</p>'; return; }
+  document.getElementById('listaSugerencias').innerHTML = res.datos.map(c=>`
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <b style="font-size:13px;">${c.nombre} <span style="color:var(--muted);font-weight:400;">(${c.sugerencias.length} sugeridos)</span></b>
+        <div>
+          <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="marcarTodosSugerencia('${c.usuario}', true)">Marcar todos</button>
+          <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="marcarTodosSugerencia('${c.usuario}', false)">Ninguno</button>
+          <button class="btn btn-gold" style="padding:5px 12px;font-size:11px;" onclick="asignarSeleccionados('${c.usuario}')">Asignar y enviar</button>
+        </div>
+      </div>
+      <div style="max-height:180px;overflow-y:auto;">
+        ${c.sugerencias.map(s=>`
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;">
+            <input type="checkbox" class="chkSugerencia-${c.usuario}" value="${s.cedula}">
+            ${titleCase(s.nombre)} · ${titleCase(s.comuna)} · ${s.diasSinContacto===null?'nunca contactado':'hace '+s.diasSinContacto+' días'}
+          </label>`).join('')}
+      </div>
+    </div>`).join('');
+}
+function marcarTodosSugerencia(usuario, valor){
+  document.querySelectorAll('.chkSugerencia-'+usuario).forEach(c=>c.checked=valor);
+}
+async function asignarSeleccionados(usuario){
+  const cedulas = [...document.querySelectorAll('.chkSugerencia-'+usuario+':checked')].map(c=>c.value);
+  if(!cedulas.length){ toast('Selecciona al menos una persona'); return; }
   mostrarCargando(true);
-  const res = await apiPost({action:'forzarGenerarTareas'});
+  const res = await apiPost({action:'asignarTareasSeleccionadas', usuarioCoordinador: usuario, cedulas});
   mostrarCargando(false);
-  toast(res.ok ? `${res.tareasCreadas} tareas nuevas creadas y enviadas por correo` : (res.error||'Error'));
-  cargarResumenTareas();
+  toast(res.ok ? `${res.asignadas} tarea(s) asignada(s)${res.conCorreo?' y enviadas por correo':' (sin correo: ese usuario no tiene email registrado)'}` : (res.error||'Error'));
+  if(res.ok){ cargarResumenTareas(); }
+}
+
+// ---------- TAREAS DE PRECANDIDATOS ----------
+async function cargarCandidatos(){
+  const res = await apiGet({action:'getTareasCandidatosPendientes'});
+  if(!res.ok){ document.getElementById('listaCandidatos').innerHTML = res.error||'Error'; return; }
+  if(!res.datos.length){ document.getElementById('listaCandidatos').innerHTML = '<p style="color:var(--muted);font-size:13px;">Aún no hay militantes marcados con "Intención de candidatura".</p>'; return; }
+  document.getElementById('listaCandidatos').innerHTML = res.datos.map(c=>`
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <b style="font-size:13px;">${titleCase(c.nombre)}</b> <span style="color:var(--muted);font-size:11.5px;">${c.email?'· '+c.email:'· sin email (no recibirá el correo)'}</span>
+      <div style="margin-top:8px;">
+        ${c.tareas.map(t=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;">
+            <input type="text" value="${t.descripcion.replace(/"/g,'&quot;')}" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;" onchange="editarTareaCandidato('${t.id}', this.value)">
+            <button onclick="borrarTareaCandidato('${t.id}','${c.cedula}')" style="background:none;border:none;color:var(--red);cursor:pointer;">✕</button>
+          </div>`).join('') || '<p style="color:var(--muted);font-size:11.5px;margin:4px 0;">Sin tareas cargadas.</p>'}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <input type="text" id="nuevaTarea-${c.cedula}" placeholder="Nueva tarea para esta persona…" style="flex:1;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;">
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:11.5px;" onclick="agregarTareaCandidatoFrontend('${c.cedula}')">+ Agregar</button>
+      </div>
+    </div>`).join('');
+}
+async function agregarTareaCandidatoFrontend(cedula){
+  const input = document.getElementById('nuevaTarea-'+cedula);
+  const descripcion = input.value.trim();
+  if(!descripcion) return;
+  const res = await apiPost({action:'agregarTareaCandidato', cedula, descripcion});
+  if(res.ok){ input.value=''; cargarCandidatos(); } else toast(res.error||'Error');
+}
+async function editarTareaCandidato(id, descripcion){
+  const res = await apiPost({action:'actualizarTareaCandidato', id, descripcion});
+  if(!res.ok) toast(res.error||'Error');
+}
+async function borrarTareaCandidato(id, cedula){
+  const res = await apiPost({action:'eliminarTareaCandidato', id});
+  if(res.ok) cargarCandidatos(); else toast(res.error||'Error');
 }
 async function forzarEnviarCandidatos(){
   mostrarCargando(true);
   const res = await apiPost({action:'forzarEnviarTareasCandidatos'});
   mostrarCargando(false);
   toast(res.ok ? `Enviado a ${res.enviados} precandidatos` : (res.error||'Error'));
+  cargarCandidatos();
 }
 
 async function cargarResumenCarteras(){
@@ -1460,6 +1602,20 @@ async function cargarBannerTareas(){
 function toggleBannerTareas(){
   const lista = document.getElementById('bannerTareasLista');
   lista.style.display = lista.style.display==='none' ? 'block' : 'none';
+}
+
+async function cargarMisTareasVista(){
+  document.getElementById('listaMisTareas').innerHTML = 'Cargando…';
+  const res = await apiGet({action:'getMisTareasPendientes'});
+  if(!res.ok || !res.datos.length){
+    document.getElementById('listaMisTareas').innerHTML = '<p style="color:var(--muted);font-size:13px;">No tienes tareas de contacto pendientes por ahora 🎉</p>';
+    return;
+  }
+  document.getElementById('listaMisTareas').innerHTML = res.datos.map(t=>`
+    <div class="noticiaCard" style="cursor:pointer;" onclick="cambiarTab('militantes'); abrirDrawer('${t.cedula}');">
+      <h3 style="margin:0 0 4px;">${titleCase(t.nombre)}</h3>
+      <div class="meta">${titleCase(t.comuna)} · ${t.telefono || 'sin teléfono'} · asignada el ${new Date(t.fechaAsignacion).toLocaleDateString('es-CL')}</div>
+    </div>`).join('');
 }
 
 // ---------- GESTIÓN DE USUARIOS ----------
