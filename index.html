@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
-<head> 
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sistema Territorial y Gestión Distrital D12</title>
+<title>PRYSMA · Gestión Distrital D12</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -196,21 +196,21 @@
 
 <div id="loginScreen" style="display:none;">
   <div id="loginBox">
-    <div class="logo">A</div>
-    <h1>Sistema Integrado de Gestión Territorial</h1>
-    <p> Distrito 12</p>
+    <div class="logo">P</div>
+    <h1>PRYSMA</h1>
+    <p>Gestión Distrital · Distrito 12</p>
     <input type="text" id="usuarioInput" placeholder="Usuario" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('passInput').focus()">
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-7</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-9</p>
   </div>
 </div>
 
 <div id="app">
   <header>
     <div class="left">
-      <div class="brand"><div class="logo">A</div>Sistema Integrado de Gestión Territorial <span>Distrito 12</span></div>
+      <div class="brand"><div class="logo">P</div>PRYSMA <span>Distrito 12</span></div>
       <nav>
         <button id="tabMilitantes" class="active" onclick="cambiarTab('militantes')">Militantes</button>
         <button id="tabKpi" onclick="cambiarTab(SESSION.rol==='admin' ? 'kpi' : 'mistareas')">Panel de KPIs</button>
@@ -272,6 +272,7 @@
     <div id="toolbar2">
       <span id="selCount">0 seleccionados</span>
       <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="seleccionados.clear(); renderTabla();">Limpiar selección</button>
+      <button class="btn btn-outline" id="btnEstadoMasivo" style="padding:5px 10px;font-size:11px;display:none;" onclick="abrirModalEstadoMasivo()">Cambiar estado a selección</button>
       <div class="btnRow">
         <button class="btn btn-outline" onclick="exportarCSV()">Exportar CSV</button>
         <button class="btn btn-outline" id="btnAgregar" onclick="abrirModalAgregar()">+ Agregar militante</button>
@@ -297,7 +298,12 @@
           <h1>Informe Ejecutivo · Distrito 12</h1>
           <p id="kpiFecha"></p>
         </div>
-        <button class="btn btn-gold no-print" onclick="window.print()">Descargar informe (PDF)</button>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select id="kpiComunaFiltro" onchange="renderKPIs()" class="no-print" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;">
+            <option value="">Todas las comunas</option>
+          </select>
+          <button class="btn btn-gold no-print" onclick="window.print()">Descargar informe (PDF)</button>
+        </div>
       </div>
       <div class="kpiCards" id="kpiCards"></div>
       <div class="chartsGrid">
@@ -334,10 +340,23 @@
       <div id="sugerenciasCard" class="chartCard no-print" style="margin-bottom:18px;">
         <h4>Asignar tareas de contacto</h4>
         <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
-          El sistema sugiere a quién priorizar (nunca contactados primero). Elige a quiénes asignarle a cada
-          coordinador y presiona "Asignar y enviar" — recién ahí se crea la tarea y le llega el correo.
+          El sistema sugiere a quién priorizar (nunca contactados primero). Marca a quiénes quieres asignarle a
+          cada coordinador y presiona "Agregar al borrador" — todavía no se envía nada. Cuando termines de armar
+          el borrador, bájalo a la sección de abajo para revisarlo y enviarlo.
         </p>
         <div id="listaSugerencias"></div>
+      </div>
+
+      <div id="borradorTareasCard" class="chartCard no-print" style="margin-bottom:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h4 style="margin:0;">Tareas por enviar (borrador)</h4>
+          <button class="btn btn-gold" onclick="enviarBorradorTareas()">Enviar todas las tareas del borrador</button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
+          Revisa la lista antes de enviar — puedes quitar a quien no corresponda con la ✕. Nada de esto se envía
+          hasta que presiones el botón de arriba.
+        </p>
+        <div id="listaBorrador"></div>
       </div>
 
       <div id="candidatosCard" class="chartCard no-print" style="margin-bottom:18px;">
@@ -473,6 +492,13 @@
       <input type="checkbox" id="dCandidato" style="width:auto;margin:0;"> Intención de candidatura (recibe tareas especiales por correo)
     </label>
     <div class="actionRow"><button class="btn-gold" onclick="guardarRolEstado()">Guardar</button></div>
+  </div>
+  <div class="section" id="seccionCarteraIndividual" style="display:none;">
+    <h4>Cartera territorial</h4>
+    <label>Asignar a coordinador</label>
+    <select id="dCoordinadorCartera"></select>
+    <div class="actionRow"><button class="btn-gold" onclick="asignarEstaPersonaACoordinador()">Asignar</button></div>
+    <div id="carterasActualesPersona" style="font-size:11.5px;color:var(--muted);margin-top:8px;"></div>
   </div>
   <div class="section" id="seccionAccionesRapidas">
     <h4>Acciones rápidas</h4>
@@ -692,6 +718,23 @@
   </div>
 </div>
 
+<!-- MODAL CAMBIO DE ESTADO MASIVO (solo admin) -->
+<div id="modalEstadoMasivoOverlay" onclick="if(event.target===this) cerrarModalEstadoMasivo()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:#fff;border-radius:14px;width:420px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
+      <strong>Cambiar estado a la selección</strong><button onclick="cerrarModalEstadoMasivo()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <p id="descripcionEstadoMasivo" style="font-size:12.5px;color:var(--muted);margin:0 0 14px;"></p>
+      <label style="font-size:11px;color:var(--muted);font-weight:600;">Nuevo estado</label>
+      <select id="nuevoEstadoMasivo" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;"></select>
+    </div>
+    <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);">
+      <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="confirmarEstadoMasivo()">Aplicar cambio</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL LISTADO DE TAREAS (solo admin) -->
 <div id="modalListaTareasOverlay" onclick="if(event.target===this) cerrarModalListaTareas()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
   <div style="background:#fff;border-radius:14px;width:560px;max-width:92vw;margin:40px auto;">
@@ -720,6 +763,7 @@ document.addEventListener('keydown', function(e){
   cerrarModalDetalleCartera();
   cerrarModalOKR();
   cerrarModalListaTareas();
+  cerrarModalEstadoMasivo();
 });
 
 let USUARIO = localStorage.getItem('prysma_usuario') || '';
@@ -729,6 +773,7 @@ let SESSION = {
   nombre: localStorage.getItem('prysma_nombre') || ''
 };
 let MILITANTES = [], ROLES = [], PLANTILLAS = [];
+let EMAILS_ENVIADOS = {};
 let filtrados = [];
 let seleccionados = new Set();
 let pagina = 1;
@@ -835,6 +880,7 @@ async function entrarApp(){
     document.getElementById('tabMapa').style.display='inline-block';
     document.getElementById('btnUsuarios').style.display='inline-flex';
     document.getElementById('tabKpi').innerText = 'Panel de KPIs';
+    document.getElementById('btnEstadoMasivo').style.display='inline-flex';
   }
   if(SESSION.rol==='coordinador'){
     document.getElementById('tabKpi').innerText = 'Mis Tareas';
@@ -854,6 +900,9 @@ async function entrarApp(){
     const selP = document.getElementById('mPlantilla');
     PLANTILLAS.forEach(p=> selP.innerHTML += `<option value="${p.id}">${p.nombre}</option>`);
     aplicarFiltros();
+    if(SESSION.rol==='admin'){
+      apiGet({action:'getCedulasConEmailEnviado'}).then(r=>{ if(r.ok){ EMAILS_ENVIADOS = r.datos; renderTabla(); } });
+    }
   } catch(err){
     mostrarCargando(false);
     toast('No se pudo cargar la base: ' + err.message, 8000);
@@ -998,9 +1047,12 @@ function renderTabla(){
       <td onclick="abrirDrawer('${m.CEDULA}')">${m.EDAD||'-'}</td>
       <td onclick="abrirDrawer('${m.CEDULA}')">${m.ROL? `<span class="rolPill" style="background:${rolColor(m.ROL)}">${m.ROL.trim()}</span>` : '-'}</td>
       <td onclick="abrirDrawer('${m.CEDULA}')">${m.TELEFONO||'-'}</td>
-      <td onclick="event.stopPropagation()">
+      <td onclick="event.stopPropagation()" style="position:relative;">
         ${SESSION.rol==='admin' ? `
-        <button class="iconBtn email" title="${m.EMAIL?'Enviar correo':'Sin email registrado'}" ${m.EMAIL?'':'disabled'} onclick="accionRapidaEmail('${m.CEDULA}')">${ICONO_EMAIL}</button>
+        <span style="position:relative;display:inline-block;">
+          <button class="iconBtn email" title="${m.EMAIL?'Enviar correo':'Sin email registrado'}" ${m.EMAIL?'':'disabled'} onclick="accionRapidaEmail('${m.CEDULA}')">${ICONO_EMAIL}</button>
+          ${EMAILS_ENVIADOS[String(m.CEDULA)] ? `<span title="Correo enviado el ${new Date(EMAILS_ENVIADOS[String(m.CEDULA)]).toLocaleDateString('es-CL')}" style="position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--green);border:1.5px solid #fff;"></span>` : ''}
+        </span>
         <button class="iconBtn wsp" title="${m.TELEFONO?'Abrir WhatsApp':'Sin teléfono registrado'}" ${m.TELEFONO?'':'disabled'} onclick="accionRapidaWhatsApp('${m.CEDULA}')">${ICONO_WSP}</button>` : ''}
       </td>
     </tr>`).join('');
@@ -1049,20 +1101,33 @@ function cambiarTab(tab){
 }
 
 // ---------- KPIs ----------
+function poblarFiltroComunaKPI(){
+  const sel = document.getElementById('kpiComunaFiltro');
+  if(sel.dataset.cargado) return;
+  const comunas = [...new Set(MILITANTES.map(m=>norm(m.COMUNA)))].filter(Boolean).sort();
+  const mapaLabel = {}; MILITANTES.forEach(m=>{ mapaLabel[norm(m.COMUNA)] = titleCase(m.COMUNA); });
+  comunas.forEach(c=> sel.innerHTML += `<option value="${c}">${mapaLabel[c]}</option>`);
+  sel.dataset.cargado = '1';
+}
+
 async function renderKPIs(){
-  const total = MILITANTES.length;
-  const conEmail = MILITANTES.filter(m=>m.EMAIL).length;
-  const conTel = MILITANTES.filter(m=>m.TELEFONO).length;
-  const conRol = MILITANTES.filter(m=>m.ROL).length;
-  const cumpleMes = MILITANTES.filter(m=>coincideFechaEspecial(m,'cumple_mes')).length;
-  const anivMes = MILITANTES.filter(m=>coincideFechaEspecial(m,'aniv_mes')).length;
-  const ingresosMes = MILITANTES.filter(m=>coincideFechaIngreso(m,'1m')).length;
-  const ingresosTrimestre = MILITANTES.filter(m=>coincideFechaIngreso(m,'3m')).length;
-  const edades = MILITANTES.map(m=>Number(m.EDAD)).filter(e=>!isNaN(e)&&e>0);
+  poblarFiltroComunaKPI();
+  const comunaFiltro = document.getElementById('kpiComunaFiltro').value;
+  const MILITANTES_KPI = comunaFiltro ? MILITANTES.filter(m=>norm(m.COMUNA)===comunaFiltro) : MILITANTES;
+
+  const total = MILITANTES_KPI.length;
+  const conEmail = MILITANTES_KPI.filter(m=>m.EMAIL).length;
+  const conTel = MILITANTES_KPI.filter(m=>m.TELEFONO).length;
+  const conRol = MILITANTES_KPI.filter(m=>m.ROL).length;
+  const cumpleMes = MILITANTES_KPI.filter(m=>coincideFechaEspecial(m,'cumple_mes')).length;
+  const anivMes = MILITANTES_KPI.filter(m=>coincideFechaEspecial(m,'aniv_mes')).length;
+  const ingresosMes = MILITANTES_KPI.filter(m=>coincideFechaIngreso(m,'1m')).length;
+  const ingresosTrimestre = MILITANTES_KPI.filter(m=>coincideFechaIngreso(m,'3m')).length;
+  const edades = MILITANTES_KPI.map(m=>Number(m.EDAD)).filter(e=>!isNaN(e)&&e>0);
   const edadProm = edades.length ? Math.round(edades.reduce((a,b)=>a+b,0)/edades.length) : 0;
-  const mujeres = MILITANTES.filter(m=>m.SEXO==='M').length;
-  const varones = MILITANTES.filter(m=>m.SEXO==='V').length;
-  const renunciados = MILITANTES.filter(m=>m.ESTADO==='Renunciado').length;
+  const mujeres = MILITANTES_KPI.filter(m=>m.SEXO==='M').length;
+  const varones = MILITANTES_KPI.filter(m=>m.SEXO==='V').length;
+  const renunciados = MILITANTES_KPI.filter(m=>m.ESTADO==='Renunciado').length;
 
   let hoy = { cumpleanos:0, aniversarios:0, individuales:0, masivosPersonalizados:0, lotesBCC:0, total:0 };
   try{
@@ -1070,7 +1135,7 @@ async function renderKPIs(){
     if(res.ok) hoy = res.datos;
   } catch(err){ /* si falla, se muestran en 0 */ }
 
-  const porComuna = {}; MILITANTES.forEach(m=>{ const k = titleCase(m.COMUNA)||'Sin comuna'; porComuna[k]=(porComuna[k]||0)+1; });
+  const porComuna = {}; MILITANTES_KPI.forEach(m=>{ const k = titleCase(m.COMUNA)||'Sin comuna'; porComuna[k]=(porComuna[k]||0)+1; });
   const comunaTop = Object.entries(porComuna).sort((a,b)=>b[1]-a[1])[0] || ['-',0];
 
   document.getElementById('kpiFecha').innerText = 'Generado el ' + new Date().toLocaleDateString('es-CL', {day:'numeric',month:'long',year:'numeric'});
@@ -1091,16 +1156,16 @@ async function renderKPIs(){
     <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.aniversarios}</div><div class="lbl">Aniversarios enviados hoy</div></div>
     <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.total}</div><div class="lbl">Total correos enviados hoy</div></div>`;
 
-  const porRol = {}; MILITANTES.forEach(m=>{ const k = m.ROL ? m.ROL.trim() : 'Sin rol asignado'; porRol[k]=(porRol[k]||0)+1; });
+  const porRol = {}; MILITANTES_KPI.forEach(m=>{ const k = m.ROL ? m.ROL.trim() : 'Sin rol asignado'; porRol[k]=(porRol[k]||0)+1; });
   const porSexo = { 'Mujer': mujeres, 'Varón': varones };
-  const porEstado = {}; ESTADOS_FIJOS.forEach(e=> porEstado[e] = MILITANTES.filter(m=>m.ESTADO===e).length);
-  porEstado['Sin estado'] = MILITANTES.filter(m=>!m.ESTADO || !ESTADOS_FIJOS.includes(m.ESTADO)).length;
+  const porEstado = {}; ESTADOS_FIJOS.forEach(e=> porEstado[e] = MILITANTES_KPI.filter(m=>m.ESTADO===e).length);
+  porEstado['Sin estado'] = MILITANTES_KPI.filter(m=>!m.ESTADO || !ESTADOS_FIJOS.includes(m.ESTADO)).length;
   const porIngreso = {
     'Último mes': ingresosMes,
-    '1-3 meses': MILITANTES.filter(m=>coincideFechaIngreso(m,'3m') && !coincideFechaIngreso(m,'1m')).length,
-    '3-6 meses': MILITANTES.filter(m=>coincideFechaIngreso(m,'6m') && !coincideFechaIngreso(m,'3m')).length,
-    '6-12 meses': MILITANTES.filter(m=>coincideFechaIngreso(m,'12m') && !coincideFechaIngreso(m,'6m')).length,
-    'Más de 1 año': MILITANTES.filter(m=>coincideFechaIngreso(m,'mas1a')).length
+    '1-3 meses': MILITANTES_KPI.filter(m=>coincideFechaIngreso(m,'3m') && !coincideFechaIngreso(m,'1m')).length,
+    '3-6 meses': MILITANTES_KPI.filter(m=>coincideFechaIngreso(m,'6m') && !coincideFechaIngreso(m,'3m')).length,
+    '6-12 meses': MILITANTES_KPI.filter(m=>coincideFechaIngreso(m,'12m') && !coincideFechaIngreso(m,'6m')).length,
+    'Más de 1 año': MILITANTES_KPI.filter(m=>coincideFechaIngreso(m,'mas1a')).length
   };
 
   _dibujarChart('chartComuna','bar', Object.keys(porComuna), Object.values(porComuna), ['#16233F']);
@@ -1117,8 +1182,9 @@ async function renderKPIs(){
   });
   document.getElementById('tareasCard').style.display = SESSION.rol==='admin' ? 'block':'none';
   document.getElementById('sugerenciasCard').style.display = SESSION.rol==='admin' ? 'block':'none';
+  document.getElementById('borradorTareasCard').style.display = SESSION.rol==='admin' ? 'block':'none';
   document.getElementById('candidatosCard').style.display = SESSION.rol==='admin' ? 'block':'none';
-  if(SESSION.rol==='admin'){ cargarResumenTareas(); cargarCandidatos(); }
+  if(SESSION.rol==='admin'){ cargarResumenTareas(); cargarCandidatos(); cargarBorradorTareas(); }
   document.getElementById('btnAgregarOKR').style.display = SESSION.rol==='admin' ? 'inline-flex':'none';
   cargarOKRs();
   cargarEstadoCampanas();
@@ -1347,6 +1413,23 @@ function renderCapaMapa(){
 // ---------- ASIGNACIÓN DE CARTERAS TERRITORIALES ----------
 let centroElegido = null;
 let marcadorCentro = null;
+async function cargarCoordinadoresParaSelectorIndividual(){
+  const sel = document.getElementById('dCoordinadorCartera');
+  const res = await apiGet({action:'listarUsuarios'});
+  if(!res.ok) return;
+  const coordinadores = res.datos.filter(u=>u.rol==='coordinador' && u.activo);
+  sel.innerHTML = coordinadores.length
+    ? coordinadores.map(u=>`<option value="${u.usuario}">${u.nombre} (${u.usuario})</option>`).join('')
+    : '<option value="">Crea un coordinador primero en "Usuarios"</option>';
+}
+async function asignarEstaPersonaACoordinador(){
+  const usuarioCoordinador = document.getElementById('dCoordinadorCartera').value;
+  if(!usuarioCoordinador){ toast('No hay coordinadores creados'); return; }
+  const res = await apiPost({action:'asignarMilitanteACartera', usuarioCoordinador, cedula: cedulaActiva});
+  toast(res.ok ? 'Asignado correctamente' : (res.error||'Error'));
+  if(res.ok) abrirDrawer(cedulaActiva);
+}
+
 async function cargarCoordinadoresParaCartera(){
   const sel = document.getElementById('selCoordinadorCartera');
   if(sel.dataset.cargado) return;
@@ -1409,6 +1492,31 @@ function cerrarModalOKR(){ document.getElementById('modalOKROverlay').style.disp
 function cambiarTipoOKR(){
   document.getElementById('okrCampoMetrica').style.display = document.getElementById('okrTipo').value==='automatico' ? 'block':'none';
 }
+
+// ---------- CAMBIO DE ESTADO MASIVO ----------
+function abrirModalEstadoMasivo(){
+  if(!seleccionados.size){ toast('Selecciona al menos un militante primero'); return; }
+  document.getElementById('descripcionEstadoMasivo').innerText = `Se cambiará el estado de ${seleccionados.size} militante(s) seleccionado(s).`;
+  const sel = document.getElementById('nuevoEstadoMasivo');
+  sel.innerHTML = ESTADOS_FIJOS.map(e=>`<option value="${e}">${e}</option>`).join('');
+  document.getElementById('modalEstadoMasivoOverlay').style.display='block';
+}
+function cerrarModalEstadoMasivo(){ document.getElementById('modalEstadoMasivoOverlay').style.display='none'; }
+async function confirmarEstadoMasivo(){
+  const nuevoEstado = document.getElementById('nuevoEstadoMasivo').value;
+  const cedulas = [...seleccionados];
+  mostrarCargando(true);
+  const res = await apiPost({action:'actualizarEstadoMasivo', cedulas, nuevoEstado});
+  mostrarCargando(false);
+  toast(res.ok ? `Estado actualizado en ${res.actualizados} militante(s)` : (res.error||'Error'));
+  if(res.ok){
+    cedulas.forEach(c=>{ const m = MILITANTES.find(x=>String(x.CEDULA)===String(c)); if(m) m.ESTADO = nuevoEstado; });
+    seleccionados.clear();
+    cerrarModalEstadoMasivo();
+    aplicarFiltros();
+  }
+}
+
 async function guardarNuevoOKR(){
   const datos = {
     objetivo: document.getElementById('okrObjetivo').value.trim(),
@@ -1480,7 +1588,7 @@ async function cargarSugerencias(){
         <div>
           <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="marcarTodosSugerencia('${c.usuario}', true)">Marcar todos</button>
           <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="marcarTodosSugerencia('${c.usuario}', false)">Ninguno</button>
-          <button class="btn btn-gold" style="padding:5px 12px;font-size:11px;" onclick="asignarSeleccionados('${c.usuario}')">Asignar y enviar</button>
+          <button class="btn btn-gold" style="padding:5px 12px;font-size:11px;" onclick="agregarSeleccionadosABorrador('${c.usuario}')">Agregar al borrador</button>
         </div>
       </div>
       <div style="max-height:180px;overflow-y:auto;">
@@ -1495,14 +1603,45 @@ async function cargarSugerencias(){
 function marcarTodosSugerencia(usuario, valor){
   document.querySelectorAll('.chkSugerencia-'+usuario).forEach(c=>c.checked=valor);
 }
-async function asignarSeleccionados(usuario){
+async function agregarSeleccionadosABorrador(usuario){
   const cedulas = [...document.querySelectorAll('.chkSugerencia-'+usuario+':checked')].map(c=>c.value);
   if(!cedulas.length){ toast('Selecciona al menos una persona'); return; }
   mostrarCargando(true);
-  const res = await apiPost({action:'asignarTareasSeleccionadas', usuarioCoordinador: usuario, cedulas});
+  const res = await apiPost({action:'agregarTareasBorrador', usuarioCoordinador: usuario, cedulas});
   mostrarCargando(false);
-  toast(res.ok ? `${res.asignadas} tarea(s) asignada(s)${res.conCorreo?' y enviadas por correo':' (sin correo: ese usuario no tiene email registrado)'}` : (res.error||'Error'));
-  if(res.ok){ cargarResumenTareas(); }
+  toast(res.ok ? `${res.agregadas} agregada(s) al borrador` : (res.error||'Error'));
+  if(res.ok){ cargarSugerencias(); cargarBorradorTareas(); }
+}
+async function cargarBorradorTareas(){
+  const res = await apiGet({action:'getTareasBorrador'});
+  if(!res.ok){ document.getElementById('listaBorrador').innerHTML = res.error||'Error'; return; }
+  if(!res.datos.length || !res.datos.some(g=>g.tareas.length)){
+    document.getElementById('listaBorrador').innerHTML = '<p style="color:var(--muted);font-size:13px;">Aún no hay tareas en el borrador.</p>';
+    return;
+  }
+  document.getElementById('listaBorrador').innerHTML = res.datos.filter(g=>g.tareas.length).map(g=>`
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <b style="font-size:13px;">${g.nombre} <span style="color:var(--muted);font-weight:400;">(${g.tareas.length} en borrador)${g.email?'':' · sin email, no podrá recibir el correo'}</span></b>
+      <div style="margin-top:8px;">
+        ${g.tareas.map(t=>`
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:12px;">
+            <span>${titleCase(t.nombre)} · ${titleCase(t.comuna)}</span>
+            <button onclick="quitarDeBorrador('${t.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;">✕</button>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+async function quitarDeBorrador(id){
+  const res = await apiPost({action:'eliminarTareaBorrador', id});
+  if(res.ok) cargarBorradorTareas(); else toast(res.error||'Error');
+}
+async function enviarBorradorTareas(){
+  if(!confirm('¿Enviar ahora todas las tareas del borrador? Se les avisará por correo a los coordinadores correspondientes.')) return;
+  mostrarCargando(true);
+  const res = await apiPost({action:'enviarTareasBorrador'});
+  mostrarCargando(false);
+  toast(res.ok ? `Se notificó a ${res.coordinadoresNotificados} coordinador(es)` : (res.error||'Error'));
+  if(res.ok){ cargarBorradorTareas(); cargarResumenTareas(); }
 }
 
 // ---------- TAREAS DE PRECANDIDATOS ----------
@@ -1614,16 +1753,35 @@ function toggleBannerTareas(){
 
 async function cargarMisTareasVista(){
   document.getElementById('listaMisTareas').innerHTML = 'Cargando…';
-  const res = await apiGet({action:'getMisTareasPendientes'});
-  if(!res.ok || !res.datos.length){
-    document.getElementById('listaMisTareas').innerHTML = '<p style="color:var(--muted);font-size:13px;">No tienes tareas de contacto pendientes por ahora 🎉</p>';
-    return;
-  }
-  document.getElementById('listaMisTareas').innerHTML = res.datos.map(t=>`
+  const [resPendientes, resHistorial] = await Promise.all([
+    apiGet({action:'getMisTareasPendientes'}),
+    apiGet({action:'getMiHistorialTareas'})
+  ]);
+  const pendientes = resPendientes.ok ? resPendientes.datos : [];
+  const historial = resHistorial.ok ? resHistorial.datos : [];
+  const completadas = historial.filter(t=>t.estado==='Completada');
+
+  let html = `<div class="kpiCards" style="margin-bottom:20px;">
+    <div class="kpiCard"><div class="num">${pendientes.length}</div><div class="lbl">Pendientes ahora</div></div>
+    <div class="kpiCard"><div class="num">${completadas.length}</div><div class="lbl">Completadas en total</div></div>
+    <div class="kpiCard"><div class="num">${historial.length ? Math.round(completadas.length/historial.length*100) : 0}%</div><div class="lbl">% de cumplimiento</div></div>
+  </div>`;
+
+  html += `<h3 style="font-size:13px;color:var(--navy);margin:0 0 10px;">Pendientes</h3>`;
+  html += pendientes.length ? pendientes.map(t=>`
     <div class="noticiaCard" style="cursor:pointer;" onclick="cambiarTab('militantes'); abrirDrawer('${t.cedula}');">
       <h3 style="margin:0 0 4px;">${titleCase(t.nombre)}</h3>
       <div class="meta">${titleCase(t.comuna)} · ${t.telefono || 'sin teléfono'} · asignada el ${new Date(t.fechaAsignacion).toLocaleDateString('es-CL')}</div>
-    </div>`).join('');
+    </div>`).join('') : '<p style="color:var(--muted);font-size:13px;">No tienes tareas pendientes por ahora 🎉</p>';
+
+  html += `<h3 style="font-size:13px;color:var(--navy);margin:22px 0 10px;">Completadas recientemente</h3>`;
+  html += completadas.length ? completadas.slice(0,20).map(t=>`
+    <div class="noticiaCard" style="border-left-color:var(--green);">
+      <h3 style="margin:0 0 4px;">${titleCase(t.nombre)}</h3>
+      <div class="meta">${titleCase(t.comuna)} · completada el ${new Date(t.fechaCompletada).toLocaleDateString('es-CL')}</div>
+    </div>`).join('') : '<p style="color:var(--muted);font-size:13px;">Aún no tienes tareas completadas.</p>';
+
+  document.getElementById('listaMisTareas').innerHTML = html;
 }
 
 // ---------- GESTIÓN DE USUARIOS ----------
@@ -1691,6 +1849,16 @@ function abrirDrawer(cedula){
   const soloView = SESSION.rol==='viewer';
   ['dEmail','dTelefono','dDomicilio','dComuna','dEstado','dNotaNueva'].forEach(id=>document.getElementById(id).disabled=soloView);
   document.getElementById('dRol').disabled = SESSION.rol!=='admin';
+  document.getElementById('seccionCarteraIndividual').style.display = SESSION.rol==='admin' ? 'block':'none';
+  if(SESSION.rol==='admin'){
+    cargarCoordinadoresParaSelectorIndividual();
+    document.getElementById('carterasActualesPersona').innerText = 'Cargando…';
+    apiGet({action:'getCarterasDeCedula', cedula}).then(res=>{
+      document.getElementById('carterasActualesPersona').innerText = (res.ok && res.datos.length)
+        ? 'Actualmente en la cartera de: ' + res.datos.map(c=>c.nombre).join(', ')
+        : 'No está en ninguna cartera todavía.';
+    });
+  }
   document.getElementById('seccionAccionesRapidas').style.display = SESSION.rol==='admin' ? 'block':'none';
   document.getElementById('btnEliminarMilitante').style.display = SESSION.rol==='admin' ? 'block':'none';
   document.getElementById('overlay').style.display='block';
@@ -1794,6 +1962,7 @@ async function enviarBienvenidaInd(){
   if(!confirm('¿Enviar correo de bienvenida a esta persona?')) return;
   const res = await apiPost({action:'enviarBienvenida', cedula: cedulaActiva, usuario: USUARIO});
   toast(res.ok ? 'Bienvenida enviada' : (res.error||'Error'));
+  if(res.ok) refrescarEmailsEnviados();
 }
 function abrirWhatsAppMasivo(){
   const objetivo = seleccionados.size ? [...seleccionados] : filtrados.map(m=>String(m.CEDULA));
@@ -1873,6 +2042,7 @@ async function enviarDesdeModal(){
     mostrarCargando(false);
     toast(res.ok ? 'Correo enviado' : (res.error||'Error'));
     cerrarModal();
+    if(res.ok) refrescarEmailsEnviados();
     return;
   }
 
@@ -1897,6 +2067,7 @@ async function enviarDesdeModal(){
     toast(`Enviado a ${enviados} de ${objetivo.length} seleccionados`);
     cerrarModal();
     seleccionados.clear(); renderTabla();
+    if(enviados) refrescarEmailsEnviados();
   } else {
     const filtros = {
       comuna: document.getElementById('fComuna').value, sexo: document.getElementById('fSexo').value,
@@ -1907,7 +2078,13 @@ async function enviarDesdeModal(){
     mostrarCargando(false);
     toast(res.ok ? `Enviado a ${res.enviados} de ${res.totalCoincidencias} coincidencias` : (res.error||'Error'));
     cerrarModal();
+    if(res.ok && res.enviados) refrescarEmailsEnviados();
   }
+}
+async function refrescarEmailsEnviados(){
+  if(SESSION.rol!=='admin') return;
+  const r = await apiGet({action:'getCedulasConEmailEnviado'});
+  if(r.ok){ EMAILS_ENVIADOS = r.datos; renderTabla(); }
 }
 
 function exportarCSV(){
