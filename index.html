@@ -203,7 +203,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-10</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-11</p>
   </div>
 </div>
 
@@ -1609,7 +1609,8 @@ async function verListaTareas(usuario, nombre){
         <div><b>${titleCase(t.nombre)}</b> <span style="color:var(--muted);">· ${titleCase(t.comuna)} · asignada ${new Date(t.fechaAsignacion).toLocaleDateString('es-CL')}</span></div>
         <span class="okrBadge" style="background:${t.estado==='Completada'?'#1E8E5A':'#C9A227'};">${t.estado}</span>
       </div>
-      ${t.comentario ? `<div style="color:var(--muted);margin-top:3px;"><i>${t.comentario}</i></div>` : ''}
+      ${t.comentario ? `<div style="color:var(--muted);margin-top:3px;"><i>Comentario asignado: ${t.comentario}</i></div>` : ''}
+      ${t.notaCompletada ? `<div style="margin-top:5px;padding:6px 8px;background:#F0F9F2;border-radius:6px;color:#166534;"><b>Nota del coordinador:</b> ${t.notaCompletada}</div>` : ''}
     </div>`).join('');
 }
 function cerrarModalListaTareas(){ document.getElementById('modalListaTareasOverlay').style.display='none'; }
@@ -1871,6 +1872,7 @@ async function cargarMisTareasVista(){
     <div class="noticiaCard" style="border-left-color:var(--green);">
       <h3 style="margin:0 0 4px;">${titleCase(t.nombre)}</h3>
       <div class="meta">${titleCase(t.comuna)} · completada el ${new Date(t.fechaCompletada).toLocaleDateString('es-CL')}</div>
+      ${t.notaCompletada ? `<p style="margin:6px 0 0;font-size:12px;color:var(--text);">${t.notaCompletada}</p>` : ''}
     </div>`).join('') : '<p style="color:var(--muted);font-size:13px;">Aún no tienes tareas completadas.</p>';
 
   document.getElementById('listaMisTareas').innerHTML = html;
