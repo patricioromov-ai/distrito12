@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sistema Integrado de Gestión Territorial Distrital D12</title>
+<title>PRYSMA · Gestión Distrital D12</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -196,21 +196,21 @@
 
 <div id="loginScreen" style="display:none;">
   <div id="loginBox">
-    <div class="logo">A</div>
-    <h1>Sistema Integrado de Gestión Territorial</h1>
-    <p>Sistema Integrado de Gestión Territorial · Distrito 12</p>
+    <div class="logo">P</div>
+    <h1>PRYSMA</h1>
+    <p>Gestión Distrital · Distrito 12</p>
     <input type="text" id="usuarioInput" placeholder="Usuario" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('passInput').focus()">
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-9</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-10</p>
   </div>
 </div>
 
 <div id="app">
   <header>
     <div class="left">
-      <div class="brand"><div class="logo">A</div>Sistema Integrado de Gestión Territorial <span>Distrito 12</span></div>
+      <div class="brand"><div class="logo">P</div>PRYSMA <span>Distrito 12</span></div>
       <nav>
         <button id="tabMilitantes" class="active" onclick="cambiarTab('militantes')">Militantes</button>
         <button id="tabKpi" onclick="cambiarTab(SESSION.rol==='admin' ? 'kpi' : 'mistareas')">Panel de KPIs</button>
@@ -272,7 +272,7 @@
     <div id="toolbar2">
       <span id="selCount">0 seleccionados</span>
       <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="seleccionados.clear(); renderTabla();">Limpiar selección</button>
-      <button class="btn btn-outline" id="btnEstadoMasivo" style="padding:5px 10px;font-size:11px;display:none;" onclick="abrirModalEstadoMasivo()">Cambiar estado a selección</button>
+      <button class="btn btn-outline" id="btnEstadoMasivo" style="padding:5px 10px;font-size:11px;display:none;" onclick="abrirModalEstadoMasivo()">Cambiar estado/rol a selección</button>
       <div class="btnRow">
         <button class="btn btn-outline" onclick="exportarCSV()">Exportar CSV</button>
         <button class="btn btn-outline" id="btnAgregar" onclick="abrirModalAgregar()">+ Agregar militante</button>
@@ -353,9 +353,22 @@
           <button class="btn btn-gold" onclick="enviarBorradorTareas()">Enviar todas las tareas del borrador</button>
         </div>
         <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
-          Revisa la lista antes de enviar — puedes quitar a quien no corresponda con la ✕. Nada de esto se envía
-          hasta que presiones el botón de arriba.
+          Revisa la lista antes de enviar — edita el comentario si quieres, o quita a quien no corresponda con la
+          ✕. Nada de esto se envía hasta que presiones el botón de arriba.
         </p>
+
+        <div style="border:1px dashed var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px;">+ Agregar tarea manual (elige a cualquier militante, no solo sugeridos)</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="buscarMilitanteManual" placeholder="Buscar por nombre o cédula…" style="flex:1;min-width:180px;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;" oninput="buscarMilitanteParaTareaManual(this.value)">
+            <select id="coordinadorTareaManual" style="padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"></select>
+          </div>
+          <div id="resultadosBusquedaManual" style="max-height:120px;overflow-y:auto;margin-top:6px;"></div>
+          <div id="personaElegidaManual" style="font-size:12px;margin-top:6px;display:none;padding:6px 8px;background:#F4F5F7;border-radius:6px;"></div>
+          <input type="text" id="comentarioTareaManual" placeholder="Comentario (opcional)…" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;margin-top:6px;">
+          <button class="btn btn-outline" style="margin-top:8px;padding:6px 14px;font-size:11.5px;" onclick="confirmarTareaManual()">Agregar al borrador</button>
+        </div>
+
         <div id="listaBorrador"></div>
       </div>
 
@@ -718,16 +731,21 @@
   </div>
 </div>
 
-<!-- MODAL CAMBIO DE ESTADO MASIVO (solo admin) -->
+<!-- MODAL CAMBIO DE ESTADO/ROL MASIVO (solo admin) -->
 <div id="modalEstadoMasivoOverlay" onclick="if(event.target===this) cerrarModalEstadoMasivo()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
   <div style="background:#fff;border-radius:14px;width:420px;max-width:92vw;margin:40px auto;">
     <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
-      <strong>Cambiar estado a la selección</strong><button onclick="cerrarModalEstadoMasivo()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+      <strong>Cambiar a la selección</strong><button onclick="cerrarModalEstadoMasivo()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
     </div>
     <div class="mbody" style="padding:22px;">
       <p id="descripcionEstadoMasivo" style="font-size:12.5px;color:var(--muted);margin:0 0 14px;"></p>
-      <label style="font-size:11px;color:var(--muted);font-weight:600;">Nuevo estado</label>
-      <select id="nuevoEstadoMasivo" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;"></select>
+      <label style="font-size:11px;color:var(--muted);font-weight:600;">¿Qué quieres cambiar?</label>
+      <div class="modoTabs" style="margin-top:4px;">
+        <div class="modoTab active" id="modoCampoEstado" onclick="cambiarCampoMasivo('estado')">Estado</div>
+        <div class="modoTab" id="modoCampoRol" onclick="cambiarCampoMasivo('rol')">Rol</div>
+      </div>
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:14px;display:block;">Nuevo valor</label>
+      <select id="nuevoValorMasivo" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;"></select>
     </div>
     <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);">
       <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="confirmarEstadoMasivo()">Aplicar cambio</button>
@@ -1184,7 +1202,7 @@ async function renderKPIs(){
   document.getElementById('sugerenciasCard').style.display = SESSION.rol==='admin' ? 'block':'none';
   document.getElementById('borradorTareasCard').style.display = SESSION.rol==='admin' ? 'block':'none';
   document.getElementById('candidatosCard').style.display = SESSION.rol==='admin' ? 'block':'none';
-  if(SESSION.rol==='admin'){ cargarResumenTareas(); cargarCandidatos(); cargarBorradorTareas(); }
+  if(SESSION.rol==='admin'){ cargarResumenTareas(); cargarCandidatos(); cargarBorradorTareas(); cargarCoordinadoresParaTareaManual(); }
   document.getElementById('btnAgregarOKR').style.display = SESSION.rol==='admin' ? 'inline-flex':'none';
   cargarOKRs();
   cargarEstadoCampanas();
@@ -1493,24 +1511,40 @@ function cambiarTipoOKR(){
   document.getElementById('okrCampoMetrica').style.display = document.getElementById('okrTipo').value==='automatico' ? 'block':'none';
 }
 
-// ---------- CAMBIO DE ESTADO MASIVO ----------
+// ---------- CAMBIO DE ESTADO/ROL MASIVO ----------
+let campoMasivoActual = 'estado';
 function abrirModalEstadoMasivo(){
   if(!seleccionados.size){ toast('Selecciona al menos un militante primero'); return; }
-  document.getElementById('descripcionEstadoMasivo').innerText = `Se cambiará el estado de ${seleccionados.size} militante(s) seleccionado(s).`;
-  const sel = document.getElementById('nuevoEstadoMasivo');
-  sel.innerHTML = ESTADOS_FIJOS.map(e=>`<option value="${e}">${e}</option>`).join('');
+  document.getElementById('descripcionEstadoMasivo').innerText = `Se aplicará a ${seleccionados.size} militante(s) seleccionado(s).`;
+  cambiarCampoMasivo('estado');
   document.getElementById('modalEstadoMasivoOverlay').style.display='block';
+}
+function cambiarCampoMasivo(campo){
+  campoMasivoActual = campo;
+  document.getElementById('modoCampoEstado').classList.toggle('active', campo==='estado');
+  document.getElementById('modoCampoRol').classList.toggle('active', campo==='rol');
+  const sel = document.getElementById('nuevoValorMasivo');
+  if(campo==='estado'){
+    sel.innerHTML = ESTADOS_FIJOS.map(e=>`<option value="${e}">${e}</option>`).join('');
+  } else {
+    sel.innerHTML = '<option value="">Sin rol</option>' + ROLES.map(r=>`<option value="${r.rol.trim()}">${r.rol.trim()}</option>`).join('');
+  }
 }
 function cerrarModalEstadoMasivo(){ document.getElementById('modalEstadoMasivoOverlay').style.display='none'; }
 async function confirmarEstadoMasivo(){
-  const nuevoEstado = document.getElementById('nuevoEstadoMasivo').value;
+  const nuevoValor = document.getElementById('nuevoValorMasivo').value;
   const cedulas = [...seleccionados];
   mostrarCargando(true);
-  const res = await apiPost({action:'actualizarEstadoMasivo', cedulas, nuevoEstado});
+  const accion = campoMasivoActual==='estado' ? 'actualizarEstadoMasivo' : 'actualizarRolMasivo';
+  const payload = campoMasivoActual==='estado' ? {action:accion, cedulas, nuevoEstado:nuevoValor} : {action:accion, cedulas, nuevoRol:nuevoValor};
+  const res = await apiPost(payload);
   mostrarCargando(false);
-  toast(res.ok ? `Estado actualizado en ${res.actualizados} militante(s)` : (res.error||'Error'));
+  toast(res.ok ? `${campoMasivoActual==='estado'?'Estado':'Rol'} actualizado en ${res.actualizados} militante(s)` : (res.error||'Error'));
   if(res.ok){
-    cedulas.forEach(c=>{ const m = MILITANTES.find(x=>String(x.CEDULA)===String(c)); if(m) m.ESTADO = nuevoEstado; });
+    cedulas.forEach(c=>{
+      const m = MILITANTES.find(x=>String(x.CEDULA)===String(c));
+      if(m){ if(campoMasivoActual==='estado') m.ESTADO = nuevoValor; else m.ROL = nuevoValor; }
+    });
     seleccionados.clear();
     cerrarModalEstadoMasivo();
     aplicarFiltros();
@@ -1570,9 +1604,12 @@ async function verListaTareas(usuario, nombre){
     return;
   }
   document.getElementById('listaDetalleTareas').innerHTML = res.datos.map(t=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;">
-      <div><b>${titleCase(t.nombre)}</b> <span style="color:var(--muted);">· ${titleCase(t.comuna)} · asignada ${new Date(t.fechaAsignacion).toLocaleDateString('es-CL')}</span></div>
-      <span class="okrBadge" style="background:${t.estado==='Completada'?'#1E8E5A':'#C9A227'};">${t.estado}</span>
+    <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div><b>${titleCase(t.nombre)}</b> <span style="color:var(--muted);">· ${titleCase(t.comuna)} · asignada ${new Date(t.fechaAsignacion).toLocaleDateString('es-CL')}</span></div>
+        <span class="okrBadge" style="background:${t.estado==='Completada'?'#1E8E5A':'#C9A227'};">${t.estado}</span>
+      </div>
+      ${t.comentario ? `<div style="color:var(--muted);margin-top:3px;"><i>${t.comentario}</i></div>` : ''}
     </div>`).join('');
 }
 function cerrarModalListaTareas(){ document.getElementById('modalListaTareasOverlay').style.display='none'; }
@@ -1592,11 +1629,13 @@ async function cargarSugerencias(){
         </div>
       </div>
       <div style="max-height:180px;overflow-y:auto;">
-        ${c.sugerencias.map(s=>`
-          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;">
-            <input type="checkbox" class="chkSugerencia-${c.usuario}" value="${s.cedula}">
-            ${titleCase(s.nombre)} · ${titleCase(s.comuna)} · ${s.diasSinContacto===null?'nunca contactado':'hace '+s.diasSinContacto+' días'}
-          </label>`).join('')}
+        ${c.sugerencias.map(s=>{
+          const comentario = s.diasSinContacto===null ? 'Nunca contactado' : 'Hace '+s.diasSinContacto+' días sin contacto';
+          return `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;">
+            <input type="checkbox" class="chkSugerencia-${c.usuario}" value="${s.cedula}" data-comentario="${comentario}">
+            ${titleCase(s.nombre)} · ${titleCase(s.comuna)} · ${comentario.toLowerCase()}
+          </label>`;
+        }).join('')}
       </div>
     </div>`).join('');
 }
@@ -1604,10 +1643,11 @@ function marcarTodosSugerencia(usuario, valor){
   document.querySelectorAll('.chkSugerencia-'+usuario).forEach(c=>c.checked=valor);
 }
 async function agregarSeleccionadosABorrador(usuario){
-  const cedulas = [...document.querySelectorAll('.chkSugerencia-'+usuario+':checked')].map(c=>c.value);
-  if(!cedulas.length){ toast('Selecciona al menos una persona'); return; }
+  const checks = [...document.querySelectorAll('.chkSugerencia-'+usuario+':checked')];
+  if(!checks.length){ toast('Selecciona al menos una persona'); return; }
+  const items = checks.map(c=>({cedula: c.value, comentario: c.dataset.comentario||''}));
   mostrarCargando(true);
-  const res = await apiPost({action:'agregarTareasBorrador', usuarioCoordinador: usuario, cedulas});
+  const res = await apiPost({action:'agregarTareasBorrador', usuarioCoordinador: usuario, items});
   mostrarCargando(false);
   toast(res.ok ? `${res.agregadas} agregada(s) al borrador` : (res.error||'Error'));
   if(res.ok){ cargarSugerencias(); cargarBorradorTareas(); }
@@ -1624,12 +1664,63 @@ async function cargarBorradorTareas(){
       <b style="font-size:13px;">${g.nombre} <span style="color:var(--muted);font-weight:400;">(${g.tareas.length} en borrador)${g.email?'':' · sin email, no podrá recibir el correo'}</span></b>
       <div style="margin-top:8px;">
         ${g.tareas.map(t=>`
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:12px;">
-            <span>${titleCase(t.nombre)} · ${titleCase(t.comuna)}</span>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;border-top:1px solid var(--border);">
+            <div style="flex:0 0 200px;">${titleCase(t.nombre)} <span style="color:var(--muted);">· ${titleCase(t.comuna)}</span></div>
+            <input type="text" value="${(t.comentario||'').replace(/"/g,'&quot;')}" placeholder="Comentario para el coordinador…" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;" onchange="editarComentarioTarea('${t.id}', this.value)">
             <button onclick="quitarDeBorrador('${t.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;">✕</button>
           </div>`).join('')}
       </div>
     </div>`).join('');
+}
+async function editarComentarioTarea(id, comentario){
+  const res = await apiPost({action:'actualizarComentarioTarea', id, comentario});
+  if(!res.ok) toast(res.error||'Error');
+}
+
+// ---------- TAREA MANUAL (elegir a cualquier militante) ----------
+let personaElegidaManualCedula = null;
+function buscarMilitanteParaTareaManual(texto){
+  const cont = document.getElementById('resultadosBusquedaManual');
+  if(texto.trim().length < 2){ cont.innerHTML=''; return; }
+  const q = texto.toLowerCase();
+  const resultados = MILITANTES.filter(m=>String(m.NOMBRE).toLowerCase().includes(q) || String(m.CEDULA).includes(q)).slice(0,8);
+  cont.innerHTML = resultados.length ? resultados.map(m=>`
+    <div style="padding:5px 8px;font-size:12px;cursor:pointer;border-radius:5px;" onmouseover="this.style.background='#F4F5F7'" onmouseout="this.style.background='transparent'" onclick="elegirPersonaManual('${m.CEDULA}')">
+      ${titleCase(m.NOMBRE)} · ${titleCase(m.COMUNA)}
+    </div>`).join('') : '<div style="font-size:11.5px;color:var(--muted);padding:4px 8px;">Sin resultados</div>';
+}
+function elegirPersonaManual(cedula){
+  const m = MILITANTES.find(x=>String(x.CEDULA)===String(cedula));
+  personaElegidaManualCedula = cedula;
+  document.getElementById('personaElegidaManual').style.display='block';
+  document.getElementById('personaElegidaManual').innerText = `Elegido: ${titleCase(m.NOMBRE)} (${titleCase(m.COMUNA)})`;
+  document.getElementById('resultadosBusquedaManual').innerHTML='';
+  document.getElementById('buscarMilitanteManual').value='';
+}
+async function cargarCoordinadoresParaTareaManual(){
+  const sel = document.getElementById('coordinadorTareaManual');
+  const res = await apiGet({action:'listarUsuarios'});
+  if(!res.ok) return;
+  const coordinadores = res.datos.filter(u=>u.rol==='coordinador' && u.activo);
+  sel.innerHTML = coordinadores.length
+    ? coordinadores.map(u=>`<option value="${u.usuario}">${u.nombre}</option>`).join('')
+    : '<option value="">Crea un coordinador primero</option>';
+}
+async function confirmarTareaManual(){
+  if(!personaElegidaManualCedula){ toast('Busca y elige a una persona primero'); return; }
+  const usuarioCoordinador = document.getElementById('coordinadorTareaManual').value;
+  if(!usuarioCoordinador){ toast('Elige un coordinador'); return; }
+  const comentario = document.getElementById('comentarioTareaManual').value.trim();
+  mostrarCargando(true);
+  const res = await apiPost({action:'agregarTareaManual', usuarioCoordinador, cedula: personaElegidaManualCedula, comentario});
+  mostrarCargando(false);
+  toast(res.ok ? 'Tarea agregada al borrador' : (res.error||'Error'));
+  if(res.ok){
+    personaElegidaManualCedula = null;
+    document.getElementById('personaElegidaManual').style.display='none';
+    document.getElementById('comentarioTareaManual').value='';
+    cargarBorradorTareas();
+  }
 }
 async function quitarDeBorrador(id){
   const res = await apiPost({action:'eliminarTareaBorrador', id});
@@ -1742,7 +1833,7 @@ async function cargarBannerTareas(){
   document.getElementById('bannerTareasTitulo').innerText = `📋 Tienes ${res.datos.length} contacto(s) pendiente(s) — haz clic para ver el detalle`;
   document.getElementById('bannerTareasLista').innerHTML = res.datos.map(t=>`
     <div style="padding:6px 0;border-top:1px solid rgba(255,255,255,.15);cursor:pointer;" onclick="event.stopPropagation(); cambiarTab('militantes'); abrirDrawer('${t.cedula}');">
-      ${titleCase(t.nombre)} · ${titleCase(t.comuna)} · ${t.telefono||'sin teléfono'}
+      ${titleCase(t.nombre)} · ${titleCase(t.comuna)} · ${t.telefono||'sin teléfono'}${t.comentario?' · <i>'+t.comentario+'</i>':''}
     </div>`).join('');
   banner.style.display='block';
 }
@@ -1772,6 +1863,7 @@ async function cargarMisTareasVista(){
     <div class="noticiaCard" style="cursor:pointer;" onclick="cambiarTab('militantes'); abrirDrawer('${t.cedula}');">
       <h3 style="margin:0 0 4px;">${titleCase(t.nombre)}</h3>
       <div class="meta">${titleCase(t.comuna)} · ${t.telefono || 'sin teléfono'} · asignada el ${new Date(t.fechaAsignacion).toLocaleDateString('es-CL')}</div>
+      ${t.comentario ? `<p style="margin:6px 0 0;font-size:12px;color:var(--text);"><i>${t.comentario}</i></p>` : ''}
     </div>`).join('') : '<p style="color:var(--muted);font-size:13px;">No tienes tareas pendientes por ahora 🎉</p>';
 
   html += `<h3 style="font-size:13px;color:var(--navy);margin:22px 0 10px;">Completadas recientemente</h3>`;
