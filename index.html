@@ -204,7 +204,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-15</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-16</p>
   </div>
 </div>
 
@@ -394,6 +394,18 @@
           <tbody id="tbodyCampanas"></tbody>
         </table>
         <button class="btn btn-outline" style="margin-top:12px;" onclick="forzarEnvioLote()">Forzar envío del próximo lote ahora</button>
+      </div>
+
+      <div id="actividadesCard" class="chartCard no-print" style="margin-top:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h4 style="margin:0;">Actividades y reuniones</h4>
+          <button class="btn btn-gold" onclick="abrirModalActividad()">+ Nueva actividad</button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
+          Se agenda directamente en Google Calendar. Después de realizada, registra asistencia y duración real
+          para medir el impacto y generar el acta en PDF.
+        </p>
+        <div id="listaActividades"></div>
       </div>
     </div>
 
@@ -781,6 +793,73 @@
   </div>
 </div>
 
+<!-- MODAL NUEVA ACTIVIDAD -->
+<div id="modalActividadOverlay" onclick="if(event.target===this) cerrarModalActividad()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:#fff;border-radius:14px;width:540px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
+      <strong>Nueva actividad</strong><button onclick="cerrarModalActividad()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <label style="font-size:11px;color:var(--muted);font-weight:600;">Título</label>
+      <input id="actTitulo" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;" placeholder="Ej: Reunión de coordinadores comunales">
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Descripción</label>
+      <textarea id="actDescripcion" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;min-height:70px;"></textarea>
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Lugar</label>
+      <input id="actLugar" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;" placeholder="Ej: Sede distrital, Puente Alto">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Inicio</label>
+          <input id="actInicio" type="datetime-local" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Término</label>
+          <input id="actFin" type="datetime-local" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+        </div>
+      </div>
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Modo de invitación</label>
+      <div class="modoTabs" style="margin-top:4px;">
+        <div class="modoTab active" id="modoInvitNativa" onclick="cambiarModoInvitacion('nativa')">Invitación de Calendar</div>
+        <div class="modoTab" id="modoInvitLink" onclick="cambiarModoInvitacion('link')">Correo con link</div>
+      </div>
+      <p id="explicacionInvitacion" style="font-size:11.5px;color:var(--muted);margin:8px 0 0;"></p>
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Destinatarios</label>
+      <p style="font-size:12px;color:var(--muted);margin:2px 0 8px;">
+        Si tienes militantes seleccionados en la pestaña Militantes, se usará esa selección. Si no, se usan los
+        filtros de abajo (déjalos todos en blanco para invitar a toda la base).
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="actFiltroComuna" style="padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"><option value="">Todas las comunas</option></select>
+        <select id="actFiltroSexo" style="padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"><option value="">Todos</option><option value="M">Mujer</option><option value="V">Varón</option></select>
+        <select id="actFiltroRol" style="padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;"><option value="">Todos los roles</option></select>
+      </div>
+      <div id="actDestinatariosInfo" style="font-size:12px;color:var(--muted);margin-top:8px;"></div>
+    </div>
+    <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);">
+      <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="confirmarNuevaActividad()">Crear e invitar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REGISTRAR RESULTADOS DE ACTIVIDAD -->
+<div id="modalResultadosOverlay" onclick="if(event.target===this) cerrarModalResultados()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:#fff;border-radius:14px;width:460px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:14px 14px 0 0;">
+      <strong>Registrar resultados</strong><button onclick="cerrarModalResultados()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <label style="font-size:11px;color:var(--muted);font-weight:600;">Asistentes reales</label>
+      <input id="resAsistentes" type="number" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Duración real (minutos)</label>
+      <input id="resDuracion" type="number" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;">
+      <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Comentarios y acuerdos</label>
+      <textarea id="resComentarios" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;min-height:90px;" placeholder="Temas tratados, acuerdos, próximos pasos…"></textarea>
+    </div>
+    <div class="mfoot" style="padding:16px 22px;text-align:right;border-top:1px solid var(--border);">
+      <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="confirmarResultadosActividad()">Guardar resultados</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL LISTADO DE TAREAS (solo admin) -->
 <div id="modalListaTareasOverlay" onclick="if(event.target===this) cerrarModalListaTareas()" style="display:none;position:fixed;inset:0;background:rgba(11,18,32,.55);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
   <div style="background:#fff;border-radius:14px;width:560px;max-width:92vw;margin:40px auto;">
@@ -810,6 +889,8 @@ document.addEventListener('keydown', function(e){
   cerrarModalOKR();
   cerrarModalListaTareas();
   cerrarModalEstadoMasivo();
+  cerrarModalActividad();
+  cerrarModalResultados();
 });
 
 let USUARIO = localStorage.getItem('prysma_usuario') || '';
@@ -1241,6 +1322,7 @@ function cargarGestionAdmin(){
   cargarCandidatos();
   cargarCoordinadoresParaTareaManual();
   cargarEstadoCampanas();
+  cargarActividades();
 }
 
 function generarInformeEjecutivo(k){
@@ -2327,6 +2409,132 @@ function exportarCSV(){
   link.download = 'militantes_distrito12.csv';
   link.click();
 }
+
+// ---------- ACTIVIDADES Y REUNIONES ----------
+let modoInvitacionActual = 'nativa';
+let actividadActivaId = null;
+
+async function cargarActividades(){
+  const cont = document.getElementById('listaActividades');
+  cont.innerHTML = 'Cargando…';
+  const res = await apiGet({action:'listarActividades'});
+  if(!res.ok){ cont.innerHTML = res.error||'Error'; return; }
+  if(!res.datos.length){ cont.innerHTML = '<p style="color:var(--muted);font-size:13px;">Aún no hay actividades creadas.</p>'; return; }
+  cont.innerHTML = res.datos.map(a=>{
+    const fecha = new Date(a.fechaInicio).toLocaleString('es-CL', {dateStyle:'medium', timeStyle:'short'});
+    const badge = a.estado==='Realizada' ? `<span class="okrBadge" style="background:#1E8E5A;">Realizada</span>` : `<span class="okrBadge" style="background:#C9A227;">Programada</span>`;
+    return `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+        <div>
+          <b style="font-size:13px;">${a.titulo}</b> ${badge}
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;">${fecha} · ${a.lugar||'Sin lugar especificado'} · ${a.invitados} invitado(s)</div>
+          ${a.estado==='Realizada' ? `<div style="font-size:12px;margin-top:5px;">Asistencia real: <b>${a.asistentesReales}</b> (${a.pctParticipacion}% de participación) · Duración: ${a.duracionRealMin||'-'} min</div>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${a.estado==='Programada' ? `<button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="abrirModalResultados('${a.id}')">Registrar resultados</button>` : ''}
+          ${a.estado==='Realizada' && !a.pdfUrl ? `<button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="generarActa('${a.id}')">Generar acta (PDF)</button>` : ''}
+          ${a.pdfUrl ? `<a href="${a.pdfUrl}" target="_blank" rel="noopener" class="btn btn-outline" style="padding:5px 10px;font-size:11px;text-decoration:none;">Ver acta (PDF)</a>` : ''}
+          <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;color:var(--red);" onclick="borrarActividad('${a.id}')">Eliminar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirModalActividad(){
+  document.getElementById('actTitulo').value='';
+  document.getElementById('actDescripcion').value='';
+  document.getElementById('actLugar').value='';
+  document.getElementById('actInicio').value='';
+  document.getElementById('actFin').value='';
+  cambiarModoInvitacion('nativa');
+  const fComuna = document.getElementById('actFiltroComuna');
+  if(!fComuna.dataset.cargado){
+    const comunas = [...new Set(MILITANTES.map(m=>titleCase(m.COMUNA)))].sort();
+    comunas.forEach(c=> fComuna.innerHTML += `<option value="${c.toUpperCase()}">${c}</option>`);
+    const fRol = document.getElementById('actFiltroRol');
+    ROLES.forEach(r=> fRol.innerHTML += `<option value="${r.rol.trim()}">${r.rol.trim()}</option>`);
+    fComuna.dataset.cargado='1';
+  }
+  actualizarInfoDestinatariosActividad();
+  document.getElementById('modalActividadOverlay').style.display='block';
+}
+function cerrarModalActividad(){ document.getElementById('modalActividadOverlay').style.display='none'; }
+function cambiarModoInvitacion(modo){
+  modoInvitacionActual = modo;
+  document.getElementById('modoInvitNativa').classList.toggle('active', modo==='nativa');
+  document.getElementById('modoInvitLink').classList.toggle('active', modo==='link');
+  document.getElementById('explicacionInvitacion').innerText = modo==='nativa'
+    ? 'Cada invitado recibe la invitación oficial de Google Calendar con botón de Aceptar/Rechazar. Recomendado para grupos chicos o medianos (equipo, un sector) — Google puede frenar invitaciones masivas a cientos de personas de una sola vez.'
+    : 'Se envía un correo con los datos de la actividad y un link para que cada uno la agregue a su propio calendario si quiere. Más seguro para convocatorias grandes, sin confirmación automática de asistencia.';
+}
+function actualizarInfoDestinatariosActividad(){
+  const objetivo = seleccionados.size ? seleccionados.size : null;
+  document.getElementById('actDestinatariosInfo').innerText = objetivo
+    ? `Se usará tu selección actual de la pestaña Militantes: ${objetivo} persona(s).`
+    : 'No hay selección activa — se usarán los filtros de comuna/sexo/rol de arriba (vacíos = toda la base).';
+}
+async function confirmarNuevaActividad(){
+  const datos = {
+    titulo: document.getElementById('actTitulo').value.trim(),
+    descripcion: document.getElementById('actDescripcion').value.trim(),
+    lugar: document.getElementById('actLugar').value.trim(),
+    fechaInicio: document.getElementById('actInicio').value,
+    fechaFin: document.getElementById('actFin').value,
+    tipoInvitacion: modoInvitacionActual
+  };
+  if(!datos.titulo || !datos.fechaInicio || !datos.fechaFin){ toast('Completa título y fechas'); return; }
+  const payload = {action:'crearActividad', datos};
+  if(seleccionados.size){
+    payload.cedulas = [...seleccionados];
+  } else {
+    payload.filtros = {
+      comuna: document.getElementById('actFiltroComuna').value,
+      sexo: document.getElementById('actFiltroSexo').value,
+      rol: document.getElementById('actFiltroRol').value
+    };
+  }
+  mostrarCargando(true);
+  const res = await apiPost(payload);
+  mostrarCargando(false);
+  toast(res.ok ? `Actividad creada — ${res.conEmail} de ${res.invitados} invitados tienen email registrado` : (res.error||'Error'));
+  if(res.ok){ cerrarModalActividad(); cargarActividades(); }
+}
+
+function abrirModalResultados(id){
+  actividadActivaId = id;
+  document.getElementById('resAsistentes').value='';
+  document.getElementById('resDuracion').value='';
+  document.getElementById('resComentarios').value='';
+  document.getElementById('modalResultadosOverlay').style.display='block';
+}
+function cerrarModalResultados(){ document.getElementById('modalResultadosOverlay').style.display='none'; }
+async function confirmarResultadosActividad(){
+  const asistentesReales = document.getElementById('resAsistentes').value;
+  const duracionRealMin = document.getElementById('resDuracion').value;
+  const comentarios = document.getElementById('resComentarios').value.trim();
+  if(asistentesReales===''){ toast('Ingresa la cantidad de asistentes reales'); return; }
+  mostrarCargando(true);
+  const res = await apiPost({action:'registrarResultadosActividad', id: actividadActivaId, asistentesReales, duracionRealMin, comentarios});
+  mostrarCargando(false);
+  toast(res.ok ? 'Resultados guardados' : (res.error||'Error'));
+  if(res.ok){ cerrarModalResultados(); cargarActividades(); }
+}
+async function generarActa(id){
+  mostrarCargando(true);
+  const res = await apiPost({action:'generarActaPDF', id});
+  mostrarCargando(false);
+  if(res.ok){ toast('Acta generada'); window.open(res.url, '_blank'); cargarActividades(); }
+  else toast(res.error||'Error');
+}
+async function borrarActividad(id){
+  if(!confirm('¿Eliminar esta actividad? También se borrará el evento de Google Calendar.')) return;
+  const res = await apiPost({action:'eliminarActividad', id});
+  toast(res.ok ? 'Actividad eliminada' : (res.error||'Error'));
+  if(res.ok) cargarActividades();
+}
+
 </script>
 </body>
 </html>
