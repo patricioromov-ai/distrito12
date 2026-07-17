@@ -204,7 +204,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-14</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-15</p>
   </div>
 </div>
 
@@ -1461,11 +1461,17 @@ function renderCapaMapa(){
     capaActual = L.heatLayer(datosCalor, {radius: 22, blur: 18, maxZoom: 14}).addTo(mapaInstancia);
   } else {
     capaActual = L.markerClusterGroup({
+      maxClusterRadius: 55,
+      disableClusteringAtZoom: 16,
       iconCreateFunction: function(cluster){
         const n = cluster.getChildCount();
-        const tamano = n < 10 ? 34 : n < 50 ? 42 : 50;
+        let tamano, color, borde, textoColor;
+        if(n < 5){ tamano=28; color='#7FA8D9'; borde='#5B84B8'; textoColor='#0A101E'; }
+        else if(n < 15){ tamano=36; color='#3D6EA8'; borde='#2A4D78'; textoColor='#fff'; }
+        else if(n < 50){ tamano=44; color='#1D4270'; borde='#C6A24D'; textoColor='#EAD27A'; }
+        else { tamano=52; color='#0A101E'; borde='#C6A24D'; textoColor='#EAD27A'; }
         return L.divIcon({
-          html: `<div style="background:#101E38;width:${tamano}px;height:${tamano}px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #C6A24D;box-shadow:0 1px 5px rgba(0,0,0,.35);"><span style="color:#EAD27A;font-weight:700;font-size:12px;">${n}</span></div>`,
+          html: `<div style="background:${color};width:${tamano}px;height:${tamano}px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid ${borde};box-shadow:0 1px 5px rgba(0,0,0,.35);"><span style="color:${textoColor};font-weight:700;font-size:12px;">${n}</span></div>`,
           className: '', iconSize: [tamano, tamano]
         });
       }
@@ -1507,6 +1513,8 @@ function toggleCapaElectoral(){
   if(!mapaInstancia) return;
   if(capaElectoralVisible){
     capaElectoral = L.markerClusterGroup({
+      maxClusterRadius: 55,
+      disableClusteringAtZoom: 16,
       iconCreateFunction: function(cluster){
         const marcadores = cluster.getAllChildMarkers();
         const promedio = marcadores.reduce((s,m)=>s+(m.options.pctPdg||0),0)/marcadores.length;
