@@ -204,7 +204,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-13</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-14</p>
   </div>
 </div>
 
@@ -445,22 +445,27 @@
           <button class="btn btn-outline" onclick="cargarMapa()">Actualizar mapa</button>
         </div>
       </div>
-      <div id="mapaFiltros" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+      <div id="mapaFiltros" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
         <select id="mComuna" onchange="renderCapaMapa()"><option value="">Todas las comunas</option></select>
         <select id="mRol" onchange="renderCapaMapa()"><option value="">Todos los roles</option></select>
         <select id="mEstado" onchange="renderCapaMapa()"><option value="">Todos los estados</option></select>
         <select id="mCoordinador" onchange="renderCapaMapa()"><option value="">Todos los coordinadores</option><option value="__sin_asignar__">Sin asignar</option></select>
+      </div>
+      <div id="mapaVistaOpciones" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;padding-top:10px;border-top:1px dashed var(--border);">
+        <span style="font-size:11px;color:var(--muted);font-weight:600;">Vista:</span>
         <div class="modoTabs" style="width:280px;">
           <div class="modoTab active" id="modoPuntos" onclick="cambiarModoMapa('puntos')">Ubicaciones</div>
           <div class="modoTab" id="modoCalor" onclick="cambiarModoMapa('calor')">Mapa de calor</div>
         </div>
+        <span style="font-size:11px;color:var(--muted);font-weight:600;margin-left:8px;">Capas:</span>
         <button class="togglePill" id="pillCapaElectoral" onclick="toggleCapaElectoral()">+ Apoyo electoral PDG por local</button>
       </div>
       <div id="leyendaElectoral" style="display:none;font-size:11px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <span>% apoyo PDG diputados 2025 por local de votación:</span>
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#C0392B;margin-right:4px;"></span>Bajo (&lt;4%)</span>
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#D68910;margin-right:4px;"></span>Medio (4-7%)</span>
-        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1E8E5A;margin-right:4px;"></span>Alto (&gt;7%)</span>
+        <span>% apoyo PDG diputados 2025 por local de votación (rombos):</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#C0392B;transform:rotate(45deg);margin-right:4px;"></span>Bajo (&lt;4%)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#D68910;transform:rotate(45deg);margin-right:4px;"></span>Medio (4-7%)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#1E8E5A;transform:rotate(45deg);margin-right:4px;"></span>Alto (&gt;7%)</span>
+        <span style="margin-left:auto;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#101E38;margin-right:4px;"></span>Círculos = militantes</span>
       </div>
       <div id="mapaDiv" style="height:62vh;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);"></div>
       <p style="font-size:11px;color:var(--muted);margin-top:10px;">
@@ -1382,7 +1387,13 @@ async function cargarMapa(){
     document.getElementById('mapaProgreso').innerText = `${res.totalGeocodificados} de ${res.totalMilitantes} direcciones geocodificadas (${pct}%) — se completa automáticamente unas 50 cada 10 minutos`;
     if(!filtrosMapaListos) poblarFiltrosMapa();
     if(!mapaInstancia){
-      mapaInstancia = L.map('mapaDiv').setView([-33.58,-70.62], 11);
+      mapaInstancia = L.map('mapaDiv');
+      const puntosValidos = UBICACIONES.filter(p=>p.lat && p.lng).map(p=>[p.lat, p.lng]);
+      if(puntosValidos.length){
+        mapaInstancia.fitBounds(puntosValidos, {padding:[20,20], maxZoom:13});
+      } else {
+        mapaInstancia.setView([-33.62,-70.55], 11); // respaldo: encuadre aproximado del Distrito 12
+      }
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
       }).addTo(mapaInstancia);
@@ -1449,7 +1460,16 @@ function renderCapaMapa(){
     const datosCalor = puntos.map(p=>[p.lat, p.lng, 0.5]);
     capaActual = L.heatLayer(datosCalor, {radius: 22, blur: 18, maxZoom: 14}).addTo(mapaInstancia);
   } else {
-    capaActual = L.markerClusterGroup();
+    capaActual = L.markerClusterGroup({
+      iconCreateFunction: function(cluster){
+        const n = cluster.getChildCount();
+        const tamano = n < 10 ? 34 : n < 50 ? 42 : 50;
+        return L.divIcon({
+          html: `<div style="background:#101E38;width:${tamano}px;height:${tamano}px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #C6A24D;box-shadow:0 1px 5px rgba(0,0,0,.35);"><span style="color:#EAD27A;font-weight:700;font-size:12px;">${n}</span></div>`,
+          className: '', iconSize: [tamano, tamano]
+        });
+      }
+    });
     puntos.forEach(p=>{
       const tieneCartera = p.carteras && p.carteras.length;
       const color = tieneCartera ? _colorPorUsuario(p.carteras[0]) : '#9AA1AE';
@@ -1486,15 +1506,27 @@ function toggleCapaElectoral(){
   document.getElementById('leyendaElectoral').style.display = capaElectoralVisible ? 'flex':'none';
   if(!mapaInstancia) return;
   if(capaElectoralVisible){
-    capaElectoral = L.layerGroup();
+    capaElectoral = L.markerClusterGroup({
+      iconCreateFunction: function(cluster){
+        const marcadores = cluster.getAllChildMarkers();
+        const promedio = marcadores.reduce((s,m)=>s+(m.options.pctPdg||0),0)/marcadores.length;
+        return L.divIcon({
+          html: `<div style="background:${_colorPorApoyoPdg(promedio)};width:38px;height:38px;border-radius:6px;transform:rotate(45deg);display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35);"><span style="transform:rotate(-45deg);color:#fff;font-weight:700;font-size:12px;">${marcadores.length}</span></div>`,
+          className: '', iconSize: [38,38]
+        });
+      }
+    });
     LOCALES_VOTACION.forEach(p=>{
-      const radio = 6 + Math.sqrt(p.electores||0)/25;
-      const circulo = L.circleMarker([p.lat, p.lng], {
-        radius: radio, color: '#fff', weight: 1.5,
-        fillColor: _colorPorApoyoPdg(p.pctPdg), fillOpacity: 0.75
+      const tamano = 16 + Math.sqrt(p.electores||0)/12;
+      const color = _colorPorApoyoPdg(p.pctPdg);
+      const icono = L.divIcon({
+        className: '',
+        html: `<div style="width:${tamano}px;height:${tamano}px;background:${color};transform:rotate(45deg);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>`,
+        iconSize: [tamano, tamano]
       });
-      circulo.bindPopup(`<b>${titleCase(p.local)}</b><br>${titleCase(p.comuna)}<br>Electores: ${(p.electores||0).toLocaleString('es-CL')}<br>% PDG diputados: ${p.pctPdg!=null?p.pctPdg+'%':'-'}<br>% Parisi 2025: ${p.pctParisi!=null?p.pctParisi+'%':'-'}`);
-      capaElectoral.addLayer(circulo);
+      const marker = L.marker([p.lat, p.lng], {icon: icono, pctPdg: p.pctPdg});
+      marker.bindPopup(`<b>${titleCase(p.local)}</b><br>${titleCase(p.comuna)}<br>Electores: ${(p.electores||0).toLocaleString('es-CL')}<br>% PDG diputados: ${p.pctPdg!=null?p.pctPdg+'%':'-'}<br>% Parisi 2025: ${p.pctParisi!=null?p.pctParisi+'%':'-'}`);
+      capaElectoral.addLayer(marker);
     });
     capaElectoral.addTo(mapaInstancia);
   } else if(capaElectoral){
