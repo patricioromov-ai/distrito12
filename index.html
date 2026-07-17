@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sistema Integrado de Gestión Territorial · Gestión Distrital D12</title>
+<title>PRYSMA · Gestión Distrital D12</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -166,6 +166,7 @@
   #noticiasView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:var(--bg);}
   #misTareasView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:var(--bg);}
   #mapaView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:var(--bg);}
+  #gestionView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:var(--bg);}
   #mapaFiltros select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:inherit;background:#fff;}
   .noticiaCard{background:var(--card);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:14px;border-left:4px solid var(--teal);}
   .noticiaCard h3{margin:0 0 6px;font-size:14.5px;color:var(--navy);font-weight:700;}
@@ -196,24 +197,25 @@
 
 <div id="loginScreen" style="display:none;">
   <div id="loginBox">
-    <div class="logo">A</div>
-    <h1>Sistema Integrado de Gestión Territorial</h1>
+    <div class="logo">P</div>
+    <h1>PRYSMA</h1>
     <p>Gestión Distrital · Distrito 12</p>
     <input type="text" id="usuarioInput" placeholder="Usuario" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('passInput').focus()">
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-11</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-12</p>
   </div>
 </div>
 
 <div id="app">
   <header>
     <div class="left">
-      <div class="brand"><div class="logo">A</div>Sistema Integrado de Gestión Territorial <span>Distrito 12</span></div>
+      <div class="brand"><div class="logo">P</div>PRYSMA <span>Distrito 12</span></div>
       <nav>
         <button id="tabMilitantes" class="active" onclick="cambiarTab('militantes')">Militantes</button>
         <button id="tabKpi" onclick="cambiarTab(SESSION.rol==='admin' ? 'kpi' : 'mistareas')">Panel de KPIs</button>
+        <button id="tabGestion" onclick="cambiarTab('gestion')" style="display:none;">Tareas y Campañas</button>
         <button id="tabNoticias" onclick="cambiarTab('noticias')">Noticias PDG</button>
         <button id="tabMapa" onclick="cambiarTab('mapa')" style="display:none;">Mapa</button>
       </nav>
@@ -327,6 +329,16 @@
         </div>
         <div id="listaOKR"></div>
       </div>
+    </div>
+
+    <!-- PESTAÑA DE GESTIÓN DE TAREAS Y CAMPAÑAS (solo admin) -->
+    <div id="gestionView">
+      <div class="kpiHead">
+        <div>
+          <h1>Tareas y Campañas</h1>
+          <p>Gestión de contacto territorial, precandidatos y campañas masivas</p>
+        </div>
+      </div>
 
       <div id="tareasCard" class="chartCard no-print" style="margin-bottom:18px;">
         <h4>Cumplimiento de tareas de contacto</h4>
@@ -337,27 +349,18 @@
         </table>
       </div>
 
-      <div id="sugerenciasCard" class="chartCard no-print" style="margin-bottom:18px;">
-        <h4>Asignar tareas de contacto</h4>
-        <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
-          El sistema sugiere a quién priorizar (nunca contactados primero). Marca a quiénes quieres asignarle a
-          cada coordinador y presiona "Agregar al borrador" — todavía no se envía nada. Cuando termines de armar
-          el borrador, bájalo a la sección de abajo para revisarlo y enviarlo.
-        </p>
-        <div id="listaSugerencias"></div>
-      </div>
-
-      <div id="borradorTareasCard" class="chartCard no-print" style="margin-bottom:18px;">
+      <div id="gestionTareasCard" class="chartCard no-print" style="margin-bottom:18px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <h4 style="margin:0;">Tareas por enviar (borrador)</h4>
-          <button class="btn btn-gold" onclick="enviarBorradorTareas()">Enviar todas las tareas del borrador</button>
+          <h4 style="margin:0;">Asignar tareas de contacto</h4>
+          <button class="btn btn-gold" onclick="enviarBorradorTareas()">Enviar todas las tareas pendientes de envío</button>
         </div>
         <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">
-          Revisa la lista antes de enviar — edita el comentario si quieres, o quita a quien no corresponda con la
-          ✕. Nada de esto se envía hasta que presiones el botón de arriba.
+          Marca a quiénes quieres asignarle a cada coordinador (el sistema sugiere priorizar a los nunca
+          contactados). Edita el comentario, agrega tareas manuales o elimina cualquiera antes de enviar — nada
+          sale hasta que presiones "Enviar" (global o solo para ese coordinador).
         </p>
 
-        <div style="border:1px dashed var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+        <div style="border:1px dashed var(--border);border-radius:10px;padding:12px;margin-bottom:16px;">
           <label style="font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px;">+ Agregar tarea manual (elige a cualquier militante, no solo sugeridos)</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <input type="text" id="buscarMilitanteManual" placeholder="Buscar por nombre o cédula…" style="flex:1;min-width:180px;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;" oninput="buscarMilitanteParaTareaManual(this.value)">
@@ -365,11 +368,11 @@
           </div>
           <div id="resultadosBusquedaManual" style="max-height:120px;overflow-y:auto;margin-top:6px;"></div>
           <div id="personaElegidaManual" style="font-size:12px;margin-top:6px;display:none;padding:6px 8px;background:#F4F5F7;border-radius:6px;"></div>
-          <input type="text" id="comentarioTareaManual" placeholder="Comentario (opcional)…" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;margin-top:6px;">
-          <button class="btn btn-outline" style="margin-top:8px;padding:6px 14px;font-size:11.5px;" onclick="confirmarTareaManual()">Agregar al borrador</button>
+          <input type="text" id="comentarioTareaManual" list="comentariosPreestablecidos" placeholder="Comentario (opcional, o elige uno preestablecido)…" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;margin-top:6px;">
+          <button class="btn btn-outline" style="margin-top:8px;padding:6px 14px;font-size:11.5px;" onclick="confirmarTareaManual()">Agregar</button>
         </div>
 
-        <div id="listaBorrador"></div>
+        <div id="listaGestionTareas"></div>
       </div>
 
       <div id="candidatosCard" class="chartCard no-print" style="margin-bottom:18px;">
@@ -393,6 +396,18 @@
         <button class="btn btn-outline" style="margin-top:12px;" onclick="forzarEnvioLote()">Forzar envío del próximo lote ahora</button>
       </div>
     </div>
+
+    <datalist id="comentariosPreestablecidos">
+      <option value="Nunca contactado">
+      <option value="No contesta el teléfono">
+      <option value="Sin respuesta por WhatsApp">
+      <option value="Solicita visita presencial">
+      <option value="Comprometido a participar">
+      <option value="Cambió de domicilio">
+      <option value="Pendiente de confirmar asistencia">
+      <option value="No tiene interés por ahora">
+      <option value="Datos de contacto desactualizados">
+    </datalist>
 
     <!-- PESTAÑA DE NOTICIAS -->
     <div id="noticiasView">
@@ -896,6 +911,7 @@ async function entrarApp(){
   }
   if(SESSION.rol==='admin'){
     document.getElementById('tabMapa').style.display='inline-block';
+    document.getElementById('tabGestion').style.display='inline-block';
     document.getElementById('btnUsuarios').style.display='inline-flex';
     document.getElementById('tabKpi').innerText = 'Panel de KPIs';
     document.getElementById('btnEstadoMasivo').style.display='inline-flex';
@@ -1102,6 +1118,7 @@ function accionRapidaWhatsApp(cedula){ cedulaActiva = cedula; whatsappIndividual
 function cambiarTab(tab){
   document.getElementById('tabMilitantes').classList.toggle('active', tab==='militantes');
   document.getElementById('tabKpi').classList.toggle('active', tab==='kpi' || tab==='mistareas');
+  document.getElementById('tabGestion').classList.toggle('active', tab==='gestion');
   document.getElementById('tabNoticias').classList.toggle('active', tab==='noticias');
   document.getElementById('tabMapa').classList.toggle('active', tab==='mapa');
   document.getElementById('filterBar').style.display = tab==='militantes' ? 'block':'none';
@@ -1109,10 +1126,12 @@ function cambiarTab(tab){
   document.getElementById('tableWrap').style.display = tab==='militantes' ? 'block':'none';
   document.getElementById('pager').style.display = tab==='militantes' ? 'flex':'none';
   document.getElementById('kpiView').style.display = tab==='kpi' ? 'block':'none';
+  document.getElementById('gestionView').style.display = tab==='gestion' ? 'block':'none';
   document.getElementById('noticiasView').style.display = tab==='noticias' ? 'block':'none';
   document.getElementById('mapaView').style.display = tab==='mapa' ? 'block':'none';
   document.getElementById('misTareasView').style.display = tab==='mistareas' ? 'block':'none';
   if(tab==='kpi') renderKPIs();
+  if(tab==='gestion') cargarGestionAdmin();
   if(tab==='noticias') cargarNoticias();
   if(tab==='mapa') cargarMapa();
   if(tab==='mistareas') cargarMisTareasVista();
@@ -1198,13 +1217,16 @@ async function renderKPIs(){
     total, conEmail, conTel, conRol, cumpleMes, anivMes, ingresosMes, ingresosTrimestre,
     edadProm, comunaTop, renunciados, mujeres, varones, porComuna, porEstado
   });
-  document.getElementById('tareasCard').style.display = SESSION.rol==='admin' ? 'block':'none';
-  document.getElementById('sugerenciasCard').style.display = SESSION.rol==='admin' ? 'block':'none';
-  document.getElementById('borradorTareasCard').style.display = SESSION.rol==='admin' ? 'block':'none';
-  document.getElementById('candidatosCard').style.display = SESSION.rol==='admin' ? 'block':'none';
-  if(SESSION.rol==='admin'){ cargarResumenTareas(); cargarCandidatos(); cargarBorradorTareas(); cargarCoordinadoresParaTareaManual(); }
   document.getElementById('btnAgregarOKR').style.display = SESSION.rol==='admin' ? 'inline-flex':'none';
   cargarOKRs();
+}
+
+// ---------- GESTIÓN DE TAREAS Y CAMPAÑAS (pestaña separada, solo admin) ----------
+function cargarGestionAdmin(){
+  cargarResumenTareas();
+  cargarGestionTareas();
+  cargarCandidatos();
+  cargarCoordinadoresParaTareaManual();
   cargarEstadoCampanas();
 }
 
@@ -1615,29 +1637,62 @@ async function verListaTareas(usuario, nombre){
 }
 function cerrarModalListaTareas(){ document.getElementById('modalListaTareasOverlay').style.display='none'; }
 
-async function cargarSugerencias(){
-  const res = await apiGet({action:'getSugerenciasTareas'});
-  if(!res.ok){ document.getElementById('listaSugerencias').innerHTML = res.error||'Error'; return; }
-  if(!res.datos.length){ document.getElementById('listaSugerencias').innerHTML = '<p style="color:var(--muted);font-size:13px;">No hay sugerencias pendientes — todas las carteras están al día o sin militantes cargados.</p>'; return; }
-  document.getElementById('listaSugerencias').innerHTML = res.datos.map(c=>`
-    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <b style="font-size:13px;">${c.nombre} <span style="color:var(--muted);font-weight:400;">(${c.sugerencias.length} sugeridos)</span></b>
-        <div>
-          <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="marcarTodosSugerencia('${c.usuario}', true)">Marcar todos</button>
-          <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="marcarTodosSugerencia('${c.usuario}', false)">Ninguno</button>
-          <button class="btn btn-gold" style="padding:5px 12px;font-size:11px;" onclick="agregarSeleccionadosABorrador('${c.usuario}')">Agregar al borrador</button>
+// ---------- GESTIÓN UNIFICADA DE TAREAS (sugerencias + borrador, todo junto por coordinador) ----------
+async function cargarGestionTareas(){
+  const [resSug, resBorr] = await Promise.all([
+    apiGet({action:'getSugerenciasTareas'}),
+    apiGet({action:'getTareasBorrador'})
+  ]);
+  const sugerencias = resSug.ok ? resSug.datos : [];
+  const borradores = resBorr.ok ? resBorr.datos : [];
+
+  // Combina ambas listas por usuario coordinador, aunque uno de los dos esté vacío para esa persona
+  const usuarios = new Map();
+  sugerencias.forEach(g => usuarios.set(g.usuario, { usuario: g.usuario, nombre: g.nombre, email: '', sugerencias: g.sugerencias, tareas: [] }));
+  borradores.forEach(g => {
+    if(!usuarios.has(g.usuario)) usuarios.set(g.usuario, { usuario: g.usuario, nombre: g.nombre, email: g.email, sugerencias: [], tareas: [] });
+    const u = usuarios.get(g.usuario);
+    u.email = g.email; u.tareas = g.tareas;
+  });
+
+  const lista = [...usuarios.values()];
+  if(!lista.length){ document.getElementById('listaGestionTareas').innerHTML = '<p style="color:var(--muted);font-size:13px;">No hay carteras asignadas todavía — asigna militantes a un coordinador en la pestaña Mapa.</p>'; return; }
+
+  document.getElementById('listaGestionTareas').innerHTML = lista.map(c=>`
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <b style="font-size:13px;">${c.nombre} <span style="color:var(--muted);font-weight:400;">(${c.tareas.length} lista(s) para enviar)${c.email?'':' · sin email registrado'}</span></b>
+        ${c.tareas.length ? `<button class="btn btn-gold" style="padding:5px 12px;font-size:11px;" onclick="enviarBorradorTareas('${c.usuario}')">Enviar tareas de ${c.nombre.split(' ')[0]}</button>` : ''}
+      </div>
+
+      ${c.tareas.length ? `
+      <div style="margin-bottom:12px;">
+        ${c.tareas.map(t=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;border-top:1px solid var(--border);">
+            <div style="flex:0 0 190px;">${titleCase(t.nombre)} <span style="color:var(--muted);">· ${titleCase(t.comuna)}</span></div>
+            <input type="text" value="${(t.comentario||'').replace(/"/g,'&quot;')}" list="comentariosPreestablecidos" placeholder="Comentario…" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;" onchange="editarComentarioTarea('${t.id}', this.value)">
+            <button onclick="quitarDeBorrador('${t.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;" title="Eliminar">✕</button>
+          </div>`).join('')}
+      </div>` : ''}
+
+      ${c.sugerencias.length ? `
+      <details ${c.tareas.length?'':'open'}>
+        <summary style="cursor:pointer;font-size:12px;color:var(--blue);font-weight:600;">+ Ver sugerencias (${c.sugerencias.length})</summary>
+        <div style="display:flex;justify-content:flex-end;gap:6px;margin:8px 0;">
+          <button class="btn btn-outline" style="padding:4px 9px;font-size:10.5px;" onclick="marcarTodosSugerencia('${c.usuario}', true)">Marcar todos</button>
+          <button class="btn btn-outline" style="padding:4px 9px;font-size:10.5px;" onclick="marcarTodosSugerencia('${c.usuario}', false)">Ninguno</button>
+          <button class="btn btn-outline" style="padding:4px 9px;font-size:10.5px;" onclick="agregarSeleccionadosABorrador('${c.usuario}')">Agregar seleccionados</button>
         </div>
-      </div>
-      <div style="max-height:180px;overflow-y:auto;">
-        ${c.sugerencias.map(s=>{
-          const comentario = s.diasSinContacto===null ? 'Nunca contactado' : 'Hace '+s.diasSinContacto+' días sin contacto';
-          return `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;">
-            <input type="checkbox" class="chkSugerencia-${c.usuario}" value="${s.cedula}" data-comentario="${comentario}">
-            ${titleCase(s.nombre)} · ${titleCase(s.comuna)} · ${comentario.toLowerCase()}
-          </label>`;
-        }).join('')}
-      </div>
+        <div style="max-height:160px;overflow-y:auto;">
+          ${c.sugerencias.map(s=>{
+            const comentario = s.diasSinContacto===null ? 'Nunca contactado' : 'Hace '+s.diasSinContacto+' días sin contacto';
+            return `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;">
+              <input type="checkbox" class="chkSugerencia-${c.usuario}" value="${s.cedula}" data-comentario="${comentario}">
+              ${titleCase(s.nombre)} · ${titleCase(s.comuna)} · ${comentario.toLowerCase()}
+            </label>`;
+          }).join('')}
+        </div>
+      </details>` : ''}
     </div>`).join('');
 }
 function marcarTodosSugerencia(usuario, valor){
@@ -1650,32 +1705,25 @@ async function agregarSeleccionadosABorrador(usuario){
   mostrarCargando(true);
   const res = await apiPost({action:'agregarTareasBorrador', usuarioCoordinador: usuario, items});
   mostrarCargando(false);
-  toast(res.ok ? `${res.agregadas} agregada(s) al borrador` : (res.error||'Error'));
-  if(res.ok){ cargarSugerencias(); cargarBorradorTareas(); }
-}
-async function cargarBorradorTareas(){
-  const res = await apiGet({action:'getTareasBorrador'});
-  if(!res.ok){ document.getElementById('listaBorrador').innerHTML = res.error||'Error'; return; }
-  if(!res.datos.length || !res.datos.some(g=>g.tareas.length)){
-    document.getElementById('listaBorrador').innerHTML = '<p style="color:var(--muted);font-size:13px;">Aún no hay tareas en el borrador.</p>';
-    return;
-  }
-  document.getElementById('listaBorrador').innerHTML = res.datos.filter(g=>g.tareas.length).map(g=>`
-    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
-      <b style="font-size:13px;">${g.nombre} <span style="color:var(--muted);font-weight:400;">(${g.tareas.length} en borrador)${g.email?'':' · sin email, no podrá recibir el correo'}</span></b>
-      <div style="margin-top:8px;">
-        ${g.tareas.map(t=>`
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;border-top:1px solid var(--border);">
-            <div style="flex:0 0 200px;">${titleCase(t.nombre)} <span style="color:var(--muted);">· ${titleCase(t.comuna)}</span></div>
-            <input type="text" value="${(t.comentario||'').replace(/"/g,'&quot;')}" placeholder="Comentario para el coordinador…" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;" onchange="editarComentarioTarea('${t.id}', this.value)">
-            <button onclick="quitarDeBorrador('${t.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;">✕</button>
-          </div>`).join('')}
-      </div>
-    </div>`).join('');
+  toast(res.ok ? `${res.agregadas} agregada(s)` : (res.error||'Error'));
+  if(res.ok) cargarGestionTareas();
 }
 async function editarComentarioTarea(id, comentario){
   const res = await apiPost({action:'actualizarComentarioTarea', id, comentario});
   if(!res.ok) toast(res.error||'Error');
+}
+async function quitarDeBorrador(id){
+  const res = await apiPost({action:'eliminarTareaBorrador', id});
+  if(res.ok) cargarGestionTareas(); else toast(res.error||'Error');
+}
+async function enviarBorradorTareas(usuarioCoordinador){
+  const mensaje = usuarioCoordinador ? '¿Enviar las tareas listas de este coordinador?' : '¿Enviar ahora TODAS las tareas listas de todos los coordinadores?';
+  if(!confirm(mensaje + ' Se les avisará por correo.')) return;
+  mostrarCargando(true);
+  const res = await apiPost({action:'enviarTareasBorrador', usuarioCoordinador: usuarioCoordinador || ''});
+  mostrarCargando(false);
+  toast(res.ok ? `Se notificó a ${res.coordinadoresNotificados} coordinador(es)` : (res.error||'Error'));
+  if(res.ok){ cargarGestionTareas(); cargarResumenTareas(); }
 }
 
 // ---------- TAREA MANUAL (elegir a cualquier militante) ----------
@@ -1715,25 +1763,13 @@ async function confirmarTareaManual(){
   mostrarCargando(true);
   const res = await apiPost({action:'agregarTareaManual', usuarioCoordinador, cedula: personaElegidaManualCedula, comentario});
   mostrarCargando(false);
-  toast(res.ok ? 'Tarea agregada al borrador' : (res.error||'Error'));
+  toast(res.ok ? 'Tarea agregada' : (res.error||'Error'));
   if(res.ok){
     personaElegidaManualCedula = null;
     document.getElementById('personaElegidaManual').style.display='none';
     document.getElementById('comentarioTareaManual').value='';
-    cargarBorradorTareas();
+    cargarGestionTareas();
   }
-}
-async function quitarDeBorrador(id){
-  const res = await apiPost({action:'eliminarTareaBorrador', id});
-  if(res.ok) cargarBorradorTareas(); else toast(res.error||'Error');
-}
-async function enviarBorradorTareas(){
-  if(!confirm('¿Enviar ahora todas las tareas del borrador? Se les avisará por correo a los coordinadores correspondientes.')) return;
-  mostrarCargando(true);
-  const res = await apiPost({action:'enviarTareasBorrador'});
-  mostrarCargando(false);
-  toast(res.ok ? `Se notificó a ${res.coordinadoresNotificados} coordinador(es)` : (res.error||'Error'));
-  if(res.ok){ cargarBorradorTareas(); cargarResumenTareas(); }
 }
 
 // ---------- TAREAS DE PRECANDIDATOS ----------
