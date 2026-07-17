@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PRYSMA · Gestión Distrital D12</title>
+<title>Sistema Integrado de Gestión Territorial · Gestión Distrital D12</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -196,8 +196,8 @@
 
 <div id="loginScreen" style="display:none;">
   <div id="loginBox">
-    <div class="logo">P</div>
-    <h1>PRYSMA</h1>
+    <div class="logo">A</div>
+    <h1>Sistema Integrado de Gestión Territorial</h1>
     <p>Gestión Distrital · Distrito 12</p>
     <input type="text" id="usuarioInput" placeholder="Usuario" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('passInput').focus()">
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
@@ -210,7 +210,7 @@
 <div id="app">
   <header>
     <div class="left">
-      <div class="brand"><div class="logo">P</div>PRYSMA <span>Distrito 12</span></div>
+      <div class="brand"><div class="logo">A</div>Sistema Integrado de Gestión Territorial <span>Distrito 12</span></div>
       <nav>
         <button id="tabMilitantes" class="active" onclick="cambiarTab('militantes')">Militantes</button>
         <button id="tabKpi" onclick="cambiarTab(SESSION.rol==='admin' ? 'kpi' : 'mistareas')">Panel de KPIs</button>
