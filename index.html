@@ -204,7 +204,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-12</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-13</p>
   </div>
 </div>
 
@@ -441,6 +441,7 @@
         </div>
         <div class="btnRow">
           <button class="btn btn-outline" onclick="forzarGeocodificacion()">Geocodificar más ahora</button>
+          <button class="btn btn-outline" onclick="forzarGeocodificacionLocales()">Geocodificar locales de votación</button>
           <button class="btn btn-outline" onclick="cargarMapa()">Actualizar mapa</button>
         </div>
       </div>
@@ -453,6 +454,13 @@
           <div class="modoTab active" id="modoPuntos" onclick="cambiarModoMapa('puntos')">Ubicaciones</div>
           <div class="modoTab" id="modoCalor" onclick="cambiarModoMapa('calor')">Mapa de calor</div>
         </div>
+        <button class="togglePill" id="pillCapaElectoral" onclick="toggleCapaElectoral()">+ Apoyo electoral PDG por local</button>
+      </div>
+      <div id="leyendaElectoral" style="display:none;font-size:11px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span>% apoyo PDG diputados 2025 por local de votación:</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#C0392B;margin-right:4px;"></span>Bajo (&lt;4%)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#D68910;margin-right:4px;"></span>Medio (4-7%)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1E8E5A;margin-right:4px;"></span>Alto (&gt;7%)</span>
       </div>
       <div id="mapaDiv" style="height:62vh;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);"></div>
       <p style="font-size:11px;color:var(--muted);margin-top:10px;">
@@ -1359,6 +1367,9 @@ let UBICACIONES = [];
 let mapaInstancia = null;
 let capaActual = null;
 let modoMapaActual = 'puntos';
+let LOCALES_VOTACION = [];
+let capaElectoral = null;
+let capaElectoralVisible = false;
 let filtrosMapaListos = false;
 
 async function cargarMapa(){
@@ -1388,6 +1399,7 @@ async function cargarMapa(){
     renderCapaMapa();
     cargarCoordinadoresParaCartera();
     cargarResumenCarteras();
+    cargarLocalesVotacion();
   } catch(err){
     document.getElementById('mapaProgreso').innerText = 'No se pudo cargar el mapa: ' + err.message;
   }
@@ -1448,6 +1460,54 @@ function renderCapaMapa(){
     });
     mapaInstancia.addLayer(capaActual);
   }
+}
+
+// ---------- CAPA ELECTORAL (locales de votación, apoyo PDG) ----------
+async function cargarLocalesVotacion(){
+  try{
+    const res = await apiGet({action:'getLocalesVotacion'});
+    if(!res.ok) return;
+    LOCALES_VOTACION = res.puntos;
+    if(res.totalLocales){
+      const pct = Math.round(res.totalGeocodificados/res.totalLocales*100);
+      document.getElementById('pillCapaElectoral').title = `${res.totalGeocodificados} de ${res.totalLocales} locales geocodificados (${pct}%)`;
+    }
+  } catch(err){ /* silencioso — la capa es opcional */ }
+}
+function _colorPorApoyoPdg(pct){
+  if(pct == null) return '#9AA1AE';
+  if(pct < 4) return '#C0392B';
+  if(pct <= 7) return '#D68910';
+  return '#1E8E5A';
+}
+function toggleCapaElectoral(){
+  capaElectoralVisible = !capaElectoralVisible;
+  document.getElementById('pillCapaElectoral').classList.toggle('on', capaElectoralVisible);
+  document.getElementById('leyendaElectoral').style.display = capaElectoralVisible ? 'flex':'none';
+  if(!mapaInstancia) return;
+  if(capaElectoralVisible){
+    capaElectoral = L.layerGroup();
+    LOCALES_VOTACION.forEach(p=>{
+      const radio = 6 + Math.sqrt(p.electores||0)/25;
+      const circulo = L.circleMarker([p.lat, p.lng], {
+        radius: radio, color: '#fff', weight: 1.5,
+        fillColor: _colorPorApoyoPdg(p.pctPdg), fillOpacity: 0.75
+      });
+      circulo.bindPopup(`<b>${titleCase(p.local)}</b><br>${titleCase(p.comuna)}<br>Electores: ${(p.electores||0).toLocaleString('es-CL')}<br>% PDG diputados: ${p.pctPdg!=null?p.pctPdg+'%':'-'}<br>% Parisi 2025: ${p.pctParisi!=null?p.pctParisi+'%':'-'}`);
+      capaElectoral.addLayer(circulo);
+    });
+    capaElectoral.addTo(mapaInstancia);
+  } else if(capaElectoral){
+    mapaInstancia.removeLayer(capaElectoral);
+    capaElectoral = null;
+  }
+}
+async function forzarGeocodificacionLocales(){
+  mostrarCargando(true);
+  const res = await apiPost({action:'procesarGeocodificacionLocalesAhora'});
+  mostrarCargando(false);
+  toast(res.ok ? `Se geocodificaron ${res.procesados} locales nuevos` : (res.error||'Error'));
+  cargarLocalesVotacion();
 }
 
 // ---------- ASIGNACIÓN DE CARTERAS TERRITORIALES ----------
