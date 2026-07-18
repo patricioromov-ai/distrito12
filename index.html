@@ -204,7 +204,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-16</p>
+    <p style="margin-top:14px;font-size:10px;color:#C9CDD6;">build 2026-07-14-17</p>
   </div>
 </div>
 
@@ -478,6 +478,15 @@
         <span><span style="display:inline-block;width:10px;height:10px;background:#D68910;transform:rotate(45deg);margin-right:4px;"></span>Medio (4-7%)</span>
         <span><span style="display:inline-block;width:10px;height:10px;background:#1E8E5A;transform:rotate(45deg);margin-right:4px;"></span>Alto (&gt;7%)</span>
         <span style="margin-left:auto;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#101E38;margin-right:4px;"></span>Círculos = militantes</span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+        <span style="font-size:11px;color:var(--muted);font-weight:600;">Puntos de interés (OpenStreetMap, en vivo):</span>
+        <button class="togglePill" id="pillPOI-colegios" onclick="togglePOI('colegios')">🏫 Colegios</button>
+        <button class="togglePill" id="pillPOI-salud" onclick="togglePOI('salud')">🏥 Salud</button>
+        <button class="togglePill" id="pillPOI-sedes" onclick="togglePOI('sedes')">🏛️ Sedes sociales</button>
+        <button class="togglePill" id="pillPOI-ferias" onclick="togglePOI('ferias')">🛒 Ferias</button>
+        <button class="togglePill" id="pillPOI-deporte" onclick="togglePOI('deporte')">⚽ Deporte</button>
+        <button class="togglePill" id="pillPOI-transporte" onclick="togglePOI('transporte')">🚇 Metro</button>
       </div>
       <div id="mapaDiv" style="height:62vh;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);"></div>
       <p style="font-size:11px;color:var(--muted);margin-top:10px;">
@@ -1631,6 +1640,67 @@ async function forzarGeocodificacionLocales(){
   toast(res.ok ? `Se geocodificaron ${res.procesados} locales nuevos` : (res.error||'Error'));
   cargarLocalesVotacion();
 }
+
+// ---------- PUNTOS DE INTERÉS COMUNITARIOS (OpenStreetMap) ----------
+let PUNTOS_INTERES = null;
+const capasPOI = {};
+const CONFIG_POI = {
+  colegios:   { emoji:'🏫', color:'#2563A6', etiqueta:'Colegios' },
+  salud:      { emoji:'🏥', color:'#C0392B', etiqueta:'Centros de salud' },
+  sedes:      { emoji:'🏛️', color:'#8E44AD', etiqueta:'Sedes sociales' },
+  ferias:     { emoji:'🛒', color:'#D68910', etiqueta:'Ferias libres' },
+  deporte:    { emoji:'⚽', color:'#1E8E5A', etiqueta:'Deporte' },
+  transporte: { emoji:'🚇', color:'#101E38', etiqueta:'Estaciones de Metro' }
+};
+async function togglePOI(categoria){
+  const pill = document.getElementById('pillPOI-'+categoria);
+  const activo = !pill.classList.contains('on');
+
+  if(activo && !PUNTOS_INTERES){
+    mostrarCargando(true);
+    try{
+      const res = await apiGet({action:'getPuntosInteresComunitarios'});
+      mostrarCargando(false);
+      if(!res.ok){ toast(res.error||'No se pudo cargar OpenStreetMap'); return; }
+      PUNTOS_INTERES = res.datos;
+    } catch(err){
+      mostrarCargando(false);
+      toast('No se pudo conectar con OpenStreetMap: ' + err.message);
+      return;
+    }
+  }
+
+  pill.classList.toggle('on', activo);
+  if(!mapaInstancia) return;
+
+  if(activo){
+    if(!capasPOI[categoria]){
+      const cfg = CONFIG_POI[categoria];
+      const grupo = L.markerClusterGroup({
+        iconCreateFunction: function(cluster){
+          return L.divIcon({
+            html: `<div style="background:${cfg.color};width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);color:#fff;font-weight:700;font-size:11px;">${cluster.getChildCount()}</div>`,
+            className:'', iconSize:[30,30]
+          });
+        }
+      });
+      (PUNTOS_INTERES[categoria]||[]).forEach(p=>{
+        const icono = L.divIcon({
+          className:'', iconSize:[26,26],
+          html:`<div style="background:#fff;border:2px solid ${cfg.color};width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.3);">${cfg.emoji}</div>`
+        });
+        const marker = L.marker([p.lat, p.lon], {icon: icono});
+        marker.bindPopup(`<b>${p.nombre}</b><br>${cfg.etiqueta}`);
+        grupo.addLayer(marker);
+      });
+      capasPOI[categoria] = grupo;
+    }
+    capasPOI[categoria].addTo(mapaInstancia);
+  } else if(capasPOI[categoria]){
+    mapaInstancia.removeLayer(capasPOI[categoria]);
+  }
+}
+
 
 // ---------- ASIGNACIÓN DE CARTERAS TERRITORIALES ----------
 let centroElegido = null;
