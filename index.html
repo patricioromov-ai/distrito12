@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PRYSMA · Gestión Distrital D12</title>
+<title>SIGT · Gestión Territorial · Distrito 12</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -57,23 +57,18 @@
 
   #app{display:none;height:100vh;flex-direction:column;}
   header{background:linear-gradient(135deg,var(--navy),var(--navy2));border-bottom:1px solid var(--border);backdrop-filter:blur(20px);color:#fff;padding:0 22px;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 2px 16px rgba(0,0,0,.3);z-index:5;flex-shrink:0;}
-  header .left{display:flex;align-items:center;gap:22px;}
+  header .left{display:flex;align-items:center;gap:16px;}
   header .brand{font-weight:800;font-size:17px;letter-spacing:.3px;display:flex;align-items:center;gap:9px;}
   header .brand .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--gold-light),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--navy);font-size:13px;}
   header .brand span{color:var(--gold-light);font-weight:600;}
-  header nav{display:flex;gap:4px;}
-  header nav button{background:none;border:none;color:#9DA895;padding:9px 16px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;}
-  header nav button.active{background:rgba(255,255,255,.1);color:#fff;}
   header .userinfo{font-size:12px;color:#9DA895;display:flex;align-items:center;gap:14px;}
   header .badge{background:var(--gold);color:var(--navy);padding:4px 11px;border-radius:20px;font-weight:700;font-size:11px;letter-spacing:.4px;}
   header button.exit{background:transparent;border:1px solid #3A4438;color:#fff;padding:7px 15px;border-radius:9px;cursor:pointer;font-size:12px;font-family:inherit;}
 
-  /* CELULAR: el header se apila en filas y la navegación se desliza en vez de desbordar */
+  /* CELULAR: el header se apila en filas */
   @media (max-width:820px){
     header{flex-wrap:wrap;height:auto;min-height:60px;padding:10px 14px;row-gap:8px;}
     header .left{flex:1 1 100%;min-width:0;}
-    header nav{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;max-width:100%;}
-    header nav button{white-space:nowrap;flex-shrink:0;padding:8px 12px;font-size:12.5px;}
     header .userinfo{flex:1 1 100%;justify-content:flex-end;flex-wrap:wrap;}
     #menuInicio{padding:36px 16px 40px;}
     .menuHero h1{font-size:26px;}
@@ -239,28 +234,23 @@
 
 <div id="loginScreen" style="display:none;">
   <div id="loginBox">
-    <div class="logo">P</div>
-    <h1>PRYSMA</h1>
-    <p>Gestión Distrital · Distrito 12</p>
+    <div class="logo">S</div>
+    <h1>SIGT</h1>
+    <p style="margin-bottom:2px;">Sistema Integrado de Gestión Territorial</p>
+    <p>Distrito 12</p>
     <input type="text" id="usuarioInput" placeholder="Usuario" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('passInput').focus()">
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-4</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-5</p>
   </div>
 </div>
 
 <div id="app">
   <header>
     <div class="left">
-      <div class="brand" onclick="irAlInicio()" style="cursor:pointer;"><div class="logo">P</div>PRYSMA <span>Distrito 12</span></div>
-      <nav>
-        <button id="tabMilitantes" onclick="cambiarTab('militantes')">Militantes</button>
-        <button id="tabKpi" onclick="cambiarTab(SESSION.rol==='admin' ? 'kpi' : 'mistareas')">Panel de KPIs</button>
-        <button id="tabGestion" onclick="cambiarTab('gestion')" style="display:none;">Tareas y Campañas</button>
-        <button id="tabNoticias" onclick="cambiarTab('noticias')">Noticias PDG</button>
-        <button id="tabMapa" onclick="cambiarTab('mapa')" style="display:none;">Mapa</button>
-      </nav>
+      <div class="brand" onclick="irAlInicio()" style="cursor:pointer;"><div class="logo">S</div>SIGT <span>Distrito 12</span></div>
+      <button class="exit" id="btnVolverInicio" onclick="irAlInicio()">← Volver al inicio</button>
     </div>
     <div class="userinfo">
       <span id="totalBadge"></span>
@@ -1060,18 +1050,11 @@ async function entrarApp(){
     ['btnEmailMasivo','btnWspMasivo','btnAgregar'].forEach(id=>document.getElementById(id).style.display='none');
   }
   if(SESSION.rol==='admin'){
-    document.getElementById('tabMapa').style.display='inline-block';
-    document.getElementById('tabGestion').style.display='inline-block';
     document.getElementById('btnUsuarios').style.display='inline-flex';
-    document.getElementById('tabKpi').innerText = 'Panel de KPIs';
     document.getElementById('btnEstadoMasivo').style.display='inline-flex';
   }
   if(SESSION.rol==='coordinador'){
-    document.getElementById('tabKpi').innerText = 'Mis Tareas';
     cargarBannerTareas();
-  }
-  if(SESSION.rol==='viewer'){
-    document.getElementById('tabKpi').style.display='none';
   }
   mostrarCargando(true);
   try{
@@ -1269,11 +1252,7 @@ function accionRapidaWhatsApp(cedula){ cedulaActiva = cedula; whatsappIndividual
 // ---------- TABS ----------
 function cambiarTab(tab){
   document.getElementById('menuInicio').style.display = tab==='inicio' ? 'flex':'none';
-  document.getElementById('tabMilitantes').classList.toggle('active', tab==='militantes');
-  document.getElementById('tabKpi').classList.toggle('active', tab==='kpi' || tab==='mistareas');
-  document.getElementById('tabGestion').classList.toggle('active', tab==='gestion');
-  document.getElementById('tabNoticias').classList.toggle('active', tab==='noticias');
-  document.getElementById('tabMapa').classList.toggle('active', tab==='mapa');
+  document.getElementById('btnVolverInicio').style.display = tab==='inicio' ? 'none':'inline-block';
   document.getElementById('filterBar').style.display = tab==='militantes' ? 'block':'none';
   document.getElementById('toolbar2').style.display = tab==='militantes' ? 'flex':'none';
   document.getElementById('tableWrap').style.display = tab==='militantes' ? 'block':'none';
