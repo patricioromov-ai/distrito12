@@ -254,7 +254,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-7</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-8</p>
   </div>
 </div>
 
@@ -3068,13 +3068,18 @@ async function generarInformeOrg(){
   const fechaFin = document.getElementById('informeOrgHasta').value;
   const categoria = document.getElementById('informeOrgCategoria').value;
   mostrarCargando(true);
-  const res = await apiGet({action:'getInformeAcumulativoOrg', fechaInicio, fechaFin, categoria});
-  mostrarCargando(false);
-  if(!res.ok){ toast(res.error||'Error'); return; }
-  informeOrgFilasActuales = res.datos.filas;
-  informeOrgGenerado = true;
-  document.getElementById('informeOrgResumen').innerText = `${res.datos.total} actividad(es) en el período.`;
-  renderTablaInformeOrg();
+  try{
+    const res = await apiGet({action:'getInformeAcumulativoOrg', fechaInicio, fechaFin, categoria});
+    mostrarCargando(false);
+    if(!res.ok){ toast(res.error||'Error al generar el informe', 6000); return; }
+    informeOrgFilasActuales = res.datos.filas;
+    informeOrgGenerado = true;
+    document.getElementById('informeOrgResumen').innerText = `${res.datos.total} actividad(es) en el período.`;
+    renderTablaInformeOrg();
+  } catch(err){
+    mostrarCargando(false);
+    toast('Error de conexión al generar el informe: ' + err.message, 8000);
+  }
 }
 function renderTablaInformeOrg(){
   document.getElementById('tbodyInformeOrg').innerHTML = informeOrgFilasActuales.length ? informeOrgFilasActuales.map((f,i)=>`
