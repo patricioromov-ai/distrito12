@@ -201,6 +201,18 @@
   #misTareasView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:transparent;}
   #mapaView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:transparent;}
   #gestionView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:transparent;}
+  #organizacionesView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:transparent;}
+  #organizacionesView select{padding:9px 12px;border:1px solid var(--border);border-radius:9px;font-size:12.5px;font-family:inherit;background:var(--card-solid);color:var(--text);}
+  #drawerOrg .dhead{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:20px;display:flex;justify-content:space-between;align-items:center;}
+  #drawerOrg .dhead h2{margin:0;font-size:17px;font-weight:700;}
+  #drawerOrg .section{padding:18px 20px;border-bottom:1px solid var(--border);}
+  #drawerOrg .section h4{margin:0 0 10px;font-size:10.5px;text-transform:uppercase;color:var(--muted);letter-spacing:.6px;font-weight:700;}
+  #drawerOrg label{font-size:11px;color:var(--muted);display:block;margin-top:9px;font-weight:600;}
+  #drawerOrg input,#drawerOrg select,#drawerOrg textarea{width:100%;padding:9px;border:1px solid var(--border);border-radius:9px;font-size:13px;margin-top:3px;font-family:inherit;background:rgba(255,255,255,.04);color:var(--text);}
+  #modalOrgOverlay label,#modalActividadOrgOverlay label,#modalPreInformeOverlay label,#modalInformeOrgOverlay label{font-size:11px;color:var(--muted);display:block;margin-top:11px;font-weight:600;}
+  #modalOrgOverlay input,#modalOrgOverlay select,#modalActividadOrgOverlay input,#modalActividadOrgOverlay select,
+  #modalPreInformeOverlay input,#modalPreInformeOverlay select,#modalPreInformeOverlay textarea,
+  #modalInformeOrgOverlay input,#modalInformeOrgOverlay select{width:100%;padding:9px;border:1px solid var(--border);border-radius:9px;font-size:13px;margin-top:3px;font-family:inherit;background:rgba(255,255,255,.04);color:var(--text);}
   #mapaFiltros select{padding:9px 12px;border:1px solid var(--border);border-radius:9px;font-size:12.5px;font-family:inherit;background:var(--card-solid);color:var(--text);}
   .noticiaCard{background:var(--card);border:1px solid var(--border);backdrop-filter:blur(20px);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:14px;border-left:3px solid var(--teal);}
   .noticiaCard h3{margin:0 0 6px;font-size:14.5px;color:var(--text);font-weight:700;}
@@ -242,7 +254,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-5</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-6</p>
   </div>
 </div>
 
@@ -561,6 +573,160 @@
           <tbody id="tbodyCarteras"></tbody>
         </table>
       </div>
+    </div>
+
+    <!-- PESTAÑA DE ORGANIZACIONES TERRITORIALES (solo admin) -->
+    <div id="organizacionesView">
+      <div class="kpiHead">
+        <div>
+          <h1>Organizaciones Territoriales</h1>
+          <p id="orgTotalTexto">Cargando…</p>
+        </div>
+        <div class="btnRow">
+          <button class="btn btn-outline" onclick="abrirModalInformeOrg()">Generar informe acumulativo</button>
+          <button class="btn btn-gold" onclick="abrirModalOrg()">+ Agregar organización</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <input type="text" id="orgBuscar" placeholder="Buscar por nombre…" style="flex:1;min-width:220px;padding:10px 14px;border:1px solid var(--border);border-radius:11px;font-size:13px;font-family:inherit;background:rgba(255,255,255,.04);color:var(--text);" oninput="aplicarFiltrosOrg()">
+        <select id="orgFiltroComuna" onchange="aplicarFiltrosOrg()"><option value="">Todas las comunas</option></select>
+        <select id="orgFiltroCategoria" onchange="aplicarFiltrosOrg()"><option value="">Todas las categorías</option></select>
+      </div>
+      <div style="overflow:auto;">
+        <table>
+          <thead><tr><th>Nombre</th><th>Categoría</th><th>Comuna</th><th>Estado legal</th><th>Contacto</th><th></th></tr></thead>
+          <tbody id="tbodyOrg"></tbody>
+        </table>
+      </div>
+      <div id="pagerOrg" style="display:flex;justify-content:center;gap:10px;padding:14px;font-size:12.5px;align-items:center;color:var(--muted);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DRAWER DE ORGANIZACIÓN -->
+<div id="overlayOrg" onclick="cerrarDrawerOrg()" style="display:none;position:fixed;inset:0;background:rgba(4,6,4,.65);z-index:1000;"></div>
+<div id="drawerOrg" style="display:none;position:fixed;right:0;top:0;bottom:0;width:460px;max-width:92vw;background:var(--card-solid);border-left:1px solid var(--border);z-index:1001;box-shadow:-10px 0 40px rgba(0,0,0,.4);overflow-y:auto;">
+  <div class="dhead"><h2 id="orgDrawerNombre">—</h2><button onclick="cerrarDrawerOrg()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button></div>
+  <div class="section">
+    <h4>Datos de la organización</h4>
+    <label>Categoría</label><select id="orgDCategoria"></select>
+    <label>Comuna</label><select id="orgDComuna"></select>
+    <label>Dirección</label><input id="orgDDireccion">
+    <label>Nombre de contacto/dirigente</label><input id="orgDContactoNombre">
+    <label>Teléfono</label><input id="orgDContactoTelefono">
+    <label>Email</label><input id="orgDContactoEmail">
+    <label>Notas</label><textarea id="orgDNotas" style="min-height:70px;"></textarea>
+    <div class="actionRow">
+      <button class="btn-gold" onclick="guardarOrganizacion()">Guardar cambios</button>
+      <button class="btn-red" onclick="borrarOrganizacion()">Eliminar organización</button>
+    </div>
+  </div>
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <h4 style="margin:0;">Actividades</h4>
+      <button class="btn btn-outline" style="padding:6px 12px;font-size:11.5px;" onclick="abrirModalActividadOrg()">+ Agendar</button>
+    </div>
+    <div id="listaActividadesOrg"></div>
+  </div>
+</div>
+
+<!-- MODAL AGREGAR ORGANIZACIÓN -->
+<div id="modalOrgOverlay" onclick="if(event.target===this) cerrarModalOrg()" style="display:none;position:fixed;inset:0;background:rgba(4,6,4,.7);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:var(--card-solid);border:1px solid var(--border);border-radius:18px;width:480px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:18px 18px 0 0;">
+      <strong>Nueva organización</strong><button onclick="cerrarModalOrg()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <label>Nombre</label><input id="orgNuevoNombre">
+      <label>Categoría</label><select id="orgNuevaCategoria"></select>
+      <label>Comuna</label><select id="orgNuevaComuna"></select>
+      <label>Dirección</label><input id="orgNuevaDireccion">
+      <label>Nombre de contacto</label><input id="orgNuevoContacto">
+      <label>Teléfono</label><input id="orgNuevoTelefono">
+    </div>
+    <div class="mfoot" style="padding:14px 20px;text-align:right;border-top:1px solid var(--border);">
+      <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="confirmarNuevaOrg()">Crear organización</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AGENDAR ACTIVIDAD -->
+<div id="modalActividadOrgOverlay" onclick="if(event.target===this) cerrarModalActividadOrg()" style="display:none;position:fixed;inset:0;background:rgba(4,6,4,.7);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:var(--card-solid);border:1px solid var(--border);border-radius:18px;width:420px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:18px 18px 0 0;">
+      <strong>Agendar actividad</strong><button onclick="cerrarModalActividadOrg()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <label>Tipo de actividad</label>
+      <select id="orgActTipo"><option>Llamada</option><option>Visita presencial</option><option>Reunión</option></select>
+      <label>Fecha</label><input id="orgActFecha" type="datetime-local">
+    </div>
+    <div class="mfoot" style="padding:14px 20px;text-align:right;border-top:1px solid var(--border);">
+      <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="confirmarActividadOrg()">Agendar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRE-INFORME -->
+<div id="modalPreInformeOverlay" onclick="if(event.target===this) cerrarModalPreInforme()" style="display:none;position:fixed;inset:0;background:rgba(4,6,4,.7);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:var(--card-solid);border:1px solid var(--border);border-radius:18px;width:560px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:18px 18px 0 0;">
+      <strong>Completar pre-informe</strong><button onclick="cerrarModalPreInforme()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"><label>Lugar</label><input id="preLugar"></div>
+        <div style="flex:1;"><label>Asistentes</label><input id="preAsistentes" type="number"></div>
+      </div>
+      <label>Contexto</label><textarea id="preContexto" style="min-height:60px;"></textarea>
+      <label>Descripción de la actividad</label><textarea id="preDescripcion" style="min-height:60px;"></textarea>
+      <label>Temas tratados</label><textarea id="preTemas" style="min-height:60px;"></textarea>
+      <label>Acuerdos</label><textarea id="preAcuerdos" style="min-height:60px;"></textarea>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"><label>Próxima acción</label><input id="preProximaAccion"></div>
+        <div style="flex:1;">
+          <label>Responsable</label>
+          <select id="preResponsable"><option value="Organización">Organización</option><option value="Diputación">Diputación</option></select>
+        </div>
+      </div>
+      <label>Nivel de receptividad</label>
+      <select id="preReceptividad">
+        <option value="1">1 · Muy baja</option><option value="2">2 · Baja</option>
+        <option value="3" selected>3 · Media</option><option value="4">4 · Alta</option>
+        <option value="5">5 · Muy alta</option>
+      </select>
+      <label>Foto (opcional)</label>
+      <input id="preFoto" type="file" accept="image/*" style="padding:8px 0;border:none;">
+    </div>
+    <div class="mfoot" style="padding:14px 20px;text-align:right;border-top:1px solid var(--border);">
+      <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="confirmarPreInforme()">Guardar pre-informe</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INFORME ACUMULATIVO -->
+<div id="modalInformeOrgOverlay" onclick="if(event.target===this) cerrarModalInformeOrg()" style="display:none;position:fixed;inset:0;background:rgba(4,6,4,.7);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:var(--card-solid);border:1px solid var(--border);border-radius:18px;width:900px;max-width:95vw;margin:30px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:18px 18px 0 0;">
+      <strong>Informe acumulativo de organizaciones</strong><button onclick="cerrarModalInformeOrg()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
+        <div><label>Desde</label><input id="informeOrgDesde" type="date"></div>
+        <div><label>Hasta</label><input id="informeOrgHasta" type="date"></div>
+        <div style="flex:1;min-width:160px;"><label>Categoría</label><select id="informeOrgCategoria"><option value="">Todas</option></select></div>
+        <button class="btn-gold" style="padding:10px 18px;" onclick="generarInformeOrg()">Generar</button>
+      </div>
+      <div id="informeOrgResumen" style="font-size:12.5px;color:var(--muted);margin-bottom:12px;"></div>
+      <div style="overflow-x:auto;">
+        <table style="font-size:12px;">
+          <thead><tr><th>Organización</th><th>Categoría</th><th>Tipo</th><th>Fecha</th><th>Asistentes</th><th>Receptividad</th><th>Próxima acción</th></tr></thead>
+          <tbody id="tbodyInformeOrg"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="mfoot" style="padding:14px 20px;text-align:right;border-top:1px solid var(--border);">
+      <button class="btn btn-outline" onclick="descargarInformeOrgPDF()">Descargar PDF</button>
     </div>
   </div>
 </div>
@@ -936,6 +1102,11 @@ document.addEventListener('keydown', function(e){
   cerrarModalEstadoMasivo();
   cerrarModalActividad();
   cerrarModalResultados();
+  cerrarDrawerOrg();
+  cerrarModalOrg();
+  cerrarModalActividadOrg();
+  cerrarModalPreInforme();
+  cerrarModalInformeOrg();
 });
 
 let USUARIO = localStorage.getItem('prysma_usuario') || '';
@@ -1262,11 +1433,13 @@ function cambiarTab(tab){
   document.getElementById('noticiasView').style.display = tab==='noticias' ? 'block':'none';
   document.getElementById('mapaView').style.display = tab==='mapa' ? 'block':'none';
   document.getElementById('misTareasView').style.display = tab==='mistareas' ? 'block':'none';
+  document.getElementById('organizacionesView').style.display = tab==='organizaciones' ? 'block':'none';
   if(tab==='kpi') renderKPIs();
   if(tab==='gestion') cargarGestionAdmin();
   if(tab==='noticias') cargarNoticias();
   if(tab==='mapa') cargarMapa();
   if(tab==='mistareas') cargarMisTareasVista();
+  if(tab==='organizaciones') cargarOrganizaciones();
 }
 
 function irAlInicio(){
@@ -1279,7 +1452,8 @@ const ICONOS_MENU = {
   tareas:'<svg width="30" height="30" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" fill="currentColor" opacity=".28"/><path d="M8.5 12.5l2.3 2.3L16 10" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
   noticias:'<svg width="30" height="30" viewBox="0 0 24 24"><path d="M4 10v4a2 2 0 002 2h1l3 3v-3h1a2 2 0 002-2v-4H4z" fill="currentColor" opacity=".3"/><path d="M13 9l6-3v10l-6-3" fill="currentColor" opacity=".5"/></svg>',
   mapa:'<svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11.5A7 7 0 105 9.5C5 14.9 12 21 12 21z" fill="currentColor" opacity=".3"/><circle cx="12" cy="9.5" r="2.6" fill="currentColor"/></svg>',
-  usuarios:'<svg width="30" height="30" viewBox="0 0 24 24"><circle cx="10" cy="9" r="3.4" fill="currentColor" opacity=".35"/><path d="M4 20c0-3.4 2.7-5.6 6-5.6" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="18" cy="16.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M18 15v3M16.5 16.5h3" stroke="currentColor" stroke-width="1.2"/></svg>'
+  usuarios:'<svg width="30" height="30" viewBox="0 0 24 24"><circle cx="10" cy="9" r="3.4" fill="currentColor" opacity=".35"/><path d="M4 20c0-3.4 2.7-5.6 6-5.6" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="18" cy="16.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M18 15v3M16.5 16.5h3" stroke="currentColor" stroke-width="1.2"/></svg>',
+  organizaciones:'<svg width="30" height="30" viewBox="0 0 24 24"><rect x="4" y="9" width="7" height="11" fill="currentColor" opacity=".28"/><rect x="13" y="4" width="7" height="16" fill="currentColor" opacity=".45"/><rect x="6" y="12" width="1.6" height="1.6" fill="currentColor"/><rect x="8.5" y="12" width="1.6" height="1.6" fill="currentColor"/><rect x="6" y="15" width="1.6" height="1.6" fill="currentColor"/><rect x="8.5" y="15" width="1.6" height="1.6" fill="currentColor"/><rect x="15" y="7" width="1.6" height="1.6" fill="currentColor"/><rect x="17.5" y="7" width="1.6" height="1.6" fill="currentColor"/><rect x="15" y="10" width="1.6" height="1.6" fill="currentColor"/><rect x="17.5" y="10" width="1.6" height="1.6" fill="currentColor"/><rect x="15" y="13" width="1.6" height="1.6" fill="currentColor"/><rect x="17.5" y="13" width="1.6" height="1.6" fill="currentColor"/></svg>'
 };
 
 function renderMenuInicio(){
@@ -1294,7 +1468,8 @@ function renderMenuInicio(){
     {id:'gestion', nombre:'Tareas y Campañas', icono:'tareas', color:'#27AE60', roles:['admin'], accion:()=>cambiarTab('gestion'), stat:()=>apiGet({action:'getResumenTareas'}).then(r=>r.ok?`${r.datos.pendientesGlobal} sin contactar`:'—')},
     {id:'noticias', nombre:'Noticias PDG', icono:'noticias', color:'#3498DB', roles:['admin','coordinador','viewer'], accion:()=>cambiarTab('noticias'), stat:()=>apiGet({action:'getNoticias'}).then(r=>r.ok?`${r.datos.length} noticias`:'—')},
     {id:'mapa', nombre:'Mapa', icono:'mapa', color:'#D68910', roles:['admin'], accion:()=>cambiarTab('mapa'), stat:()=>Promise.resolve('5 comunas')},
-    {id:'usuarios', nombre:'Usuarios', icono:'usuarios', color:'#E74C3C', roles:['admin'], accion:()=>abrirModalUsuarios(), stat:()=>apiGet({action:'listarUsuarios'}).then(r=>r.ok?`${r.datos.filter(u=>u.rol==='coordinador'&&u.activo).length} coordinadores`:'—')}
+    {id:'usuarios', nombre:'Usuarios', icono:'usuarios', color:'#E74C3C', roles:['admin'], accion:()=>abrirModalUsuarios(), stat:()=>apiGet({action:'listarUsuarios'}).then(r=>r.ok?`${r.datos.filter(u=>u.rol==='coordinador'&&u.activo).length} coordinadores`:'—')},
+    {id:'organizaciones', nombre:'Organizaciones', icono:'organizaciones', color:'#8E7355', roles:['admin'], accion:()=>cambiarTab('organizaciones'), stat:()=>apiGet({action:'listarOrganizaciones', filtros:{}}).then(r=>r.ok?`${r.datos.length.toLocaleString('es-CL')} registradas`:'—')}
   ];
   window._accionesMenuInicio = TODAS_LAS_TARJETAS;
 
@@ -2620,6 +2795,302 @@ async function borrarActividad(id){
   const res = await apiPost({action:'eliminarActividad', id});
   toast(res.ok ? 'Actividad eliminada' : (res.error||'Error'));
   if(res.ok) cargarActividades();
+}
+
+// ---------- ORGANIZACIONES TERRITORIALES (solo admin) ----------
+let ORGANIZACIONES = [];
+let orgFiltrados = [];
+let orgPagina = 1;
+const ORG_POR_PAGINA = 50;
+let orgActivaId = null;
+let actividadOrgActivaId = null;
+let informeOrgFilasActuales = [];
+
+async function cargarOrganizaciones(){
+  document.getElementById('orgTotalTexto').innerText = 'Cargando…';
+  const res = await apiGet({action:'listarOrganizaciones', filtros:{}});
+  if(!res.ok){ document.getElementById('orgTotalTexto').innerText = res.error||'Error'; return; }
+  ORGANIZACIONES = res.datos;
+  document.getElementById('orgTotalTexto').innerText = `${ORGANIZACIONES.length.toLocaleString('es-CL')} organizaciones registradas`;
+  poblarFiltrosOrg();
+  aplicarFiltrosOrg();
+}
+
+function poblarFiltrosOrg(){
+  const fComuna = document.getElementById('orgFiltroComuna');
+  if(!fComuna.dataset.cargado){
+    const comunas = [...new Set(ORGANIZACIONES.map(o=>o.comuna).filter(Boolean))].sort();
+    comunas.forEach(c=> fComuna.innerHTML += `<option value="${c}">${titleCase(c)}</option>`);
+    fComuna.dataset.cargado='1';
+  }
+  const fCategoria = document.getElementById('orgFiltroCategoria');
+  if(!fCategoria.dataset.cargado){
+    const categorias = [...new Set(ORGANIZACIONES.map(o=>o.categoria).filter(Boolean))].sort();
+    categorias.forEach(c=> fCategoria.innerHTML += `<option value="${c}">${c}</option>`);
+    fCategoria.dataset.cargado='1';
+    // También se usan en los modales de nueva organización e informe
+    const selNueva = document.getElementById('orgNuevaCategoria');
+    const selInforme = document.getElementById('informeOrgCategoria');
+    categorias.forEach(c=>{
+      selNueva.innerHTML += `<option value="${c}">${c}</option>`;
+      selInforme.innerHTML += `<option value="${c}">${c}</option>`;
+    });
+    const selComunaNueva = document.getElementById('orgNuevaComuna');
+    const comunas = [...new Set(ORGANIZACIONES.map(o=>o.comuna).filter(Boolean))].sort();
+    comunas.forEach(c=> selComunaNueva.innerHTML += `<option value="${c}">${titleCase(c)}</option>`);
+    const selComunaDrawer = document.getElementById('orgDComuna');
+    comunas.forEach(c=> selComunaDrawer.innerHTML += `<option value="${c}">${titleCase(c)}</option>`);
+    categorias.forEach(c=> document.getElementById('orgDCategoria').innerHTML += `<option value="${c}">${c}</option>`);
+  }
+}
+
+function aplicarFiltrosOrg(){
+  const q = document.getElementById('orgBuscar').value.toLowerCase();
+  const comuna = document.getElementById('orgFiltroComuna').value;
+  const categoria = document.getElementById('orgFiltroCategoria').value;
+  orgFiltrados = ORGANIZACIONES.filter(o=>{
+    if(q && !String(o.nombre).toLowerCase().includes(q)) return false;
+    if(comuna && o.comuna !== comuna) return false;
+    if(categoria && o.categoria !== categoria) return false;
+    return true;
+  });
+  orgPagina = 1;
+  renderTablaOrg();
+}
+
+function renderTablaOrg(){
+  const inicio = (orgPagina-1)*ORG_POR_PAGINA;
+  const items = orgFiltrados.slice(inicio, inicio+ORG_POR_PAGINA);
+  document.getElementById('tbodyOrg').innerHTML = items.length ? items.map(o=>`
+    <tr>
+      <td class="nombreCell" onclick="abrirDrawerOrg(${o.id})">${titleCase(o.nombre)}</td>
+      <td onclick="abrirDrawerOrg(${o.id})">${o.categoria||'-'}</td>
+      <td onclick="abrirDrawerOrg(${o.id})">${titleCase(o.comuna)||'-'}</td>
+      <td onclick="abrirDrawerOrg(${o.id})">${o.estadoLegal||'-'}</td>
+      <td onclick="abrirDrawerOrg(${o.id})">${o.contactoNombre ? titleCase(o.contactoNombre) : '<span style="color:var(--muted);">Sin contacto</span>'}</td>
+      <td><button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="abrirDrawerOrg(${o.id})">Ver</button></td>
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Sin resultados</td></tr>';
+  renderPagerOrg();
+}
+function renderPagerOrg(){
+  const totalPag = Math.max(1, Math.ceil(orgFiltrados.length/ORG_POR_PAGINA));
+  document.getElementById('pagerOrg').innerHTML = `
+    <button onclick="cambiarPaginaOrg(-1)" ${orgPagina<=1?'disabled':''} style="padding:6px 14px;border:1px solid var(--border);background:var(--card-solid);color:var(--text);border-radius:9px;cursor:pointer;">‹ Anterior</button>
+    <span>Página ${orgPagina} de ${totalPag} · ${orgFiltrados.length.toLocaleString('es-CL')} resultados</span>
+    <button onclick="cambiarPaginaOrg(1)" ${orgPagina>=totalPag?'disabled':''} style="padding:6px 14px;border:1px solid var(--border);background:var(--card-solid);color:var(--text);border-radius:9px;cursor:pointer;">Siguiente ›</button>`;
+}
+function cambiarPaginaOrg(delta){ orgPagina += delta; renderTablaOrg(); }
+
+async function abrirDrawerOrg(id){
+  const o = ORGANIZACIONES.find(x=>x.id===id);
+  if(!o) return;
+  orgActivaId = id;
+  document.getElementById('orgDrawerNombre').innerText = titleCase(o.nombre);
+  document.getElementById('orgDCategoria').value = o.categoria||'';
+  document.getElementById('orgDComuna').value = o.comuna||'';
+  document.getElementById('orgDDireccion').value = o.direccion||'';
+  document.getElementById('orgDContactoNombre').value = o.contactoNombre||'';
+  document.getElementById('orgDContactoTelefono').value = o.contactoTelefono||'';
+  document.getElementById('orgDContactoEmail').value = o.contactoEmail||'';
+  document.getElementById('orgDNotas').value = o.notas||'';
+  document.getElementById('listaActividadesOrg').innerHTML = 'Cargando…';
+  document.getElementById('overlayOrg').style.display='block';
+  document.getElementById('drawerOrg').style.display='block';
+  const res = await apiGet({action:'listarActividadesOrg', idOrganizacion:id});
+  renderListaActividadesOrg(res.ok ? res.datos : []);
+}
+function cerrarDrawerOrg(){
+  document.getElementById('overlayOrg').style.display='none';
+  document.getElementById('drawerOrg').style.display='none';
+}
+function renderListaActividadesOrg(lista){
+  document.getElementById('listaActividadesOrg').innerHTML = lista.length ? lista.map(a=>{
+    const fecha = new Date(a.fechaProgramada).toLocaleDateString('es-CL');
+    const badge = a.estado==='Realizada' ? `<span class="okrBadge" style="background:#1E8E5A;">Realizada</span>` : `<span class="okrBadge" style="background:#C9A227;">Programada</span>`;
+    return `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <b style="font-size:12.5px;">${a.tipoActividad}</b> ${badge}
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">Agendada: ${fecha}${a.fechaRealizacion?' · Realizada: '+new Date(a.fechaRealizacion).toLocaleDateString('es-CL'):''}</div>
+      ${a.estado==='Realizada' ? `<div style="font-size:11.5px;margin-top:6px;">${a.descripcion||''}${a.receptividad?' · Receptividad: '+a.receptividad+'/5':''}</div>` : ''}
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        ${a.estado==='Programada' ? `<button class="btn btn-outline" style="padding:4px 9px;font-size:10.5px;" onclick="abrirModalPreInforme(${a.id})">Completar informe</button>` : ''}
+        <button class="btn btn-outline" style="padding:4px 9px;font-size:10.5px;color:var(--red);" onclick="borrarActividadOrg(${a.id})">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('') : '<p style="color:var(--muted);font-size:12.5px;">Sin actividades registradas todavía.</p>';
+}
+async function borrarActividadOrg(id){
+  if(!confirm('¿Eliminar esta actividad?')) return;
+  const res = await apiPost({action:'eliminarActividadOrg', id});
+  if(res.ok) abrirDrawerOrg(orgActivaId); else toast(res.error||'Error');
+}
+
+async function guardarOrganizacion(){
+  const campos = {
+    categoria: document.getElementById('orgDCategoria').value,
+    comuna: document.getElementById('orgDComuna').value,
+    direccion: document.getElementById('orgDDireccion').value,
+    contactoNombre: document.getElementById('orgDContactoNombre').value,
+    contactoTelefono: document.getElementById('orgDContactoTelefono').value,
+    contactoEmail: document.getElementById('orgDContactoEmail').value,
+    notas: document.getElementById('orgDNotas').value
+  };
+  mostrarCargando(true);
+  const res = await apiPost({action:'actualizarOrganizacion', id: orgActivaId, campos});
+  mostrarCargando(false);
+  toast(res.ok ? 'Guardado' : (res.error||'Error'));
+  if(res.ok){
+    const o = ORGANIZACIONES.find(x=>x.id===orgActivaId);
+    if(o) Object.assign(o, campos);
+    renderTablaOrg();
+  }
+}
+async function borrarOrganizacion(){
+  if(!confirm('¿Eliminar esta organización? También se pierden sus actividades registradas.')) return;
+  const res = await apiPost({action:'eliminarOrganizacion', id: orgActivaId});
+  toast(res.ok ? 'Organización eliminada' : (res.error||'Error'));
+  if(res.ok){
+    ORGANIZACIONES = ORGANIZACIONES.filter(o=>o.id!==orgActivaId);
+    cerrarDrawerOrg();
+    aplicarFiltrosOrg();
+  }
+}
+
+function abrirModalOrg(){
+  document.getElementById('orgNuevoNombre').value='';
+  document.getElementById('orgNuevaDireccion').value='';
+  document.getElementById('orgNuevoContacto').value='';
+  document.getElementById('orgNuevoTelefono').value='';
+  document.getElementById('modalOrgOverlay').style.display='block';
+}
+function cerrarModalOrg(){ document.getElementById('modalOrgOverlay').style.display='none'; }
+async function confirmarNuevaOrg(){
+  const datos = {
+    nombre: document.getElementById('orgNuevoNombre').value.trim(),
+    categoria: document.getElementById('orgNuevaCategoria').value,
+    comuna: document.getElementById('orgNuevaComuna').value,
+    direccion: document.getElementById('orgNuevaDireccion').value,
+    contactoNombre: document.getElementById('orgNuevoContacto').value,
+    contactoTelefono: document.getElementById('orgNuevoTelefono').value
+  };
+  if(!datos.nombre){ toast('El nombre es obligatorio'); return; }
+  mostrarCargando(true);
+  const res = await apiPost({action:'agregarOrganizacion', datos});
+  mostrarCargando(false);
+  toast(res.ok ? 'Organización creada' : (res.error||'Error'));
+  if(res.ok){
+    ORGANIZACIONES.push({id:res.id, ...datos, estadoLegal:'VIGENTE', contactoEmail:'', notas:''});
+    cerrarModalOrg();
+    aplicarFiltrosOrg();
+  }
+}
+
+function abrirModalActividadOrg(){
+  document.getElementById('orgActTipo').value='Llamada';
+  document.getElementById('orgActFecha').value='';
+  document.getElementById('modalActividadOrgOverlay').style.display='block';
+}
+function cerrarModalActividadOrg(){ document.getElementById('modalActividadOrgOverlay').style.display='none'; }
+async function confirmarActividadOrg(){
+  const tipoActividad = document.getElementById('orgActTipo').value;
+  const fechaProgramada = document.getElementById('orgActFecha').value;
+  if(!fechaProgramada){ toast('Elige una fecha'); return; }
+  mostrarCargando(true);
+  const res = await apiPost({action:'programarActividadOrg', idOrganizacion: orgActivaId, tipoActividad, fechaProgramada});
+  mostrarCargando(false);
+  toast(res.ok ? 'Actividad agendada' : (res.error||'Error'));
+  if(res.ok){ cerrarModalActividadOrg(); abrirDrawerOrg(orgActivaId); }
+}
+
+function abrirModalPreInforme(idActividad){
+  actividadOrgActivaId = idActividad;
+  ['preLugar','preAsistentes','preContexto','preDescripcion','preTemas','preAcuerdos','preProximaAccion'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('preResponsable').value='Organización';
+  document.getElementById('preReceptividad').value='3';
+  document.getElementById('preFoto').value='';
+  document.getElementById('modalPreInformeOverlay').style.display='block';
+}
+function cerrarModalPreInforme(){ document.getElementById('modalPreInformeOverlay').style.display='none'; }
+function _leerArchivoComoBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+async function confirmarPreInforme(){
+  const datos = {
+    lugar: document.getElementById('preLugar').value,
+    asistentes: document.getElementById('preAsistentes').value,
+    contexto: document.getElementById('preContexto').value,
+    descripcion: document.getElementById('preDescripcion').value,
+    temasTratados: document.getElementById('preTemas').value,
+    acuerdos: document.getElementById('preAcuerdos').value,
+    proximaAccion: document.getElementById('preProximaAccion').value,
+    responsable: document.getElementById('preResponsable').value,
+    receptividad: document.getElementById('preReceptividad').value,
+    fotoUrl: ''
+  };
+  mostrarCargando(true);
+  const archivoFoto = document.getElementById('preFoto').files[0];
+  if(archivoFoto){
+    try{
+      const base64 = await _leerArchivoComoBase64(archivoFoto);
+      const resFoto = await apiPost({action:'subirFotoActividadOrg', base64Data: base64, nombreArchivo: archivoFoto.name, tipoMime: archivoFoto.type});
+      if(resFoto.ok) datos.fotoUrl = resFoto.url;
+    } catch(err){ /* si falla la foto, se guarda el resto igual */ }
+  }
+  const res = await apiPost({action:'registrarPreInformeOrg', id: actividadOrgActivaId, datos});
+  mostrarCargando(false);
+  toast(res.ok ? 'Pre-informe guardado' : (res.error||'Error'));
+  if(res.ok){ cerrarModalPreInforme(); abrirDrawerOrg(orgActivaId); }
+}
+
+function abrirModalInformeOrg(){
+  const hoy = new Date();
+  const hace15 = new Date(); hace15.setDate(hace15.getDate()-15);
+  document.getElementById('informeOrgHasta').value = hoy.toISOString().slice(0,10);
+  document.getElementById('informeOrgDesde').value = hace15.toISOString().slice(0,10);
+  document.getElementById('informeOrgResumen').innerHTML='';
+  document.getElementById('tbodyInformeOrg').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Elige un rango de fechas y presiona "Generar"</td></tr>';
+  informeOrgFilasActuales = [];
+  document.getElementById('modalInformeOrgOverlay').style.display='block';
+}
+function cerrarModalInformeOrg(){ document.getElementById('modalInformeOrgOverlay').style.display='none'; }
+async function generarInformeOrg(){
+  const fechaInicio = document.getElementById('informeOrgDesde').value;
+  const fechaFin = document.getElementById('informeOrgHasta').value;
+  const categoria = document.getElementById('informeOrgCategoria').value;
+  mostrarCargando(true);
+  const res = await apiGet({action:'getInformeAcumulativoOrg', fechaInicio, fechaFin, categoria});
+  mostrarCargando(false);
+  if(!res.ok){ toast(res.error||'Error'); return; }
+  informeOrgFilasActuales = res.datos.filas;
+  document.getElementById('informeOrgResumen').innerText = `${res.datos.total} actividad(es) en el período.`;
+  renderTablaInformeOrg();
+}
+function renderTablaInformeOrg(){
+  document.getElementById('tbodyInformeOrg').innerHTML = informeOrgFilasActuales.length ? informeOrgFilasActuales.map((f,i)=>`
+    <tr>
+      <td>${titleCase(f.organizacion)}</td>
+      <td>${f.categoria}</td>
+      <td>${f.tipoActividad}</td>
+      <td>${new Date(f.fechaRealizacion).toLocaleDateString('es-CL')}</td>
+      <td><input value="${f.asistentes||''}" style="width:60px;padding:5px;border:1px solid var(--border);border-radius:6px;background:rgba(255,255,255,.04);color:var(--text);" onchange="informeOrgFilasActuales[${i}].asistentes=this.value"></td>
+      <td><input value="${f.receptividad||''}" style="width:45px;padding:5px;border:1px solid var(--border);border-radius:6px;background:rgba(255,255,255,.04);color:var(--text);" onchange="informeOrgFilasActuales[${i}].receptividad=this.value"></td>
+      <td><input value="${(f.proximaAccion||'').replace(/"/g,'&quot;')}" style="width:160px;padding:5px;border:1px solid var(--border);border-radius:6px;background:rgba(255,255,255,.04);color:var(--text);" onchange="informeOrgFilasActuales[${i}].proximaAccion=this.value"></td>
+    </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Sin actividades en ese rango</td></tr>';
+}
+async function descargarInformeOrgPDF(){
+  if(!informeOrgFilasActuales.length){ toast('Genera el informe primero'); return; }
+  mostrarCargando(true);
+  const res = await apiPost({action:'generarInformeOrgPDF', filas: informeOrgFilasActuales, fechaInicio: document.getElementById('informeOrgDesde').value, fechaFin: document.getElementById('informeOrgHasta').value});
+  mostrarCargando(false);
+  if(res.ok){ toast('PDF generado'); window.open(res.url, '_blank'); }
+  else toast(res.error||'Error');
 }
 
 </script>
