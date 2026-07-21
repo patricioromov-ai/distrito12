@@ -254,7 +254,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-6</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-7</p>
   </div>
 </div>
 
@@ -2805,6 +2805,7 @@ const ORG_POR_PAGINA = 50;
 let orgActivaId = null;
 let actividadOrgActivaId = null;
 let informeOrgFilasActuales = [];
+let informeOrgGenerado = false;
 
 async function cargarOrganizaciones(){
   document.getElementById('orgTotalTexto').innerText = 'Cargando…';
@@ -3052,11 +3053,13 @@ async function confirmarPreInforme(){
 function abrirModalInformeOrg(){
   const hoy = new Date();
   const hace15 = new Date(); hace15.setDate(hace15.getDate()-15);
-  document.getElementById('informeOrgHasta').value = hoy.toISOString().slice(0,10);
-  document.getElementById('informeOrgDesde').value = hace15.toISOString().slice(0,10);
+  const _fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('informeOrgHasta').value = _fmt(hoy);
+  document.getElementById('informeOrgDesde').value = _fmt(hace15);
   document.getElementById('informeOrgResumen').innerHTML='';
   document.getElementById('tbodyInformeOrg').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Elige un rango de fechas y presiona "Generar"</td></tr>';
   informeOrgFilasActuales = [];
+  informeOrgGenerado = false;
   document.getElementById('modalInformeOrgOverlay').style.display='block';
 }
 function cerrarModalInformeOrg(){ document.getElementById('modalInformeOrgOverlay').style.display='none'; }
@@ -3069,6 +3072,7 @@ async function generarInformeOrg(){
   mostrarCargando(false);
   if(!res.ok){ toast(res.error||'Error'); return; }
   informeOrgFilasActuales = res.datos.filas;
+  informeOrgGenerado = true;
   document.getElementById('informeOrgResumen').innerText = `${res.datos.total} actividad(es) en el período.`;
   renderTablaInformeOrg();
 }
@@ -3085,7 +3089,8 @@ function renderTablaInformeOrg(){
     </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Sin actividades en ese rango</td></tr>';
 }
 async function descargarInformeOrgPDF(){
-  if(!informeOrgFilasActuales.length){ toast('Genera el informe primero'); return; }
+  if(!informeOrgGenerado){ toast('Presiona "Generar" primero'); return; }
+  if(!informeOrgFilasActuales.length){ toast('No hay actividades registradas en ese rango de fechas — no hay nada que descargar'); return; }
   mostrarCargando(true);
   const res = await apiPost({action:'generarInformeOrgPDF', filas: informeOrgFilasActuales, fechaInicio: document.getElementById('informeOrgDesde').value, fechaFin: document.getElementById('informeOrgHasta').value});
   mostrarCargando(false);
