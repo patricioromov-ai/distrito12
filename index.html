@@ -32,6 +32,8 @@
     --radius:18px; --radius-sm:11px; --shadow:0 10px 30px rgba(0,0,0,.35); --shadow-lg:0 24px 60px rgba(0,0,0,.5);
   }
   *{box-sizing:border-box;}
+  select{ color-scheme: dark; }
+  select option{ background: var(--card-solid); color: var(--text); }
   body{margin:0;font-family:'Inter',Arial,sans-serif;overflow-x:hidden;background:
     radial-gradient(circle at 12% 8%, var(--glow-a), transparent 42%),
     radial-gradient(circle at 88% 92%, var(--glow-b), transparent 48%),
@@ -254,7 +256,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-8</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-9</p>
   </div>
 </div>
 
