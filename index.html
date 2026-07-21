@@ -256,7 +256,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-10</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-11</p>
   </div>
 </div>
 
@@ -662,6 +662,7 @@
       <label>Dirección</label><input id="orgNuevaDireccion">
       <label>Nombre de contacto</label><input id="orgNuevoContacto">
       <label>Teléfono</label><input id="orgNuevoTelefono">
+      <label>Email</label><input id="orgNuevoEmail" type="email">
     </div>
     <div class="mfoot" style="padding:14px 20px;text-align:right;border-top:1px solid var(--border);">
       <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="confirmarNuevaOrg()">Crear organización</button>
@@ -3061,6 +3062,7 @@ function abrirModalOrg(){
   document.getElementById('orgNuevaDireccion').value='';
   document.getElementById('orgNuevoContacto').value='';
   document.getElementById('orgNuevoTelefono').value='';
+  document.getElementById('orgNuevoEmail').value='';
   document.getElementById('modalOrgOverlay').style.display='block';
 }
 function cerrarModalOrg(){ document.getElementById('modalOrgOverlay').style.display='none'; }
@@ -3071,7 +3073,8 @@ async function confirmarNuevaOrg(){
     comuna: document.getElementById('orgNuevaComuna').value,
     direccion: document.getElementById('orgNuevaDireccion').value,
     contactoNombre: document.getElementById('orgNuevoContacto').value,
-    contactoTelefono: document.getElementById('orgNuevoTelefono').value
+    contactoTelefono: document.getElementById('orgNuevoTelefono').value,
+    contactoEmail: document.getElementById('orgNuevoEmail').value
   };
   if(!datos.nombre){ toast('El nombre es obligatorio'); return; }
   mostrarCargando(true);
@@ -3079,7 +3082,7 @@ async function confirmarNuevaOrg(){
   mostrarCargando(false);
   toast(res.ok ? 'Organización creada' : (res.error||'Error'));
   if(res.ok){
-    ORGANIZACIONES.push({id:res.id, ...datos, estadoLegal:'VIGENTE', contactoEmail:'', notas:''});
+    ORGANIZACIONES.push({id:res.id, ...datos, estadoLegal:'VIGENTE', notas:''});
     cerrarModalOrg();
     aplicarFiltrosOrg();
   }
