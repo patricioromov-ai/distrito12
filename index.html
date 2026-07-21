@@ -256,7 +256,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-9</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-10</p>
   </div>
 </div>
 
@@ -585,18 +585,27 @@
           <p id="orgTotalTexto">Cargando…</p>
         </div>
         <div class="btnRow">
+          <button class="btn btn-outline" onclick="cargarOrganizaciones(true)">Actualizar</button>
+          <button class="btn btn-outline" onclick="exportarCSVOrg()">Exportar CSV</button>
           <button class="btn btn-outline" onclick="abrirModalInformeOrg()">Generar informe acumulativo</button>
           <button class="btn btn-gold" onclick="abrirModalOrg()">+ Agregar organización</button>
         </div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-        <input type="text" id="orgBuscar" placeholder="Buscar por nombre…" style="flex:1;min-width:220px;padding:10px 14px;border:1px solid var(--border);border-radius:11px;font-size:13px;font-family:inherit;background:rgba(255,255,255,.04);color:var(--text);" oninput="aplicarFiltrosOrg()">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <input type="text" id="orgBuscar" placeholder="Buscar por nombre…" style="flex:1;min-width:220px;padding:10px 14px;border:1px solid var(--border);border-radius:11px;font-size:13px;font-family:inherit;background:rgba(255,255,255,.04);color:var(--text);" oninput="onBuscarOrgInput()">
         <select id="orgFiltroComuna" onchange="aplicarFiltrosOrg()"><option value="">Todas las comunas</option></select>
-        <select id="orgFiltroCategoria" onchange="aplicarFiltrosOrg()"><option value="">Todas las categorías</option></select>
+        <button class="btn btn-outline" onclick="limpiarFiltrosOrg()">Limpiar filtros</button>
       </div>
+      <div id="chipsCategoriaOrg" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>
+      <p id="orgContadorResultados" style="font-size:12.5px;color:var(--muted);margin:0 0 10px;"></p>
       <div style="overflow:auto;">
         <table>
-          <thead><tr><th>Nombre</th><th>Categoría</th><th>Comuna</th><th>Estado legal</th><th>Contacto</th><th></th></tr></thead>
+          <thead><tr>
+            <th style="cursor:pointer;" onclick="ordenarOrg('nombre')">Nombre <span id="ordIcon-nombre"></span></th>
+            <th style="cursor:pointer;" onclick="ordenarOrg('categoria')">Categoría <span id="ordIcon-categoria"></span></th>
+            <th style="cursor:pointer;" onclick="ordenarOrg('comuna')">Comuna <span id="ordIcon-comuna"></span></th>
+            <th>Estado legal</th><th>Contacto</th><th></th>
+          </tr></thead>
           <tbody id="tbodyOrg"></tbody>
         </table>
       </div>
@@ -615,8 +624,16 @@
     <label>Comuna</label><select id="orgDComuna"></select>
     <label>Dirección</label><input id="orgDDireccion">
     <label>Nombre de contacto/dirigente</label><input id="orgDContactoNombre">
-    <label>Teléfono</label><input id="orgDContactoTelefono">
-    <label>Email</label><input id="orgDContactoEmail">
+    <label>Teléfono</label>
+    <div style="display:flex;gap:6px;">
+      <input id="orgDContactoTelefono" style="flex:1;">
+      <button class="iconBtn wsp" style="flex-shrink:0;" title="Abrir WhatsApp" onclick="whatsappOrg(orgActivaId)"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15L2 22l5.2-1.4A10 10 0 1012 2zm5.6 14.3c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.6-2.6-1.1-4.3-3.8-4.5-4-.1-.2-1.1-1.4-1.1-2.7s.7-1.9 1-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.7.8 1.8.1.2.1.3 0 .5-.1.2-.1.3-.3.5-.1.2-.3.3-.4.5-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.5 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1.2.1 1.5.7 1.7.8.2.1.4.2.4.3.1.2.1.7-.1 1.2z"/></svg></button>
+    </div>
+    <label>Email</label>
+    <div style="display:flex;gap:6px;">
+      <input id="orgDContactoEmail" style="flex:1;">
+      <button class="iconBtn email" style="flex-shrink:0;" title="Enviar correo (cuenta institucional)" onclick="emailOrg(orgActivaId)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></button>
+    </div>
     <label>Notas</label><textarea id="orgDNotas" style="min-height:70px;"></textarea>
     <div class="actionRow">
       <button class="btn-gold" onclick="guardarOrganizacion()">Guardar cambios</button>
@@ -1374,6 +1391,17 @@ function rolColor(rol){
 // ---------- ICONOS ----------
 const ICONO_EMAIL = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>`;
 const ICONO_WSP = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15L2 22l5.2-1.4A10 10 0 1012 2zm5.6 14.3c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.6-2.6-1.1-4.3-3.8-4.5-4-.1-.2-1.1-1.4-1.1-2.7s.7-1.9 1-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.7.8 1.8.1.2.1.3 0 .5-.1.2-.1.3-.3.5-.1.2-.3.3-.4.5-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.5 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1.2.1 1.5.7 1.7.8.2.1.4.2.4.3.1.2.1.7-.1 1.2z"/></svg>`;
+
+// Correo institucional del sistema — el link de "Enviar email" en Organizaciones
+// abre el compositor de Gmail forzando esta cuenta (parámetro authuser), en vez
+// de dejar que el navegador use cualquier cuenta que tenga por defecto. Esto
+// requiere que esa cuenta ya esté abierta como sesión en el navegador de quien
+// lo usa — no es posible iniciar sesión automáticamente por razones de seguridad.
+const GMAIL_INSTITUCIONAL = 'distrito12pdgrm@gmail.com';
+function abrirGmailInstitucional(destinatario, asunto){
+  const url = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=${encodeURIComponent(destinatario)}&su=${encodeURIComponent(asunto||'')}&authuser=${encodeURIComponent(GMAIL_INSTITUCIONAL)}`;
+  window.open(url, '_blank');
+}
 const ICONO_MAS = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>`;
 
 function renderTabla(){
@@ -2809,7 +2837,13 @@ let actividadOrgActivaId = null;
 let informeOrgFilasActuales = [];
 let informeOrgGenerado = false;
 
-async function cargarOrganizaciones(){
+let categoriaSeleccionadaOrg = '';
+let ordenOrgCampo = 'nombre';
+let ordenOrgAsc = true;
+let _debounceBuscarOrg = null;
+
+async function cargarOrganizaciones(forzar){
+  if(ORGANIZACIONES.length && !forzar){ aplicarFiltrosOrg(); return; } // ya está en memoria, no se vuelve a pedir
   document.getElementById('orgTotalTexto').innerText = 'Cargando…';
   const res = await apiGet({action:'listarOrganizaciones', filtros:{}});
   if(!res.ok){ document.getElementById('orgTotalTexto').innerText = res.error||'Error'; return; }
@@ -2819,49 +2853,85 @@ async function cargarOrganizaciones(){
   aplicarFiltrosOrg();
 }
 
+function onBuscarOrgInput(){
+  clearTimeout(_debounceBuscarOrg);
+  _debounceBuscarOrg = setTimeout(aplicarFiltrosOrg, 250); // espera a que la persona deje de escribir
+}
+
 function poblarFiltrosOrg(){
   const fComuna = document.getElementById('orgFiltroComuna');
+  const categorias = [...new Set(ORGANIZACIONES.map(o=>o.categoria).filter(Boolean))].sort();
+  const comunas = [...new Set(ORGANIZACIONES.map(o=>o.comuna).filter(Boolean))].sort();
   if(!fComuna.dataset.cargado){
-    const comunas = [...new Set(ORGANIZACIONES.map(o=>o.comuna).filter(Boolean))].sort();
     comunas.forEach(c=> fComuna.innerHTML += `<option value="${c}">${titleCase(c)}</option>`);
     fComuna.dataset.cargado='1';
   }
-  const fCategoria = document.getElementById('orgFiltroCategoria');
-  if(!fCategoria.dataset.cargado){
-    const categorias = [...new Set(ORGANIZACIONES.map(o=>o.categoria).filter(Boolean))].sort();
-    categorias.forEach(c=> fCategoria.innerHTML += `<option value="${c}">${c}</option>`);
-    fCategoria.dataset.cargado='1';
-    // También se usan en los modales de nueva organización e informe
+  if(!document.getElementById('informeOrgCategoria').dataset.cargado){
     const selNueva = document.getElementById('orgNuevaCategoria');
     const selInforme = document.getElementById('informeOrgCategoria');
     categorias.forEach(c=>{
       selNueva.innerHTML += `<option value="${c}">${c}</option>`;
       selInforme.innerHTML += `<option value="${c}">${c}</option>`;
     });
+    selInforme.dataset.cargado='1';
     const selComunaNueva = document.getElementById('orgNuevaComuna');
-    const comunas = [...new Set(ORGANIZACIONES.map(o=>o.comuna).filter(Boolean))].sort();
     comunas.forEach(c=> selComunaNueva.innerHTML += `<option value="${c}">${titleCase(c)}</option>`);
     const selComunaDrawer = document.getElementById('orgDComuna');
     comunas.forEach(c=> selComunaDrawer.innerHTML += `<option value="${c}">${titleCase(c)}</option>`);
     categorias.forEach(c=> document.getElementById('orgDCategoria').innerHTML += `<option value="${c}">${c}</option>`);
   }
+  // Chips de categoría con conteo, calculados de los datos ya cargados
+  const conteos = {};
+  ORGANIZACIONES.forEach(o=>{ conteos[o.categoria] = (conteos[o.categoria]||0)+1; });
+  const chipsHTML = [`<button class="togglePill ${categoriaSeleccionadaOrg===''?'on':''}" onclick="seleccionarCategoriaOrg('')">Todas (${ORGANIZACIONES.length.toLocaleString('es-CL')})</button>`]
+    .concat(categorias.map(c=>`<button class="togglePill ${categoriaSeleccionadaOrg===c?'on':''}" onclick="seleccionarCategoriaOrg('${c.replace(/'/g,"\\'")}')">${c} (${conteos[c].toLocaleString('es-CL')})</button>`));
+  document.getElementById('chipsCategoriaOrg').innerHTML = chipsHTML.join('');
+}
+function seleccionarCategoriaOrg(cat){
+  categoriaSeleccionadaOrg = cat;
+  poblarFiltrosOrg(); // solo para refrescar el estado visual "on" de los chips (no repuebla, ya está cargado=1)
+  aplicarFiltrosOrg();
+}
+function limpiarFiltrosOrg(){
+  document.getElementById('orgBuscar').value='';
+  document.getElementById('orgFiltroComuna').value='';
+  categoriaSeleccionadaOrg='';
+  poblarFiltrosOrg();
+  aplicarFiltrosOrg();
 }
 
 function aplicarFiltrosOrg(){
   const q = document.getElementById('orgBuscar').value.toLowerCase();
   const comuna = document.getElementById('orgFiltroComuna').value;
-  const categoria = document.getElementById('orgFiltroCategoria').value;
+  const categoria = categoriaSeleccionadaOrg;
   orgFiltrados = ORGANIZACIONES.filter(o=>{
     if(q && !String(o.nombre).toLowerCase().includes(q)) return false;
     if(comuna && o.comuna !== comuna) return false;
     if(categoria && o.categoria !== categoria) return false;
     return true;
   });
+  ordenarArregloOrg();
   orgPagina = 1;
   renderTablaOrg();
 }
+function ordenarOrg(campo){
+  if(ordenOrgCampo===campo) ordenOrgAsc = !ordenOrgAsc;
+  else { ordenOrgCampo = campo; ordenOrgAsc = true; }
+  ['nombre','categoria','comuna'].forEach(c=> document.getElementById('ordIcon-'+c).innerText='');
+  document.getElementById('ordIcon-'+campo).innerText = ordenOrgAsc ? '▲' : '▼';
+  ordenarArregloOrg();
+  renderTablaOrg();
+}
+function ordenarArregloOrg(){
+  orgFiltrados.sort((a,b)=>{
+    const va = String(a[ordenOrgCampo]||'').toLowerCase();
+    const vb = String(b[ordenOrgCampo]||'').toLowerCase();
+    return ordenOrgAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+}
 
 function renderTablaOrg(){
+  document.getElementById('orgContadorResultados').innerText = `Mostrando ${orgFiltrados.length.toLocaleString('es-CL')} de ${ORGANIZACIONES.length.toLocaleString('es-CL')} organizaciones`;
   const inicio = (orgPagina-1)*ORG_POR_PAGINA;
   const items = orgFiltrados.slice(inicio, inicio+ORG_POR_PAGINA);
   document.getElementById('tbodyOrg').innerHTML = items.length ? items.map(o=>`
@@ -2871,9 +2941,34 @@ function renderTablaOrg(){
       <td onclick="abrirDrawerOrg(${o.id})">${titleCase(o.comuna)||'-'}</td>
       <td onclick="abrirDrawerOrg(${o.id})">${o.estadoLegal||'-'}</td>
       <td onclick="abrirDrawerOrg(${o.id})">${o.contactoNombre ? titleCase(o.contactoNombre) : '<span style="color:var(--muted);">Sin contacto</span>'}</td>
-      <td><button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="abrirDrawerOrg(${o.id})">Ver</button></td>
+      <td onclick="event.stopPropagation()">
+        <button class="iconBtn wsp" title="${o.contactoTelefono?'Abrir WhatsApp':'Sin teléfono registrado'}" ${o.contactoTelefono?'':'disabled'} onclick="whatsappOrg(${o.id})">${ICONO_WSP}</button>
+        <button class="iconBtn email" title="${o.contactoEmail?'Enviar correo (cuenta institucional)':'Sin email registrado'}" ${o.contactoEmail?'':'disabled'} onclick="emailOrg(${o.id})">${ICONO_EMAIL}</button>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="abrirDrawerOrg(${o.id})">Ver</button>
+      </td>
     </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Sin resultados</td></tr>';
   renderPagerOrg();
+}
+function whatsappOrg(id){
+  const o = ORGANIZACIONES.find(x=>x.id===id);
+  if(!o || !o.contactoTelefono){ toast('Sin teléfono registrado'); return; }
+  window.open(`https://wa.me/${normalizarTelefono(o.contactoTelefono)}`, '_blank');
+}
+function emailOrg(id){
+  const o = ORGANIZACIONES.find(x=>x.id===id);
+  if(!o || !o.contactoEmail){ toast('Sin email registrado'); return; }
+  abrirGmailInstitucional(o.contactoEmail, `Distrito 12 · ${titleCase(o.nombre)}`);
+}
+function exportarCSVOrg(){
+  const headers = ['NOMBRE','CATEGORIA','COMUNA','ESTADO_LEGAL','CONTACTO_NOMBRE','CONTACTO_TELEFONO','CONTACTO_EMAIL'];
+  const rows = orgFiltrados.map(o=> [o.nombre,o.categoria,o.comuna,o.estadoLegal,o.contactoNombre,o.contactoTelefono,o.contactoEmail]
+    .map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'organizaciones_distrito12.csv';
+  link.click();
 }
 function renderPagerOrg(){
   const totalPag = Math.max(1, Math.ceil(orgFiltrados.length/ORG_POR_PAGINA));
