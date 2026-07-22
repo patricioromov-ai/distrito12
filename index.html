@@ -215,6 +215,22 @@
   .chatMsg .chatHora{font-size:9.5px;opacity:.55;margin-top:4px;text-align:right;}
   #chatInputRow{display:flex;gap:10px;flex-shrink:0;}
   #chatInputRow input{flex:1;padding:12px 16px;border:1px solid var(--border);border-radius:12px;font-size:13.5px;font-family:inherit;background:rgba(255,255,255,.04);color:var(--text);}
+
+  #chatMilitantesView{display:none;flex:1;overflow:hidden;padding:24px 26px 16px;background:transparent;gap:16px;}
+  #chatMilLista{width:300px;flex-shrink:0;display:flex;flex-direction:column;overflow-y:auto;background:var(--card);border:1px solid var(--border);backdrop-filter:blur(20px);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);}
+  .chatMilConvItem{padding:11px 10px;border-radius:10px;cursor:pointer;margin-bottom:4px;position:relative;}
+  .chatMilConvItem:hover,.chatMilConvItem.activa{background:rgba(224,164,88,.1);}
+  .chatMilConvItem .cNombre{font-size:12.5px;font-weight:700;}
+  .chatMilConvItem .cPreview{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+  .chatMilBadge{position:absolute;top:10px;right:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 7px;}
+  #chatMilHilo{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--card);border:1px solid var(--border);backdrop-filter:blur(20px);border-radius:var(--radius);box-shadow:var(--shadow);}
+  #chatMilHiloVacio{flex:1;display:flex;align-items:center;justify-content:center;}
+  #chatMilHiloActivo{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+  #chatMilHiloHead{padding:14px 18px;border-bottom:1px solid var(--border);}
+  #chatMilMensajesCont{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+  #chatMilInputRow{display:flex;gap:10px;padding:14px 18px;border-top:1px solid var(--border);flex-shrink:0;}
+  #chatMilInputRow input{flex:1;padding:11px 15px;border:1px solid var(--border);border-radius:11px;font-size:13px;font-family:inherit;background:rgba(255,255,255,.04);color:var(--text);}
+  @media (max-width:820px){ #chatMilitantesView{flex-direction:column;} #chatMilLista{width:100%;max-height:180px;} }
   #modalEncuestaOverlay label,#modalInvitEncuestaOverlay label,#modalResultadosEncuestaOverlay label{font-size:11px;color:var(--muted);display:block;margin-top:11px;font-weight:600;}
   #modalEncuestaOverlay input,#modalEncuestaOverlay select,#modalEncuestaOverlay textarea,
   #modalInvitEncuestaOverlay select,
@@ -275,7 +291,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-22-2</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-22-3</p>
   </div>
 </div>
 
@@ -358,6 +374,7 @@
         <button class="btn btn-outline" id="btnAgregar" onclick="abrirModalAgregar()">+ Agregar militante</button>
         <button class="btn btn-green" id="btnWspMasivo" onclick="abrirWhatsAppMasivo()">WhatsApp</button>
         <button class="btn btn-gold" id="btnEmailMasivo" onclick="abrirModalCorreo(true)">Enviar correo</button>
+        <button class="btn btn-outline" id="btnChatMasivo" onclick="enviarLinksChatMasivoFrontend()">Enviar links de chat</button>
       </div>
     </div>
 
@@ -679,6 +696,32 @@
         <button class="btn btn-gold" onclick="enviarMensajeChatFrontend()">Enviar</button>
       </div>
     </div>
+
+    <!-- PESTAÑA DE CHAT CON MILITANTES (admin + coordinadores) -->
+    <div id="chatMilitantesView">
+      <div id="chatMilLista">
+        <div class="kpiHead" style="margin-bottom:10px;">
+          <div><h1 style="font-size:18px;">Chat con Militantes</h1></div>
+        </div>
+        <div id="chatMilConversaciones"></div>
+      </div>
+      <div id="chatMilHilo">
+        <div id="chatMilHiloVacio">
+          <p style="color:var(--muted);font-size:13px;">Elige una conversación para ver los mensajes.</p>
+        </div>
+        <div id="chatMilHiloActivo" style="display:none;">
+          <div id="chatMilHiloHead">
+            <b id="chatMilNombreActivo">—</b>
+            <span id="chatMilComunaActivo" style="color:var(--muted);font-size:11.5px;"></span>
+          </div>
+          <div id="chatMilMensajesCont"></div>
+          <div id="chatMilInputRow">
+            <input type="text" id="chatMilInput" placeholder="Escribe una respuesta…" onkeydown="if(event.key==='Enter') enviarMensajeChatMilitanteFrontend()">
+            <button class="btn btn-gold" onclick="enviarMensajeChatMilitanteFrontend()">Enviar</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -925,6 +968,10 @@
       <button class="btn-green" id="btnDrawerWsp" style="color:#fff;" onclick="whatsappIndividual()">WhatsApp</button>
     </div>
     <div class="actionRow"><button class="btn-outline" id="btnDrawerBienvenida" style="border:1px solid var(--border);" onclick="enviarBienvenidaInd()">Enviar bienvenida</button></div>
+  </div>
+  <div class="section" id="seccionChatMilitante">
+    <h4>Chat directo</h4>
+    <div class="actionRow"><button class="btn-outline" style="border:1px solid var(--border);" onclick="enviarLinkChatIndividualFrontend()">Enviar link de chat</button></div>
   </div>
   <div class="section">
     <h4>Notas</h4>
@@ -1413,7 +1460,7 @@ async function entrarApp(){
   document.getElementById('app').style.display='flex';
   document.getElementById('rolBadge').innerText = (SESSION.nombre ? SESSION.nombre + ' · ' : '') + (SESSION.rol==='admin' ? 'ADMIN' : SESSION.rol==='coordinador' ? 'COORDINADOR' : 'SOLO VER');
   if(SESSION.rol==='viewer'){
-    ['btnEmailMasivo','btnWspMasivo','btnAgregar'].forEach(id=>document.getElementById(id).style.display='none');
+    ['btnEmailMasivo','btnWspMasivo','btnAgregar','btnChatMasivo'].forEach(id=>document.getElementById(id).style.display='none');
   }
   if(SESSION.rol==='coordinador'){
     ['btnEmailMasivo','btnWspMasivo','btnAgregar'].forEach(id=>document.getElementById(id).style.display='none');
@@ -1645,6 +1692,7 @@ function cambiarTab(tab){
   document.getElementById('organizacionesView').style.display = tab==='organizaciones' ? 'block':'none';
   document.getElementById('encuestasView').style.display = tab==='encuestas' ? 'block':'none';
   document.getElementById('chatEquipoView').style.display = tab==='chat' ? 'flex':'none';
+  document.getElementById('chatMilitantesView').style.display = tab==='chatmilitantes' ? 'flex':'none';
   if(tab==='kpi') renderKPIs();
   if(tab==='gestion') cargarGestionAdmin();
   if(tab==='noticias') cargarNoticias();
@@ -1653,6 +1701,7 @@ function cambiarTab(tab){
   if(tab==='organizaciones') cargarOrganizaciones();
   if(tab==='encuestas') cargarEncuestas();
   if(tab==='chat') iniciarChatEquipo(); else detenerChatEquipo();
+  if(tab==='chatmilitantes') iniciarChatMilitantes(); else detenerChatMilitantes();
 }
 
 function irAlInicio(){
@@ -1668,7 +1717,8 @@ const ICONOS_MENU = {
   usuarios:'<svg width="30" height="30" viewBox="0 0 24 24"><circle cx="10" cy="9" r="3.4" fill="currentColor" opacity=".35"/><path d="M4 20c0-3.4 2.7-5.6 6-5.6" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="18" cy="16.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M18 15v3M16.5 16.5h3" stroke="currentColor" stroke-width="1.2"/></svg>',
   organizaciones:'<svg width="30" height="30" viewBox="0 0 24 24"><rect x="4" y="9" width="7" height="11" fill="currentColor" opacity=".28"/><rect x="13" y="4" width="7" height="16" fill="currentColor" opacity=".45"/><rect x="6" y="12" width="1.6" height="1.6" fill="currentColor"/><rect x="8.5" y="12" width="1.6" height="1.6" fill="currentColor"/><rect x="6" y="15" width="1.6" height="1.6" fill="currentColor"/><rect x="8.5" y="15" width="1.6" height="1.6" fill="currentColor"/><rect x="15" y="7" width="1.6" height="1.6" fill="currentColor"/><rect x="17.5" y="7" width="1.6" height="1.6" fill="currentColor"/><rect x="15" y="10" width="1.6" height="1.6" fill="currentColor"/><rect x="17.5" y="10" width="1.6" height="1.6" fill="currentColor"/><rect x="15" y="13" width="1.6" height="1.6" fill="currentColor"/><rect x="17.5" y="13" width="1.6" height="1.6" fill="currentColor"/></svg>',
   encuestas:'<svg width="30" height="30" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2" fill="currentColor" opacity=".22"/><rect x="8" y="1.5" width="8" height="3.5" rx="1" fill="currentColor" opacity=".5"/><path d="M8 11.5l2 2 3.5-4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 16.5h8" stroke="currentColor" stroke-width="1.4"/></svg>',
-  chat:'<svg width="30" height="30" viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 011 1v9a1 1 0 01-1 1H9l-4 4v-4H4a1 1 0 01-1-1V6a1 1 0 011-1z" fill="currentColor" opacity=".28"/><circle cx="8" cy="10.5" r="1.2" fill="currentColor"/><circle cx="12" cy="10.5" r="1.2" fill="currentColor"/><circle cx="16" cy="10.5" r="1.2" fill="currentColor"/></svg>'
+  chat:'<svg width="30" height="30" viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 011 1v9a1 1 0 01-1 1H9l-4 4v-4H4a1 1 0 01-1-1V6a1 1 0 011-1z" fill="currentColor" opacity=".28"/><circle cx="8" cy="10.5" r="1.2" fill="currentColor"/><circle cx="12" cy="10.5" r="1.2" fill="currentColor"/><circle cx="16" cy="10.5" r="1.2" fill="currentColor"/></svg>',
+  chatMilitantes:'<svg width="30" height="30" viewBox="0 0 24 24"><path d="M3 4h12a1 1 0 011 1v7a1 1 0 01-1 1H8l-3 3v-3H3a1 1 0 01-1-1V5a1 1 0 011-1z" fill="currentColor" opacity=".45"/><path d="M13 9h6a1 1 0 011 1v6a1 1 0 01-1 1h-1v3l-3-3h-2a1 1 0 01-1-1v-3" fill="currentColor" opacity=".22"/></svg>'
 };
 
 function renderMenuInicio(){
@@ -1686,7 +1736,8 @@ function renderMenuInicio(){
     {id:'usuarios', nombre:'Usuarios', icono:'usuarios', color:'#E74C3C', roles:['admin'], accion:()=>abrirModalUsuarios(), stat:()=>apiGet({action:'listarUsuarios'}).then(r=>r.ok?`${r.datos.filter(u=>u.rol==='coordinador'&&u.activo).length} coordinadores`:'—')},
     {id:'organizaciones', nombre:'Organizaciones', icono:'organizaciones', color:'#8E7355', roles:['admin'], accion:()=>cambiarTab('organizaciones'), stat:()=>apiGet({action:'listarOrganizaciones', filtros:{}}).then(r=>r.ok?`${r.datos.length.toLocaleString('es-CL')} registradas`:'—')},
     {id:'encuestas', nombre:'Encuestas', icono:'encuestas', color:'#5AA8E8', roles:['admin'], accion:()=>cambiarTab('encuestas'), stat:()=>apiGet({action:'listarEncuestas'}).then(r=>r.ok?`${r.datos.length} encuesta(s)`:'—')},
-    {id:'chat', nombre:'Chat de Equipo', icono:'chat', color:'#3CB68A', roles:['admin','coordinador'], accion:()=>cambiarTab('chat'), stat:()=>apiGet({action:'obtenerMensajesChat', limite:1}).then(r=>r.ok?`${r.datos.length?'activo':'sin mensajes'}`:'—')}
+    {id:'chat', nombre:'Chat de Equipo', icono:'chat', color:'#3CB68A', roles:['admin','coordinador'], accion:()=>cambiarTab('chat'), stat:()=>apiGet({action:'obtenerMensajesChat', limite:1}).then(r=>r.ok?`${r.datos.length?'activo':'sin mensajes'}`:'—')},
+    {id:'chatmilitantes', nombre:'Chat con Militantes', icono:'chatMilitantes', color:'#E0A458', roles:['admin','coordinador'], accion:()=>cambiarTab('chatmilitantes'), stat:()=>apiGet({action:'listarConversacionesChatMilitante'}).then(r=>r.ok?`${r.datos.reduce((s,c)=>s+c.noLeidos,0)} sin leer`:'—')}
   ];
   window._accionesMenuInicio = TODAS_LAS_TARJETAS;
 
@@ -2769,6 +2820,7 @@ function abrirDrawer(cedula){
     });
   }
   document.getElementById('seccionAccionesRapidas').style.display = SESSION.rol==='admin' ? 'block':'none';
+  document.getElementById('seccionChatMilitante').style.display = (SESSION.rol==='admin'||SESSION.rol==='coordinador') ? 'block':'none';
   document.getElementById('btnEliminarMilitante').style.display = SESSION.rol==='admin' ? 'block':'none';
   document.getElementById('overlay').style.display='block';
   document.getElementById('drawer').style.display='block';
@@ -3749,6 +3801,95 @@ async function enviarMensajeChatFrontend(){
   input.value = '';
   const res = await apiPost({action:'enviarMensajeChat', mensaje});
   if(res.ok) cargarMensajesChat(true);
+  else toast(res.error||'Error al enviar');
+}
+
+// ---------- CHAT CON MILITANTES (1 a 1) ----------
+let chatMilIntervaloLista = null;
+let chatMilIntervaloHilo = null;
+let chatMilConversacionActiva = null;
+let chatMilUltimoConteoHilo = 0;
+
+async function enviarLinkChatIndividualFrontend(){
+  if(!confirm('¿Enviar el link de chat directo a esta persona?')) return;
+  const res = await apiPost({action:'enviarLinkChatIndividual', cedula: cedulaActiva});
+  toast(res.ok ? 'Link de chat enviado' : (res.error||'Error'));
+}
+async function enviarLinksChatMasivoFrontend(){
+  const objetivo = seleccionados.size ? [...seleccionados] : null;
+  if(!objetivo && !confirm(`¿Enviar el link de chat a las ${filtrados.length} personas filtradas actualmente?`)) return;
+  const payload = {action:'enviarLinksChatMasivo'};
+  if(objetivo) payload.cedulas = objetivo;
+  else payload.filtros = { comuna: document.getElementById('fComuna').value, rol: document.getElementById('fRol').value, estado: document.getElementById('fEstado').value };
+  mostrarCargando(true);
+  const res = await apiPost(payload);
+  mostrarCargando(false);
+  toast(res.ok ? `${res.enviados} de ${res.total} links enviados` : (res.error||'Error'));
+  if(res.ok){ seleccionados.clear(); renderTabla(); }
+}
+
+function iniciarChatMilitantes(){
+  cargarConversacionesChatMil(true);
+  if(chatMilIntervaloLista) clearInterval(chatMilIntervaloLista);
+  chatMilIntervaloLista = setInterval(()=>cargarConversacionesChatMil(false), 6000);
+}
+function detenerChatMilitantes(){
+  if(chatMilIntervaloLista){ clearInterval(chatMilIntervaloLista); chatMilIntervaloLista = null; }
+  if(chatMilIntervaloHilo){ clearInterval(chatMilIntervaloHilo); chatMilIntervaloHilo = null; }
+}
+async function cargarConversacionesChatMil(){
+  try{
+    const res = await apiGet({action:'listarConversacionesChatMilitante'});
+    if(!res.ok) return;
+    const cont = document.getElementById('chatMilConversaciones');
+    if(!res.datos.length){ cont.innerHTML = '<p style="color:var(--muted);font-size:12.5px;">Nadie te ha escrito todavía. Envía el link de chat desde la ficha de un militante para empezar.</p>'; return; }
+    cont.innerHTML = res.datos.map(c=>`
+      <div class="chatMilConvItem ${chatMilConversacionActiva===c.cedula?'activa':''}" onclick="abrirConversacionChatMil('${c.cedula}','${titleCase(c.nombre).replace(/'/g,"&apos;")}','${titleCase(c.comuna)}')">
+        ${c.noLeidos ? `<span class="chatMilBadge">${c.noLeidos}</span>` : ''}
+        <div class="cNombre">${titleCase(c.nombre)}</div>
+        <div class="cPreview">${(c.ultimoMensaje||'').slice(0,50)}</div>
+      </div>`).join('');
+  } catch(err){ /* silencioso */ }
+}
+function abrirConversacionChatMil(cedula, nombre, comuna){
+  chatMilConversacionActiva = cedula;
+  document.getElementById('chatMilHiloVacio').style.display = 'none';
+  document.getElementById('chatMilHiloActivo').style.display = 'flex';
+  document.getElementById('chatMilNombreActivo').innerText = nombre;
+  document.getElementById('chatMilComunaActivo').innerText = comuna ? ' · '+comuna : '';
+  chatMilUltimoConteoHilo = -1;
+  cargarHiloChatMil(true);
+  if(chatMilIntervaloHilo) clearInterval(chatMilIntervaloHilo);
+  chatMilIntervaloHilo = setInterval(()=>cargarHiloChatMil(false), 4000);
+  cargarConversacionesChatMil(); // refresca para quitar el badge de no leídos
+}
+async function cargarHiloChatMil(forzarScroll){
+  if(!chatMilConversacionActiva) return;
+  try{
+    const res = await apiGet({action:'obtenerMensajesChatMilitanteInterno', cedula: chatMilConversacionActiva});
+    if(!res.ok) return;
+    if(res.datos.length === chatMilUltimoConteoHilo && !forzarScroll) return;
+    chatMilUltimoConteoHilo = res.datos.length;
+    const cont = document.getElementById('chatMilMensajesCont');
+    cont.innerHTML = res.datos.length ? res.datos.map(m=>{
+      const propio = m.autor === 'equipo';
+      const hora = new Date(m.fecha).toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'});
+      return `<div class="chatMsg ${propio?'propio':'ajeno'}">
+        ${!propio ? `<div class="chatNombre">${m.nombreAutor}</div>` : ''}
+        <div>${_escapeHtmlChat(m.mensaje)}</div>
+        <div class="chatHora">${hora}</div>
+      </div>`;
+    }).join('') : '<p style="color:var(--muted);font-size:12.5px;text-align:center;margin:auto;">Sin mensajes todavía.</p>';
+    cont.scrollTop = cont.scrollHeight;
+  } catch(err){ /* silencioso */ }
+}
+async function enviarMensajeChatMilitanteFrontend(){
+  const input = document.getElementById('chatMilInput');
+  const mensaje = input.value.trim();
+  if(!mensaje || !chatMilConversacionActiva) return;
+  input.value = '';
+  const res = await apiPost({action:'enviarMensajeChatMilitanteInterno', cedula: chatMilConversacionActiva, mensaje});
+  if(res.ok) cargarHiloChatMil(true);
   else toast(res.error||'Error al enviar');
 }
 
