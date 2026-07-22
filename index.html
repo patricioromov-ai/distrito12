@@ -47,8 +47,9 @@
   #avisoConfig .box{max-width:480px;}
   #avisoConfig code{background:#0006;padding:2px 8px;border-radius:6px;}
 
-  #loginScreen{height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 25% 15%, var(--navy3), var(--navy) 70%);}
-  #loginBox{background:var(--card-solid);border:1px solid var(--border);padding:46px 44px;border-radius:22px;width:340px;box-shadow:var(--shadow-lg);text-align:center;}
+  #loginScreen{height:100vh;position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%, #10160C, #080A06 70%);overflow:hidden;}
+  #canvasParticulas{position:absolute;inset:0;z-index:0;}
+  #loginBox{position:relative;z-index:2;background:rgba(21,26,17,.85);backdrop-filter:blur(16px);border:1px solid var(--border);padding:46px 44px;border-radius:22px;width:340px;box-shadow:var(--shadow-lg);text-align:center;}
   #loginBox .logo{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--gold-light),var(--gold));margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--navy);font-size:20px;}
   #loginBox h1{font-size:21px;color:var(--text);margin-bottom:2px;letter-spacing:.3px;font-weight:800;}
   #loginBox p{color:var(--muted);font-size:13px;margin-top:0;margin-bottom:22px;}
@@ -247,6 +248,7 @@
 </div>
 
 <div id="loginScreen" style="display:none;">
+  <canvas id="canvasParticulas"></canvas>
   <div id="loginBox">
     <div class="logo">S</div>
     <h1>SIGT</h1>
@@ -256,7 +258,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-11</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-12</p>
   </div>
 </div>
 
@@ -1164,10 +1166,51 @@ window.onload = function(){
   }
   if(!USUARIO || !CLAVE || !SESSION.rol){
     document.getElementById('loginScreen').style.display='flex';
+    iniciarParticulasLogin();
   } else {
     entrarApp();
   }
 };
+
+// Animación de fondo del login: puntos dorados flotando que se conectan con
+// líneas finas cuando están cerca — puramente decorativo, sin dependencias.
+let _particulasIniciadas = false;
+function iniciarParticulasLogin(){
+  if(_particulasIniciadas) return;
+  _particulasIniciadas = true;
+  const canvas = document.getElementById('canvasParticulas');
+  const ctx = canvas.getContext('2d');
+  function ajustarTamano(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  ajustarTamano();
+  window.addEventListener('resize', ajustarTamano);
+  const puntos = Array.from({length:55}, ()=>({
+    x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+    vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3
+  }));
+  function animar(){
+    if(document.getElementById('loginScreen').style.display==='none'){ requestAnimationFrame(animar); return; } // pausa si ya se entró a la app
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    puntos.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>canvas.width) p.vx*=-1;
+      if(p.y<0||p.y>canvas.height) p.vy*=-1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,1.6,0,Math.PI*2);
+      ctx.fillStyle='rgba(224,164,88,.55)'; ctx.fill();
+    });
+    for(let i=0;i<puntos.length;i++){
+      for(let j=i+1;j<puntos.length;j++){
+        const dx=puntos[i].x-puntos[j].x, dy=puntos[i].y-puntos[j].y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<120){
+          ctx.beginPath(); ctx.moveTo(puntos[i].x,puntos[i].y); ctx.lineTo(puntos[j].x,puntos[j].y);
+          ctx.strokeStyle=`rgba(224,164,88,${0.12*(1-dist/120)})`; ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(animar);
+  }
+  animar();
+}
 
 // ---------- LLAMADAS A LA API ----------
 async function _parsearRespuesta(res){
@@ -1588,13 +1631,17 @@ async function renderKPIs(){
     'Más de 1 año': MILITANTES_KPI.filter(m=>coincideFechaIngreso(m,'mas1a')).length
   };
 
-  _dibujarChart('chartComuna','bar', Object.keys(porComuna), Object.values(porComuna), ['#1C261D']);
+  // Paleta vibrante compartida — evita repetir colores casi iguales al fondo oscuro
+  const PALETA_CHARTS = ['#E0A458','#5AA8E8','#3FBFA0','#3CCB7F','#F0665A','#9B7BD6'];
+  const coloresComuna = Object.keys(porComuna).map((_,i)=>PALETA_CHARTS[i%PALETA_CHARTS.length]);
+  const coloresIngreso = Object.keys(porIngreso).map((_,i)=>PALETA_CHARTS[i%PALETA_CHARTS.length]);
+  _dibujarChart('chartComuna','bar', Object.keys(porComuna), Object.values(porComuna), coloresComuna);
   _dibujarChart('chartRol','doughnut', Object.keys(porRol), Object.values(porRol), Object.keys(porRol).map(r=>rolColor(r)));
-  _dibujarChart('chartSexo','doughnut', Object.keys(porSexo), Object.values(porSexo), ['#E0A458','#1C261D']);
-  _dibujarChart('chartEstado','doughnut', Object.keys(porEstado), Object.values(porEstado), ['#2563A6','#1E8E5A','#E0A458','#C0392B','#6B7280']);
+  _dibujarChart('chartSexo','doughnut', Object.keys(porSexo), Object.values(porSexo), ['#E0A458','#5AA8E8']);
+  _dibujarChart('chartEstado','doughnut', Object.keys(porEstado), Object.values(porEstado), ['#5AA8E8','#3CCB7F','#E0A458','#F0665A','#8A9385']);
   _dibujarChart('chartContacto','bar', ['Con email','Sin email','Con teléfono','Sin teléfono'],
-    [conEmail, total-conEmail, conTel, total-conTel], ['#1E8E5A','#C0392B','#1E8E5A','#C0392B']);
-  _dibujarChart('chartIngresos','bar', Object.keys(porIngreso), Object.values(porIngreso), ['#1C261D']);
+    [conEmail, total-conEmail, conTel, total-conTel], ['#3CCB7F','#F0665A','#3CCB7F','#F0665A']);
+  _dibujarChart('chartIngresos','bar', Object.keys(porIngreso), Object.values(porIngreso), coloresIngreso);
 
   generarInformeEjecutivo({
     total, conEmail, conTel, conRol, cumpleMes, anivMes, ingresosMes, ingresosTrimestre,
@@ -1661,9 +1708,13 @@ function generarInformeEjecutivo(k){
 function _dibujarChart(canvasId, tipo, labels, data, colores){
   if(charts[canvasId]) charts[canvasId].destroy();
   const ctx = document.getElementById(canvasId).getContext('2d');
+  const colorFinal = colores.length>=labels.length ? colores : labels.map((_,i)=>colores[i%colores.length]);
+  const datasetExtra = tipo==='bar'
+    ? { borderRadius:6, borderSkipped:false, maxBarThickness:56 }
+    : { borderColor:'#171C17', borderWidth:3, hoverOffset:6 };
   charts[canvasId] = new Chart(ctx, {
     type: tipo,
-    data: { labels, datasets: [{ data, backgroundColor: colores.length>=labels.length ? colores : labels.map((_,i)=>colores[i%colores.length]) }] },
+    data: { labels, datasets: [{ data, backgroundColor: colorFinal, ...datasetExtra }] },
     options: { responsive:true,
       plugins:{ legend:{ display: tipo==='doughnut', position:'bottom', labels:{boxWidth:12,font:{size:11},color:'#C7CEC2'} } },
       scales: tipo==='bar' ? {
