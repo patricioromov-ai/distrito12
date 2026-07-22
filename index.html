@@ -258,7 +258,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-12</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-19-13</p>
   </div>
 </div>
 
@@ -381,6 +381,17 @@
         <div class="chartCard"><h4>Cobertura de datos de contacto</h4><canvas id="chartContacto"></canvas></div>
         <div class="chartCard"><h4>Ingresos por período</h4><canvas id="chartIngresos"></canvas></div>
       </div>
+      <div class="chartsGrid">
+        <div class="chartCard" id="cardCoberturaComuna" style="grid-column:1/-1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+            <h4 style="margin:0;">Cobertura de email por comuna <span style="color:var(--muted);font-weight:400;font-size:11px;">· ranking vs. meta</span></h4>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+              <span style="display:inline-block;width:14px;height:2px;background:#F0665A;border-top:2px dashed #F0665A;"></span> Meta 70%
+            </div>
+          </div>
+          <canvas id="chartCoberturaComuna" style="max-height:260px;"></canvas>
+        </div>
+      </div>
       <div class="chartCard" id="informeNarrativo" style="margin-bottom:18px;"></div>
 
       <div id="okrCard" class="chartCard" style="margin-bottom:18px;">
@@ -402,10 +413,19 @@
       </div>
 
       <div id="tareasCard" class="chartCard no-print" style="margin-bottom:18px;">
-        <h4>Cumplimiento de tareas de contacto</h4>
-        <div class="kpiCards" id="tareasCards" style="margin-bottom:14px;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:2px;">
+          <h4 style="margin:0;">Cumplimiento de tareas de contacto</h4>
+          <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted);">
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#3CCB7F;margin-right:3px;"></span>En meta</span>
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#E0A458;margin-right:3px;"></span>En riesgo</span>
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#F0665A;margin-right:3px;"></span>Bajo meta</span>
+            <span style="display:inline-block;width:14px;height:2px;border-top:2px dashed #F0665A;margin-left:4px;"></span> Meta 70%
+          </div>
+        </div>
+        <div class="kpiCards" id="tareasCards" style="margin-bottom:14px;margin-top:10px;"></div>
+        <canvas id="chartCumplimientoCoord" style="max-height:220px;margin-bottom:16px;"></canvas>
         <table style="box-shadow:none;font-size:12px;">
-          <thead><tr><th>Coordinador</th><th>Asignadas</th><th>Completadas</th><th>Pendientes</th><th>% Cumplimiento</th><th></th></tr></thead>
+          <thead><tr><th></th><th>Coordinador</th><th>Asignadas</th><th>Completadas</th><th>Pendientes</th><th>% Cumplimiento</th><th></th></tr></thead>
           <tbody id="tbodyTareas"></tbody>
         </table>
       </div>
@@ -1599,6 +1619,12 @@ async function renderKPIs(){
   } catch(err){ /* si falla, se muestran en 0 */ }
 
   const porComuna = {}; MILITANTES_KPI.forEach(m=>{ const k = titleCase(m.COMUNA)||'Sin comuna'; porComuna[k]=(porComuna[k]||0)+1; });
+  const coberturaPorComuna = {};
+  Object.keys(porComuna).forEach(k=>{
+    const enComuna = MILITANTES_KPI.filter(m=>(titleCase(m.COMUNA)||'Sin comuna')===k);
+    coberturaPorComuna[k] = enComuna.length ? Math.round(enComuna.filter(m=>m.EMAIL).length/enComuna.length*100) : 0;
+  });
+  const comunasOrdenadas = Object.keys(coberturaPorComuna).sort((a,b)=>coberturaPorComuna[b]-coberturaPorComuna[a]);
   const comunaTop = Object.entries(porComuna).sort((a,b)=>b[1]-a[1])[0] || ['-',0];
 
   document.getElementById('kpiFecha').innerText = 'Generado el ' + new Date().toLocaleDateString('es-CL', {day:'numeric',month:'long',year:'numeric'});
@@ -1642,6 +1668,7 @@ async function renderKPIs(){
   _dibujarChart('chartContacto','bar', ['Con email','Sin email','Con teléfono','Sin teléfono'],
     [conEmail, total-conEmail, conTel, total-conTel], ['#3CCB7F','#F0665A','#3CCB7F','#F0665A']);
   _dibujarChart('chartIngresos','bar', Object.keys(porIngreso), Object.values(porIngreso), coloresIngreso);
+  _dibujarChartConMeta('chartCoberturaComuna', comunasOrdenadas, comunasOrdenadas.map(k=>coberturaPorComuna[k]), 70, 'con email');
 
   generarInformeEjecutivo({
     total, conEmail, conTel, conRol, cumpleMes, anivMes, ingresosMes, ingresosTrimestre,
@@ -1721,6 +1748,44 @@ function _dibujarChart(canvasId, tipo, labels, data, colores){
         y:{beginAtZero:true, ticks:{precision:0,color:'#8A9385'}, grid:{color:'rgba(255,255,255,.07)'}},
         x:{ticks:{color:'#8A9385'}, grid:{display:false}}
       } : {} }
+  });
+}
+
+// Gráfico horizontal de ranking con línea de meta punteada superpuesta —
+// usa un degradado en las barras para un acabado más "tecnológico".
+function _dibujarChartConMeta(canvasId, labels, data, meta, etiqueta){
+  etiqueta = etiqueta || '%';
+  if(charts[canvasId]) charts[canvasId].destroy();
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const gradiente = ctx.createLinearGradient(0,0,canvas.width || 600,0);
+  gradiente.addColorStop(0, '#3D6EA8');
+  gradiente.addColorStop(1, '#5AA8E8');
+  charts[canvasId] = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type:'bar', label:etiqueta, data, backgroundColor:gradiente,
+          borderRadius:8, borderSkipped:false, maxBarThickness:26,
+          order:2
+        },
+        {
+          type:'line', label:'Meta', data: labels.map(()=>meta),
+          borderColor:'#F0665A', borderWidth:2, borderDash:[7,5],
+          pointRadius:0, fill:false, tension:0, order:1
+        }
+      ]
+    },
+    options: {
+      indexAxis:'y', responsive:true,
+      plugins:{ legend:{ display:false },
+        tooltip:{ callbacks:{ label: c => c.dataset.label==='Meta' ? `Meta: ${meta}%` : `${c.parsed.x}% ${etiqueta}` } } },
+      scales: {
+        x:{ min:0, max:100, ticks:{color:'#8A9385', callback:v=>v+'%'}, grid:{color:'rgba(255,255,255,.07)'} },
+        y:{ ticks:{color:'#C7CEC2'}, grid:{display:false} }
+      }
+    }
   });
 }
 
@@ -2134,11 +2199,23 @@ async function cargarResumenTareas(){
     <div class="kpiCard"><div class="num">${d.pendientesGlobal}</div><div class="lbl">Militantes en cartera aún sin contactar</div></div>
     <div class="kpiCard"><div class="num">${d.ritmoDiario}</div><div class="lbl">Contactos completados por día (promedio 14 días)</div></div>
     <div class="kpiCard"><div class="num">${d.diasEstimados ?? '—'}</div><div class="lbl">Días estimados para terminar al ritmo actual</div></div>`;
+
+  const UMBRAL_SEMAFORO = 70; // % de cumplimiento a partir del cual se considera "en meta"
+  function semaforo(pct){
+    if(pct>=UMBRAL_SEMAFORO) return `<span title="En meta" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3CCB7F;box-shadow:0 0 8px #3CCB7F;"></span>`;
+    if(pct>=UMBRAL_SEMAFORO-25) return `<span title="En riesgo" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#E0A458;box-shadow:0 0 8px #E0A458;"></span>`;
+    return `<span title="Bajo meta" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F0665A;box-shadow:0 0 8px #F0665A;"></span>`;
+  }
   document.getElementById('tbodyTareas').innerHTML = d.porCoordinador.length ? d.porCoordinador.map(c=>`
-    <tr><td><b>${c.nombre}</b> <span style="color:var(--muted);">(${c.usuario})</span></td>
+    <tr><td>${semaforo(c.pctCumplimiento)}</td><td><b>${c.nombre}</b> <span style="color:var(--muted);">(${c.usuario})</span></td>
     <td>${c.asignadas}</td><td>${c.completadas}</td><td>${c.pendientes}</td><td>${c.pctCumplimiento}%</td>
     <td><button class="btn btn-outline" style="padding:5px 10px;font-size:11px;" onclick="verListaTareas('${c.usuario}','${c.nombre.replace(/'/g,"&apos;")}')">Ver tareas</button></td></tr>`).join('')
-    : '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Aún no se han asignado tareas</td></tr>';
+    : '<tr><td colspan="7" style="text-align:center;color:var(--muted);">Aún no se han asignado tareas</td></tr>';
+
+  if(d.porCoordinador.length){
+    const ordenados = [...d.porCoordinador].sort((a,b)=>b.pctCumplimiento-a.pctCumplimiento);
+    _dibujarChartConMeta('chartCumplimientoCoord', ordenados.map(c=>c.nombre), ordenados.map(c=>c.pctCumplimiento), UMBRAL_SEMAFORO, 'cumplimiento');
+  }
   cargarSugerencias();
 }
 
