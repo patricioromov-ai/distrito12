@@ -266,7 +266,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-21-1</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-22-1</p>
   </div>
 </div>
 
@@ -2161,7 +2161,7 @@ function toggleCapaFerias(){
       maxClusterRadius: 50,
       iconCreateFunction: function(cluster){
         return L.divIcon({
-          html: `<div style="background:#8E7355;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35);color:#fff;font-weight:700;font-size:11px;">${cluster.getChildCount()}</div>`,
+          html: `<div style="background:#1FC9D9;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35);color:#0E120E;font-weight:700;font-size:11px;">${cluster.getChildCount()}</div>`,
           className:'', iconSize:[32,32]
         });
       }
@@ -2169,7 +2169,7 @@ function toggleCapaFerias(){
     FERIAS_LIBRES.forEach(f=>{
       const icono = L.divIcon({
         className:'', iconSize:[26,26],
-        html:`<div style="background:#8E7355;border:2px solid #fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.4);">🛒</div>`
+        html:`<div style="background:#1FC9D9;border:2px solid #fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.4);">🛒</div>`
       });
       const marker = L.marker([f.lat, f.lng], {icon: icono});
       marker.bindPopup(`<b>Feria libre</b><br>${f.direccion}<br>${titleCase(f.comuna)}`);
