@@ -338,7 +338,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-23-2</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-23-3</p>
   </div>
 </div>
 
@@ -4105,7 +4105,7 @@ function _mtBuscarMilitante(cedula){ return MILITANTES.find(m=>String(m.CEDULA)=
 function mtLlamar(cedula){
   const m = _mtBuscarMilitante(cedula);
   if(!m || !m.TELEFONO){ toast('Sin teléfono registrado'); return; }
-  window.location.href = 'tel:'+normalizarTelefono(m.TELEFONO);
+  window.location.href = 'tel:+'+normalizarTelefono(m.TELEFONO);
 }
 function mtWhatsapp(cedula){
   const m = _mtBuscarMilitante(cedula);
@@ -4154,7 +4154,7 @@ async function abrirHojaDistrital(){
 function cerrarHojaDistrital(){ document.getElementById('mtModalDistrital').classList.remove('abierto'); }
 function distritalLlamar(){
   if(!mtContactoDistrital || !mtContactoDistrital.telefono){ toast('Sin teléfono registrado para Distrital'); return; }
-  window.location.href = 'tel:'+normalizarTelefono(mtContactoDistrital.telefono);
+  window.location.href = 'tel:+'+normalizarTelefono(mtContactoDistrital.telefono);
 }
 function distritalWhatsapp(){
   if(!mtContactoDistrital || !mtContactoDistrital.telefono){ toast('Sin teléfono registrado para Distrital'); return; }
