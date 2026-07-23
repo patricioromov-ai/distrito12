@@ -291,7 +291,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-22-3</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-23-1</p>
   </div>
 </div>
 
@@ -703,6 +703,7 @@
         <div class="kpiHead" style="margin-bottom:10px;">
           <div><h1 style="font-size:18px;">Chat con Militantes</h1></div>
         </div>
+        <button class="btn btn-outline" id="btnConfigBot" style="display:none;margin-bottom:12px;font-size:11px;padding:6px 10px;" onclick="abrirModalBot()">🤖 Respuestas automáticas</button>
         <div id="chatMilConversaciones"></div>
       </div>
       <div id="chatMilHilo">
@@ -923,6 +924,29 @@
     <div class="mfoot" style="padding:14px 20px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--border);">
       <button class="btn btn-outline" onclick="descargarInformeEncuestaPDF()">Descargar PDF</button>
       <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="enviarInformeEncuestaPorCorreoFrontend()">Enviar por correo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIGURACIÓN DEL BOT -->
+<div id="modalBotOverlay" onclick="if(event.target===this) cerrarModalBot()" style="display:none;position:fixed;inset:0;background:rgba(4,6,4,.7);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:var(--card-solid);border:1px solid var(--border);border-radius:18px;width:560px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:18px 18px 0 0;">
+      <strong>Respuestas automáticas del chat</strong><button onclick="cerrarModalBot()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <p style="font-size:12px;color:var(--muted);margin:0 0 16px;">
+        Si el mensaje de un militante contiene alguna de las palabras clave (separadas por coma), se le responde
+        automáticamente con el texto que definas — sin que nadie del equipo tenga que intervenir.
+      </p>
+      <div id="listaReglasBot"></div>
+      <div style="border:1px dashed var(--border);border-radius:10px;padding:14px;margin-top:14px;">
+        <label style="font-size:11px;color:var(--muted);font-weight:600;">Palabras clave (separadas por coma)</label>
+        <input id="botNuevaPalabras" placeholder="ej: horario, atención" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:9px;font-size:13px;margin-top:3px;background:rgba(255,255,255,.04);color:var(--text);">
+        <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:10px;display:block;">Respuesta automática</label>
+        <textarea id="botNuevaRespuesta" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:9px;font-size:13px;margin-top:3px;min-height:60px;background:rgba(255,255,255,.04);color:var(--text);"></textarea>
+        <button class="btn btn-gold" style="margin-top:10px;padding:7px 16px;font-size:12px;" onclick="agregarReglaBotFrontend()">+ Agregar regla</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1311,6 +1335,7 @@ document.addEventListener('keydown', function(e){
   cerrarModalNuevaEncuesta();
   cerrarModalInvitaciones();
   cerrarModalResultadosEncuesta();
+  cerrarModalBot();
 });
 
 let USUARIO = localStorage.getItem('prysma_usuario') || '';
@@ -1468,6 +1493,7 @@ async function entrarApp(){
   if(SESSION.rol==='admin'){
     document.getElementById('btnUsuarios').style.display='inline-flex';
     document.getElementById('btnEstadoMasivo').style.display='inline-flex';
+    document.getElementById('btnConfigBot').style.display='inline-block';
   }
   if(SESSION.rol==='coordinador'){
     cargarBannerTareas();
@@ -3891,6 +3917,51 @@ async function enviarMensajeChatMilitanteFrontend(){
   const res = await apiPost({action:'enviarMensajeChatMilitanteInterno', cedula: chatMilConversacionActiva, mensaje});
   if(res.ok) cargarHiloChatMil(true);
   else toast(res.error||'Error al enviar');
+}
+
+// ---------- BOT DE RESPUESTAS AUTOMÁTICAS (configuración, solo admin) ----------
+async function abrirModalBot(){
+  document.getElementById('botNuevaPalabras').value='';
+  document.getElementById('botNuevaRespuesta').value='';
+  document.getElementById('modalBotOverlay').style.display='block';
+  await cargarReglasBot();
+}
+function cerrarModalBot(){ document.getElementById('modalBotOverlay').style.display='none'; }
+async function cargarReglasBot(){
+  const res = await apiGet({action:'listarReglasBot'});
+  if(!res.ok){ document.getElementById('listaReglasBot').innerHTML = res.error||'Error'; return; }
+  document.getElementById('listaReglasBot').innerHTML = res.datos.length ? res.datos.map(r=>`
+    <div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;${r.activo?'':'opacity:.5;'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <input value="${r.palabrasClave.replace(/"/g,'&quot;')}" onchange="editarReglaBot(${r.id},'palabrasClave',this.value)" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:rgba(255,255,255,.04);color:var(--text);">
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);white-space:nowrap;">
+          <input type="checkbox" ${r.activo?'checked':''} onchange="editarReglaBot(${r.id},'activo',this.checked)" style="width:auto;"> Activa
+        </label>
+        <button onclick="borrarReglaBot(${r.id})" style="background:none;border:none;color:var(--red);cursor:pointer;">✕</button>
+      </div>
+      <textarea onchange="editarReglaBot(${r.id},'respuesta',this.value)" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:6px;min-height:44px;background:rgba(255,255,255,.04);color:var(--text);">${r.respuesta}</textarea>
+    </div>`).join('') : '<p style="color:var(--muted);font-size:12.5px;">Sin reglas configuradas todavía.</p>';
+}
+async function agregarReglaBotFrontend(){
+  const palabrasClave = document.getElementById('botNuevaPalabras').value.trim();
+  const respuesta = document.getElementById('botNuevaRespuesta').value.trim();
+  if(!palabrasClave || !respuesta){ toast('Completa palabras clave y respuesta'); return; }
+  const res = await apiPost({action:'agregarReglaBot', datos:{palabrasClave, respuesta}});
+  if(res.ok){
+    document.getElementById('botNuevaPalabras').value='';
+    document.getElementById('botNuevaRespuesta').value='';
+    cargarReglasBot();
+  } else toast(res.error||'Error');
+}
+async function editarReglaBot(id, campo, valor){
+  const campos = {}; campos[campo] = valor;
+  const res = await apiPost({action:'actualizarReglaBot', id, campos});
+  if(!res.ok) toast(res.error||'Error');
+}
+async function borrarReglaBot(id){
+  if(!confirm('¿Eliminar esta regla?')) return;
+  const res = await apiPost({action:'eliminarReglaBot', id});
+  if(res.ok) cargarReglasBot(); else toast(res.error||'Error');
 }
 
 </script>
