@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SIGT · Gestión Territorial · Distrito 12</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0E120E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SIGT">
+<link rel="apple-touch-icon" href="iconos/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -338,7 +344,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-23-5</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-23-6 (PWA)</p>
   </div>
 </div>
 
@@ -369,6 +375,7 @@
         <p>Pasa el cursor o toca un módulo para comenzar</p>
       </div>
       <div class="menuGrid" id="menuGrid"></div>
+      <button id="btnInstalarApp" onclick="instalarApp()" style="display:none;margin-top:26px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--gold-light);padding:11px 20px;border-radius:12px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;position:relative;z-index:1;">📲 Instalar esta app en tu celular</button>
     </div>
     <div id="filterBar">
       <div id="filterRow1">
@@ -1514,6 +1521,9 @@ function parseFechaDDMMYYYY(str){
 
 // ---------- ARRANQUE ----------
 window.onload = function(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('service-worker.js').catch(err=>console.log('SW no registrado:', err));
+  }
   if(!API_URL_FIJA || API_URL_FIJA.indexOf('PEGA_AQUI') !== -1){
     document.getElementById('avisoConfig').style.display='flex';
     return;
@@ -1525,6 +1535,42 @@ window.onload = function(){
     entrarApp();
   }
 };
+
+// ---------- PWA: instalación y notificaciones locales ----------
+let eventoInstalacionApp = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  eventoInstalacionApp = e;
+  document.getElementById('btnInstalarApp').style.display='inline-block';
+});
+function esIOS(){ return /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream; }
+function yaEstaInstalada(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+async function instalarApp(){
+  if(eventoInstalacionApp){
+    eventoInstalacionApp.prompt();
+    const resultado = await eventoInstalacionApp.userChoice;
+    if(resultado.outcome === 'accepted') document.getElementById('btnInstalarApp').style.display='none';
+    eventoInstalacionApp = null;
+  } else if(esIOS()){
+    alert('Para instalar SIGT en tu iPhone:\n\n1. Toca el botón Compartir (el cuadrado con la flecha hacia arriba)\n2. Elige "Agregar a pantalla de inicio"\n3. Toca "Agregar"');
+  } else {
+    alert('Busca la opción "Instalar aplicación" en el menú de tu navegador (usualmente los tres puntos arriba a la derecha).');
+  }
+}
+function solicitarPermisoNotificaciones(){
+  if('Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+}
+function mostrarNotificacionLocal(titulo, cuerpo, etiqueta){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  if(!document.hidden) return; // si la persona está mirando la app en este momento, no la interrumpe con un aviso
+  if(navigator.serviceWorker && navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({ tipo:'MOSTRAR_NOTIFICACION', titulo, cuerpo, etiqueta });
+  } else {
+    new Notification(titulo, { body: cuerpo, icon: 'iconos/icon-192.png' });
+  }
+}
 
 // Animación de fondo del login: puntos dorados flotando que se conectan con
 // líneas finas cuando están cerca — puramente decorativo, sin dependencias.
@@ -1631,6 +1677,8 @@ function toast(msg, duracionMs){
 async function entrarApp(){
   document.getElementById('app').style.display='flex';
   document.getElementById('rolBadge').innerText = (SESSION.nombre ? SESSION.nombre + ' · ' : '') + (SESSION.rol==='admin' ? 'ADMIN' : SESSION.rol==='coordinador' ? 'COORDINADOR' : 'SOLO VER');
+  if(!yaEstaInstalada() && esIOS()){ document.getElementById('btnInstalarApp').style.display='inline-block'; }
+  solicitarPermisoNotificaciones();
   if(SESSION.rol==='viewer'){
     ['btnEmailMasivo','btnWspMasivo','btnAgregar','btnChatMasivo'].forEach(id=>document.getElementById(id).style.display='none');
   }
@@ -3954,6 +4002,13 @@ async function cargarMensajesChat(forzarScroll){
     if(!res.ok) return;
     if(res.datos.length === chatUltimoConteo && !forzarScroll) return; // nada nuevo, evita re-renderizar de más
     const huboMensajesNuevos = res.datos.length > chatUltimoConteo;
+    if(huboMensajesNuevos && chatUltimoConteo>0){
+      const nuevos = res.datos.slice(chatUltimoConteo).filter(m=>m.usuario!==USUARIO);
+      if(nuevos.length){
+        const ultimo = nuevos[nuevos.length-1];
+        mostrarNotificacionLocal(`${ultimo.nombre} · Chat de Equipo`, ultimo.mensaje, 'chat-equipo');
+      }
+    }
     chatUltimoConteo = res.datos.length;
     const cont = document.getElementById('chatMensajesCont');
     cont.innerHTML = res.datos.length ? res.datos.map(m=>{
@@ -3987,6 +4042,7 @@ async function enviarMensajeChatFrontend(){
 let chatMilIntervaloLista = null;
 let chatMilIntervaloHilo = null;
 let chatMilConversacionActiva = null;
+let chatMilUltimoTotalNoLeidos = undefined;
 let chatMilUltimoConteoHilo = 0;
 
 async function enviarLinkChatIndividualFrontend(){
@@ -4020,6 +4076,12 @@ async function cargarConversacionesChatMil(){
   try{
     const res = await apiGet({action:'listarConversacionesChatMilitante'});
     if(!res.ok) return;
+    const totalNoLeidos = res.datos.reduce((s,c)=>s+c.noLeidos,0);
+    if(typeof chatMilUltimoTotalNoLeidos==='number' && totalNoLeidos>chatMilUltimoTotalNoLeidos){
+      const conMasNuevos = [...res.datos].sort((a,b)=>b.noLeidos-a.noLeidos)[0];
+      if(conMasNuevos) mostrarNotificacionLocal(`${titleCase(conMasNuevos.nombre)} · Chat con Militantes`, conMasNuevos.ultimoMensaje||'Nuevo mensaje', 'chat-militante-'+conMasNuevos.cedula);
+    }
+    chatMilUltimoTotalNoLeidos = totalNoLeidos;
     const cont = document.getElementById('chatMilConversaciones');
     if(!res.datos.length){ cont.innerHTML = '<p style="color:var(--muted);font-size:12.5px;">Nadie te ha escrito todavía. Envía el link de chat desde la ficha de un militante para empezar.</p>'; return; }
     cont.innerHTML = res.datos.map(c=>`
