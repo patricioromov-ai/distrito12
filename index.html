@@ -359,7 +359,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-25-1</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-25-2</p>
   </div>
 </div>
 
@@ -1404,6 +1404,8 @@
           <option value="pct_telefono">% con teléfono registrado</option>
           <option value="pct_rol_asignado">% con rol asignado</option>
           <option value="pct_cartera_asignada">% con cartera territorial asignada</option>
+          <option value="pct_email_enviado">% con al menos 1 email enviado</option>
+          <option value="pct_whatsapp_enviado">% con al menos 1 WhatsApp enviado</option>
           <option value="pct_activos_vigentes">% en estado Activo/Vigente</option>
           <option value="pct_renuncia">% de renuncia</option>
         </select>
@@ -2183,6 +2185,16 @@ async function renderKPIs(){
   const comunasOrdenadas = Object.keys(coberturaPorComuna).sort((a,b)=>coberturaPorComuna[b]-coberturaPorComuna[a]);
   const comunaTop = Object.entries(porComuna).sort((a,b)=>b[1]-a[1])[0] || ['-',0];
 
+  let cantConEmailEnviado = 0, cantConWhatsappEnviado = 0;
+  try{
+    const [rEmail, rWsp] = await Promise.all([
+      apiGet({action:'getCedulasConEmailEnviado'}),
+      apiGet({action:'getCedulasConWhatsappEnviado'})
+    ]);
+    if(rEmail.ok) cantConEmailEnviado = Object.keys(rEmail.datos).length;
+    if(rWsp.ok) cantConWhatsappEnviado = rWsp.datos.length;
+  } catch(err){ /* si falla, se muestran en 0 */ }
+
   document.getElementById('kpiFecha').innerText = 'Generado el ' + new Date().toLocaleDateString('es-CL', {day:'numeric',month:'long',year:'numeric'});
   document.getElementById('kpiCards').innerHTML = `
     <div class="kpiCard"><div class="num">${total.toLocaleString('es-CL')}</div><div class="lbl">Total militantes</div></div>
@@ -2199,7 +2211,9 @@ async function renderKPIs(){
     <div class="kpiCard"><div class="num">${total?Math.round(mujeres/total*100):0}% / ${total?Math.round(varones/total*100):0}%</div><div class="lbl">Mujeres / Varones</div></div>
     <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.cumpleanos}</div><div class="lbl">Cumpleaños enviados hoy</div></div>
     <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.aniversarios}</div><div class="lbl">Aniversarios enviados hoy</div></div>
-    <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.total}</div><div class="lbl">Total correos enviados hoy</div></div>`;
+    <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.total}</div><div class="lbl">Total correos enviados hoy</div></div>
+    <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${cantConEmailEnviado.toLocaleString('es-CL')} (${total?Math.round(cantConEmailEnviado/total*100):0}%)</div><div class="lbl">Militantes con al menos 1 email enviado</div></div>
+    <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${cantConWhatsappEnviado.toLocaleString('es-CL')} (${total?Math.round(cantConWhatsappEnviado/total*100):0}%)</div><div class="lbl">Militantes con al menos 1 WhatsApp enviado</div></div>`;
 
   const porRol = {}; MILITANTES_KPI.forEach(m=>{ const k = m.ROL ? m.ROL.trim() : 'Sin rol asignado'; porRol[k]=(porRol[k]||0)+1; });
   const porSexo = { 'Mujer': mujeres, 'Varón': varones };
@@ -3302,6 +3316,7 @@ function whatsappIndividual(){
   if(!mensaje) return;
   const texto = mensaje.replace(/{NOMBRE}/g, titleCase(m.NOMBRE)||'');
   window.open(`https://wa.me/${normalizarTelefono(m.TELEFONO)}?text=${encodeURIComponent(texto)}`, '_blank');
+  apiPost({action:'registrarEnvioWhatsapp', cedula: m.CEDULA});
 }
 async function enviarBienvenidaInd(){
   if(!confirm('¿Enviar correo de bienvenida a esta persona?')) return;
@@ -3321,6 +3336,7 @@ function abrirWhatsAppMasivo(){
     const m = conTel[i];
     const texto = mensaje.replace(/{NOMBRE}/g, titleCase(m.NOMBRE)||'');
     window.open(`https://wa.me/${normalizarTelefono(m.TELEFONO)}?text=${encodeURIComponent(texto)}`, '_blank');
+    apiPost({action:'registrarEnvioWhatsapp', cedula: m.CEDULA});
     i++;
     if(i<conTel.length && confirm(`Abierto ${i} de ${conTel.length}. ¿Continuar con el siguiente?`)) siguiente();
   }
@@ -4390,6 +4406,7 @@ function mtWhatsapp(cedula){
   const m = _mtBuscarMilitante(cedula);
   if(!m || !m.TELEFONO){ toast('Sin teléfono registrado'); return; }
   window.open(`https://wa.me/${normalizarTelefono(m.TELEFONO)}`, '_blank');
+  apiPost({action:'registrarEnvioWhatsapp', cedula: m.CEDULA});
 }
 function mtComoLlegar(cedula){
   const m = _mtBuscarMilitante(cedula);
