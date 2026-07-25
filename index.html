@@ -359,7 +359,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-24-1 (Push)</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-25-1</p>
   </div>
 </div>
 
@@ -444,6 +444,8 @@
         <button class="btn btn-green" id="btnWspMasivo" onclick="abrirWhatsAppMasivo()">WhatsApp</button>
         <button class="btn btn-gold" id="btnEmailMasivo" onclick="abrirModalCorreo(true)">Enviar correo</button>
         <button class="btn btn-outline" id="btnChatMasivo" onclick="enviarLinksChatMasivoFrontend()">Enviar links de chat</button>
+        <button class="btn btn-outline" id="btnDuplicados" style="display:none;" onclick="abrirModalDuplicados()">🔍 Revisar duplicados</button>
+        <button class="btn btn-outline" id="btnAuditoria" style="display:none;" onclick="abrirModalAuditoria()">📜 Auditoría</button>
       </div>
     </div>
 
@@ -472,6 +474,23 @@
         </div>
       </div>
       <div class="kpiCards" id="kpiCards"></div>
+      <div class="chartCard no-print" id="contextoDistritalCard" style="margin-bottom:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <h4 style="margin:0;">Contexto distrital · Padrón y participación por comuna</h4>
+          <span style="font-size:10.5px;color:var(--muted);">Fuente: Biblioteca del Congreso Nacional (BCN) · Plebiscito 2023</span>
+        </div>
+        <p style="font-size:11.5px;color:var(--muted);margin:0 0 14px;">Datos oficiales de referencia — no se actualizan en vivo, se cargan una vez al año aproximadamente.</p>
+        <table style="box-shadow:none;font-size:12.5px;">
+          <thead><tr><th>Comuna</th><th>Padrón electoral</th><th>Participación</th></tr></thead>
+          <tbody id="tbodyContextoDistrital"></tbody>
+        </table>
+      </div>
+      <div class="chartCard no-print" id="tendenciaCard" style="margin-bottom:18px;">
+        <h4>Evolución en el tiempo</h4>
+        <p id="tendenciaVacio" style="font-size:12px;color:var(--muted);">Aún no hay suficientes semanas registradas — esto se guarda solo, una vez a la semana, y en unas semanas vas a poder ver la evolución acá.</p>
+        <canvas id="chartTendencia" style="display:none;max-height:260px;"></canvas>
+      </div>
+      <p id="estadoRespaldos" class="no-print" style="font-size:11px;color:var(--muted);margin-bottom:18px;"></p>
       <div class="chartsGrid">
         <div class="chartCard"><h4>Militantes por comuna</h4><canvas id="chartComuna"></canvas></div>
         <div class="chartCard"><h4>Distribución por rol</h4><canvas id="chartRol"></canvas></div>
@@ -1114,6 +1133,43 @@
   </div>
 </div>
 
+<!-- MODAL REVISAR POSIBLES DUPLICADOS -->
+<div id="modalDuplicadosOverlay" onclick="if(event.target===this) cerrarModalDuplicados()" style="display:none;position:fixed;inset:0;background:rgba(4,6,4,.7);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:var(--card-solid);border:1px solid var(--border);border-radius:18px;width:640px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:18px 18px 0 0;">
+      <strong>Posibles duplicados</strong><button onclick="cerrarModalDuplicados()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <p style="font-size:12px;color:var(--muted);margin:0 0 16px;">
+        Solo se muestran casos donde varias cédulas comparten exactamente la misma dirección
+        <b style="color:var(--text);">y además</b> tienen nombres muy parecidos entre sí — probablemente la
+        misma persona cargada dos veces. Un hogar real con distintas personas no aparece aquí.
+        Nada se borra automáticamente — revisa cada caso y decide tú.
+      </p>
+      <div id="listaDuplicados">Cargando…</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REGISTRO DE AUDITORÍA -->
+<div id="modalAuditoriaOverlay" onclick="if(event.target===this) cerrarModalAuditoria()" style="display:none;position:fixed;inset:0;background:rgba(4,6,4,.7);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:var(--card-solid);border:1px solid var(--border);border-radius:18px;width:720px;max-width:94vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:18px 18px 0 0;">
+      <strong>Registro de auditoría</strong><button onclick="cerrarModalAuditoria()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <p style="font-size:12px;color:var(--muted);margin:0 0 14px;">Quién cambió qué, y cuándo — militantes y usuarios. Se muestran los últimos 500 registros, más recientes primero.</p>
+      <input id="auditoriaBusqueda" placeholder="Buscar por nombre, cédula/usuario…" oninput="filtrarAuditoriaFrontend()" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;margin-bottom:14px;background:rgba(255,255,255,.04);color:var(--text);">
+      <div style="max-height:60vh;overflow-y:auto;">
+        <table style="box-shadow:none;font-size:12px;">
+          <thead><tr><th>Fecha</th><th>Quién</th><th>Tipo</th><th>Registro</th><th>Campo</th><th>Antes</th><th>Después</th></tr></thead>
+          <tbody id="tbodyAuditoria"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="overlay" onclick="cerrarDrawer()"></div>
 <div id="drawer">
   <div class="dhead"><h2 id="dNombre">—</h2><button onclick="cerrarDrawer()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button></div>
@@ -1505,6 +1561,8 @@ document.addEventListener('keydown', function(e){
   cerrarModalBot();
   cerrarHojaDistrital();
   cerrarModalCampanaGoteo();
+  cerrarModalDuplicados();
+  cerrarModalAuditoria();
 });
 
 let USUARIO = localStorage.getItem('prysma_usuario') || '';
@@ -1720,6 +1778,8 @@ async function entrarApp(){
     document.getElementById('btnUsuarios').style.display='inline-flex';
     document.getElementById('btnEstadoMasivo').style.display='inline-flex';
     document.getElementById('btnConfigBot').style.display='inline-block';
+    document.getElementById('btnDuplicados').style.display='inline-flex';
+    document.getElementById('btnAuditoria').style.display='inline-flex';
   }
   if(SESSION.rol==='coordinador'){
     cargarBannerTareas();
@@ -1955,7 +2015,7 @@ function cambiarTab(tab){
   if(tab==='encuestas') cargarEncuestas();
   if(tab==='chat') iniciarChatEquipo(); else detenerChatEquipo();
   if(tab==='chatmilitantes') iniciarChatMilitantes(); else detenerChatMilitantes();
-  if(tab==='modoterreno') cargarModoTerreno();
+  if(tab==='modoterreno'){ cargarModoTerreno(); iniciarControlInactividad(); } else { detenerControlInactividad(); }
 }
 
 function irAlInicio(){
@@ -2023,7 +2083,73 @@ function poblarFiltroComunaKPI(){
   sel.dataset.cargado = '1';
 }
 
+// Datos oficiales de referencia (Biblioteca del Congreso Nacional — Sistema
+// Integrado de Información Territorial, reporte Distrito 12, Plebiscito
+// Constitucional 2023). Se actualiza manualmente una vez al año aprox., no
+// hay una API en vivo del BCN para esto.
+const CONTEXTO_DISTRITAL_BCN = [
+  { comuna: 'Puente Alto', padron: 413938, participacion: 89.2 },
+  { comuna: 'La Florida', padron: 307628, participacion: 88.1 },
+  { comuna: 'La Pintana', padron: 135361, participacion: 86.8 },
+  { comuna: 'San José de Maipo', padron: 16129, participacion: 87.1 },
+  { comuna: 'Pirque', padron: 24879, participacion: 90.7 }
+];
+async function cargarTendenciaKPI(){
+  const res = await apiGet({action:'getHistorialKPI'});
+  if(!res.ok || res.datos.length < 2){
+    document.getElementById('tendenciaVacio').style.display = 'block';
+    document.getElementById('chartTendencia').style.display = 'none';
+    return;
+  }
+  document.getElementById('tendenciaVacio').style.display = 'none';
+  document.getElementById('chartTendencia').style.display = 'block';
+  const datos = res.datos;
+  const etiquetas = datos.map(d => new Date(d.fecha).toLocaleDateString('es-CL', {day:'2-digit', month:'short'}));
+
+  if(charts['chartTendencia']) charts['chartTendencia'].destroy();
+  const ctx = document.getElementById('chartTendencia').getContext('2d');
+  charts['chartTendencia'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: etiquetas,
+      datasets: [
+        { label:'Total militantes', data: datos.map(d=>d.totalMilitantes), borderColor:'#E0A458', backgroundColor:'rgba(224,164,88,.12)', fill:true, tension:.3, yAxisID:'y' },
+        { label:'% Cumplimiento promedio', data: datos.map(d=>d.pctCumplimientoPromedio || null), borderColor:'#5AA8E8', backgroundColor:'transparent', tension:.3, yAxisID:'y1', borderDash:[5,4] }
+      ]
+    },
+    options: {
+      responsive:true,
+      plugins:{ legend:{ position:'bottom', labels:{boxWidth:12,font:{size:11},color:'#C7CEC2'} } },
+      scales:{
+        x:{ ticks:{color:'#8A9385'}, grid:{display:false} },
+        y:{ position:'left', ticks:{color:'#8A9385'}, grid:{color:'rgba(255,255,255,.07)'}, title:{display:true,text:'Militantes',color:'#8A9385'} },
+        y1:{ position:'right', min:0, max:100, ticks:{color:'#8A9385',callback:v=>v+'%'}, grid:{display:false}, title:{display:true,text:'% Cumplimiento',color:'#8A9385'} }
+      }
+    }
+  });
+}
+
+async function cargarEstadoRespaldos(){
+  const el = document.getElementById('estadoRespaldos');
+  if(!el) return;
+  const res = await apiGet({action:'getEstadoRespaldos'});
+  if(!res.ok){ el.innerText = ''; return; }
+  const fecha = res.ultimoRespaldo ? new Date(res.ultimoRespaldo).toLocaleDateString('es-CL', {day:'2-digit', month:'long', year:'numeric'}) : 'sin respaldos todavía';
+  el.innerHTML = `🔒 Respaldo automático cada 15 días · Último: ${fecha} · ${res.totalRespaldos} guardado(s) · <a href="${res.carpetaUrl}" target="_blank" style="color:var(--gold-light);">Ver en Drive</a>`;
+}
+
+function renderContextoDistrital(){
+  const tbody = document.getElementById('tbodyContextoDistrital');
+  if(!tbody) return;
+  tbody.innerHTML = CONTEXTO_DISTRITAL_BCN.map(c=>`
+    <tr><td>${c.comuna}</td><td>${c.padron.toLocaleString('es-CL')}</td><td>${c.participacion}%</td></tr>
+  `).join('');
+}
+
 async function renderKPIs(){
+  renderContextoDistrital();
+  cargarTendenciaKPI();
+  cargarEstadoRespaldos();
   poblarFiltroComunaKPI();
   const comunaFiltro = document.getElementById('kpiComunaFiltro').value;
   const MILITANTES_KPI = comunaFiltro ? MILITANTES.filter(m=>norm(m.COMUNA)===comunaFiltro) : MILITANTES;
@@ -4406,6 +4532,127 @@ async function eliminarCampanaGoteoFrontend(id){
   const res = await apiPost({action:'eliminarCampanaEmail', id});
   toast(res.ok ? 'Campaña eliminada' : (res.error||'Error'));
   if(res.ok) cargarCampanasGoteo();
+}
+
+// ---------- CIERRE DE SESIÓN POR INACTIVIDAD (solo en Modo Terreno) ----------
+// Pensado para cuando el celular se pierde o se presta mientras alguien está
+// trabajando en la calle — si no hay ninguna interacción por 15 minutos, se
+// cierra la sesión sola, sin necesidad de que la persona se acuerde de tocar
+// "Salir" manualmente.
+const MINUTOS_INACTIVIDAD_TERRENO = 15;
+let _inactividadTimeout = null;
+function _reiniciarTimerInactividad(){
+  clearTimeout(_inactividadTimeout);
+  _inactividadTimeout = setTimeout(()=>{
+    toast('Sesión cerrada por inactividad (Modo Terreno)', 4000);
+    setTimeout(cerrarSesion, 1200);
+  }, MINUTOS_INACTIVIDAD_TERRENO * 60 * 1000);
+}
+function iniciarControlInactividad(){
+  ['click','touchstart','keydown','scroll'].forEach(ev => document.addEventListener(ev, _reiniciarTimerInactividad));
+  _reiniciarTimerInactividad();
+}
+function detenerControlInactividad(){
+  clearTimeout(_inactividadTimeout);
+  ['click','touchstart','keydown','scroll'].forEach(ev => document.removeEventListener(ev, _reiniciarTimerInactividad));
+}
+
+// ---------- REVISAR POSIBLES DUPLICADOS ----------
+async function abrirModalDuplicados(){
+  document.getElementById('modalDuplicadosOverlay').style.display='block';
+  document.getElementById('listaDuplicados').innerHTML = 'Cargando…';
+  const res = await apiGet({action:'detectarPosiblesDuplicados'});
+  if(!res.ok){ document.getElementById('listaDuplicados').innerHTML = res.error||'Error'; return; }
+  if(!res.datos.length){
+    document.getElementById('listaDuplicados').innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">No se encontraron casos sospechosos. 🎉</p>';
+    return;
+  }
+  document.getElementById('listaDuplicados').innerHTML = res.datos.map(g=>`
+    <div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:12.5px;color:var(--gold-light);font-weight:700;margin-bottom:2px;">${titleCase(g.domicilio)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">${titleCase(g.comuna)} · ${g.totalPersonas} persona(s) en esta dirección</div>
+      ${g.pares.map(p=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:rgba(240,102,90,.08);border-radius:8px;margin-bottom:6px;font-size:12.5px;">
+          <span>${titleCase(p.nombreA)} <span style="color:var(--muted);">↔</span> ${titleCase(p.nombreB)}</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline" style="padding:4px 9px;font-size:10.5px;" onclick="cerrarModalDuplicados(); buscarYAbrirFicha('${p.cedulaA}')">Ver 1°</button>
+            <button class="btn btn-outline" style="padding:4px 9px;font-size:10.5px;" onclick="cerrarModalDuplicados(); buscarYAbrirFicha('${p.cedulaB}')">Ver 2°</button>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+function cerrarModalDuplicados(){ document.getElementById('modalDuplicadosOverlay').style.display='none'; }
+function buscarYAbrirFicha(cedula){
+  document.getElementById('buscar').value = cedula;
+  aplicarFiltros();
+  const m = MILITANTES.find(x=>String(x.CEDULA)===String(cedula));
+  if(m) abrirDrawer(cedula);
+}
+
+// ---------- POSIBLES DUPLICADOS (revisión, admin) ----------
+async function abrirModalDuplicados(){
+  document.getElementById('modalDuplicadosOverlay').style.display='block';
+  document.getElementById('listaDuplicados').innerHTML = 'Cargando…';
+  const res = await apiGet({action:'detectarPosiblesDuplicados'});
+  if(!res.ok){ document.getElementById('listaDuplicados').innerHTML = res.error||'Error'; return; }
+  if(!res.datos.length){
+    document.getElementById('listaDuplicados').innerHTML = '<p style="color:var(--muted);font-size:13px;">No se encontraron casos sospechosos por ahora. 🎉</p>';
+    return;
+  }
+  document.getElementById('listaDuplicados').innerHTML = res.datos.map(grupo=>`
+    <div style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:12.5px;color:var(--gold-light);font-weight:700;margin-bottom:4px;">${titleCase(grupo.domicilio)}, ${titleCase(grupo.comuna)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">${grupo.totalPersonas} persona(s) registradas en esta dirección</div>
+      ${grupo.pares.map(p=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(240,102,90,.08);border:1px solid rgba(240,102,90,.25);border-radius:9px;padding:9px 12px;margin-bottom:6px;font-size:12px;">
+          <span>⚠️ <b>${titleCase(p.nombreA)}</b> ↔ <b>${titleCase(p.nombreB)}</b></span>
+          <span>
+            <button class="btn-outline" style="padding:4px 9px;font-size:10.5px;margin-right:4px;" onclick="cerrarModalDuplicados(); abrirDrawer('${p.cedulaA}')">Ver 1°</button>
+            <button class="btn-outline" style="padding:4px 9px;font-size:10.5px;" onclick="cerrarModalDuplicados(); abrirDrawer('${p.cedulaB}')">Ver 2°</button>
+          </span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+function cerrarModalDuplicados(){ document.getElementById('modalDuplicadosOverlay').style.display='none'; }
+
+// ---------- REGISTRO DE AUDITORÍA (admin) ----------
+let AUDITORIA_DATOS = [];
+async function abrirModalAuditoria(){
+  document.getElementById('modalAuditoriaOverlay').style.display='block';
+  document.getElementById('auditoriaBusqueda').value='';
+  document.getElementById('tbodyAuditoria').innerHTML = '<tr><td colspan="7" style="color:var(--muted);">Cargando…</td></tr>';
+  const res = await apiGet({action:'getRegistroAuditoria'});
+  if(!res.ok){ document.getElementById('tbodyAuditoria').innerHTML = `<tr><td colspan="7">${res.error||'Error'}</td></tr>`; return; }
+  AUDITORIA_DATOS = res.datos;
+  renderAuditoriaFrontend(AUDITORIA_DATOS);
+}
+function cerrarModalAuditoria(){ document.getElementById('modalAuditoriaOverlay').style.display='none'; }
+function filtrarAuditoriaFrontend(){
+  const q = document.getElementById('auditoriaBusqueda').value.trim().toLowerCase();
+  if(!q){ renderAuditoriaFrontend(AUDITORIA_DATOS); return; }
+  renderAuditoriaFrontend(AUDITORIA_DATOS.filter(a =>
+    String(a.nombreRegistro).toLowerCase().includes(q) ||
+    String(a.idRegistro).toLowerCase().includes(q) ||
+    String(a.usuario).toLowerCase().includes(q)
+  ));
+}
+function renderAuditoriaFrontend(lista){
+  const tbody = document.getElementById('tbodyAuditoria');
+  if(!lista.length){ tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);">Sin registros todavía.</td></tr>'; return; }
+  tbody.innerHTML = lista.map(a=>{
+    const fecha = new Date(a.fecha).toLocaleString('es-CL', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return `<tr>
+      <td style="white-space:nowrap;">${fecha}</td>
+      <td>${a.usuario}</td>
+      <td>${a.tipo}</td>
+      <td>${titleCase(a.nombreRegistro)||a.idRegistro}</td>
+      <td>${a.campo}</td>
+      <td style="color:var(--red);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.valorAnterior}</td>
+      <td style="color:var(--green);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.valorNuevo}</td>
+    </tr>`;
+  }).join('');
 }
 
 </script>
