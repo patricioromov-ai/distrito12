@@ -321,6 +321,21 @@
     .no-print{display:none !important;}
   }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
+<script>
+  // Configuración pública del proyecto de Firebase — no es sensible, está
+  // diseñada para ir directo en el código del frontend.
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCaWYPJyXyOkVCwEtOPhbAZsQcts7FP-44",
+    authDomain: "sigt-distrito-12.firebaseapp.com",
+    projectId: "sigt-distrito-12",
+    storageBucket: "sigt-distrito-12.firebasestorage.app",
+    messagingSenderId: "482987172182",
+    appId: "1:482987172182:web:e28964b4bc5e916591b6f7"
+  };
+  const FIREBASE_VAPID_KEY = "BPtDoczGaNADGFCrNFcIXA39-o_ZDqtD6xN_r2EoB91mmXH_N--uI-Fh5_VUNxDtR_NEQpPoxcY3dxSSbWNDzaU";
+</script>
 </head>
 <body>
 
@@ -344,7 +359,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-23-6 (PWA)</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-24-1 (Push)</p>
   </div>
 </div>
 
@@ -1524,6 +1539,16 @@ window.onload = function(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('service-worker.js').catch(err=>console.log('SW no registrado:', err));
   }
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    firebase.messaging().onMessage((payload)=>{
+      // La app está abierta y al frente en este momento, así que basta con
+      // un aviso dentro de la misma app (el aviso del sistema es para
+      // cuando la persona no está mirando la pantalla).
+      const n = payload.notification || {};
+      toast(`${n.title || 'Nuevo aviso'}: ${n.body || ''}`, 5000);
+    });
+  } catch(err){ console.log('Firebase no se pudo inicializar:', err); }
   if(!API_URL_FIJA || API_URL_FIJA.indexOf('PEGA_AQUI') !== -1){
     document.getElementById('avisoConfig').style.display='flex';
     return;
@@ -1557,10 +1582,16 @@ async function instalarApp(){
     alert('Busca la opción "Instalar aplicación" en el menú de tu navegador (usualmente los tres puntos arriba a la derecha).');
   }
 }
-function solicitarPermisoNotificaciones(){
-  if('Notification' in window && Notification.permission === 'default'){
-    Notification.requestPermission();
-  }
+async function solicitarPermisoNotificaciones(){
+  if(!('Notification' in window) || !('serviceWorker' in navigator)) return;
+  try{
+    const permiso = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission;
+    if(permiso !== 'granted') return;
+    const registro = await navigator.serviceWorker.ready;
+    const messaging = firebase.messaging();
+    const token = await messaging.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: registro });
+    if(token) await apiPost({action:'guardarTokenFCM', token});
+  } catch(err){ console.log('No se pudo activar notificaciones push:', err); }
 }
 function mostrarNotificacionLocal(titulo, cuerpo, etiqueta){
   if(!('Notification' in window) || Notification.permission !== 'granted') return;

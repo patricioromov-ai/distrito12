@@ -50,6 +50,27 @@ self.addEventListener('fetch', (evento) => {
   );
 });
 
+// ---- Notificaciones push REALES (Firebase Cloud Messaging) ----
+// Esto es lo que permite que llegue un aviso aunque la app esté
+// completamente cerrada y el celular bloqueado — el navegador despierta
+// este Service Worker en segundo plano solo para mostrar el aviso.
+self.addEventListener('push', (evento) => {
+  let datos = {};
+  try { datos = evento.data ? evento.data.json() : {}; } catch (e) {}
+  const notif = datos.notification || {};
+  const titulo = notif.title || 'SIGT';
+  const cuerpo = notif.body || '';
+  evento.waitUntil(
+    self.registration.showNotification(titulo, {
+      body: cuerpo,
+      icon: './iconos/icon-192.png',
+      badge: './iconos/icon-192.png',
+      tag: 'sigt-push-' + Date.now(),
+      data: datos.data || {}
+    })
+  );
+});
+
 // ---- Notificaciones locales (mientras la app está abierta o en 2° plano) ----
 // El sistema no envía push reales todavía (eso requiere un servicio externo
 // tipo Firebase); esto muestra un aviso del sistema operativo cuando la
