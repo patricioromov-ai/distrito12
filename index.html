@@ -399,7 +399,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-26-3 (Formación OK)</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-26-4 (Oficina Virtual)</p>
   </div>
 </div>
 
@@ -411,6 +411,7 @@
     </div>
     <div class="userinfo">
       <span id="totalBadge"></span>
+      <button class="exit" id="btnOficinaVirtual" style="display:none;border:1px solid var(--border);" onclick="toggleOficinaVirtual()">🔴 Oficina Virtual</button>
       <span class="badge" id="rolBadge"></span>
       <button class="exit" id="btnUsuarios" style="display:none;" onclick="abrirModalUsuarios()">Usuarios</button>
       <button class="exit" onclick="cerrarSesion()">Salir</button>
@@ -2088,6 +2089,10 @@ async function entrarApp(){
   document.getElementById('rolBadge').innerText = (SESSION.nombre ? SESSION.nombre + ' · ' : '') + (SESSION.rol==='admin' ? 'ADMIN' : SESSION.rol==='coordinador' ? 'COORDINADOR' : 'SOLO VER');
   if(!yaEstaInstalada() && esIOS()){ document.getElementById('btnInstalarApp').style.display='inline-block'; }
   solicitarPermisoNotificaciones();
+  if(SESSION.rol==='admin' || SESSION.rol==='coordinador'){
+    document.getElementById('btnOficinaVirtual').style.display='inline-flex';
+    cargarEstadoOficinaVirtual();
+  }
   if(SESSION.rol==='viewer'){
     ['btnEmailMasivo','btnWspMasivo','btnAgregar','btnChatMasivo'].forEach(id=>document.getElementById(id).style.display='none');
   }
@@ -5025,6 +5030,39 @@ async function confirmarEnviarFormacion(){
   if(!res.ok){ toast(res.error||'Error'); return; }
   toast(`${res.enviados} de ${res.total} inscritos y enviados` + (res.errores.length ? ` (${res.errores.length} con problemas)` : ''));
   cerrarModalFormacion();
+}
+
+// ---------- OFICINA VIRTUAL (admin y coordinador) ----------
+async function cargarEstadoOficinaVirtual(){
+  const res = await apiGet({action:'getEstadoOficinaVirtual'});
+  const btn = document.getElementById('btnOficinaVirtual');
+  if(res.disponible){
+    btn.innerText = '🟢 Oficina Virtual (abierta)';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+  } else {
+    btn.innerText = '🔴 Oficina Virtual';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.color = '';
+  }
+}
+async function toggleOficinaVirtual(){
+  const res = await apiGet({action:'getEstadoOficinaVirtual'});
+  if(res.disponible){
+    if(!confirm('¿Cerrar tu Oficina Virtual? Tus militantes ya no verán el aviso de disponibilidad.')) return;
+    mostrarCargando(true);
+    await apiPost({action:'desactivarOficinaVirtual'});
+    mostrarCargando(false);
+    toast('Oficina Virtual cerrada');
+  } else {
+    if(!confirm('¿Abrir tu Oficina Virtual? Se crea una videollamada de Meet, visible para tus militantes mientras esté activa.')) return;
+    mostrarCargando(true);
+    const resAct = await apiPost({action:'activarOficinaVirtual'});
+    mostrarCargando(false);
+    if(!resAct.ok){ toast(resAct.error||'Error al crear la reunión'); return; }
+    toast('Oficina Virtual abierta');
+  }
+  cargarEstadoOficinaVirtual();
 }
 
 </script>
