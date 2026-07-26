@@ -399,7 +399,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-26-4 (Oficina Virtual)</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-26-5</p>
   </div>
 </div>
 
@@ -411,6 +411,7 @@
     </div>
     <div class="userinfo">
       <span id="totalBadge"></span>
+      <button class="exit" id="btnEntrarMeetActivo" style="display:none;border:1px solid var(--green);color:var(--green);" onclick="entrarAMiMeetActivo()">↗ Entrar</button>
       <button class="exit" id="btnOficinaVirtual" style="display:none;border:1px solid var(--border);" onclick="toggleOficinaVirtual()">🔴 Oficina Virtual</button>
       <span class="badge" id="rolBadge"></span>
       <button class="exit" id="btnUsuarios" style="display:none;" onclick="abrirModalUsuarios()">Usuarios</button>
@@ -5033,18 +5034,29 @@ async function confirmarEnviarFormacion(){
 }
 
 // ---------- OFICINA VIRTUAL (admin y coordinador) ----------
+let miLinkMeetActivo = '';
 async function cargarEstadoOficinaVirtual(){
   const res = await apiGet({action:'getEstadoOficinaVirtual'});
   const btn = document.getElementById('btnOficinaVirtual');
+  const btnEntrar = document.getElementById('btnEntrarMeetActivo');
   if(res.disponible){
     btn.innerText = '🟢 Oficina Virtual (abierta)';
     btn.style.borderColor = 'var(--green)';
     btn.style.color = 'var(--green)';
+    miLinkMeetActivo = res.link || '';
+    btnEntrar.style.display = miLinkMeetActivo ? 'inline-flex' : 'none';
   } else {
     btn.innerText = '🔴 Oficina Virtual';
     btn.style.borderColor = 'var(--border)';
     btn.style.color = '';
+    miLinkMeetActivo = '';
+    btnEntrar.style.display = 'none';
   }
+}
+function entrarAMiMeetActivo(){
+  if(!miLinkMeetActivo) return;
+  const ventana = window.open(miLinkMeetActivo, '_blank');
+  if(!ventana) prompt('Tu navegador bloqueó la ventana. Copia este link:', miLinkMeetActivo);
 }
 async function toggleOficinaVirtual(){
   const res = await apiGet({action:'getEstadoOficinaVirtual'});
@@ -5060,7 +5072,14 @@ async function toggleOficinaVirtual(){
     const resAct = await apiPost({action:'activarOficinaVirtual'});
     mostrarCargando(false);
     if(!resAct.ok){ toast(resAct.error||'Error al crear la reunión'); return; }
-    toast('Oficina Virtual abierta');
+    toast('Oficina Virtual abierta — entra a tu reunión para poder recibir a quien se una');
+    if(resAct.link){
+      const ventana = window.open(resAct.link, '_blank');
+      if(!ventana){
+        // El navegador bloqueó la ventana emergente — se lo dejamos copiable
+        prompt('Tu navegador bloqueó la apertura automática. Copia este link y ábrelo tú mismo:', resAct.link);
+      }
+    }
   }
   cargarEstadoOficinaVirtual();
 }
