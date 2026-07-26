@@ -399,7 +399,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-26-1 (BASE)</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-26-3 (Formación OK)</p>
   </div>
 </div>
 
@@ -486,6 +486,7 @@
         <button class="btn btn-outline" id="btnChatMasivo" onclick="enviarLinksChatMasivoFrontend()">Enviar links de chat</button>
         <button class="btn btn-outline" id="btnDuplicados" style="display:none;" onclick="abrirModalDuplicados()">🔍 Revisar duplicados</button>
         <button class="btn btn-outline" id="btnAuditoria" style="display:none;" onclick="abrirModalAuditoria()">📜 Auditoría</button>
+        <button class="btn btn-outline" id="btnFormacion" style="display:none;" onclick="abrirModalFormacion()">🎓 Enviar a Formación</button>
       </div>
     </div>
 
@@ -1210,6 +1211,29 @@
   </div>
 </div>
 
+<!-- MODAL ENVIAR A FORMACIÓN -->
+<div id="modalFormacionOverlay" onclick="if(event.target===this) cerrarModalFormacion()" style="display:none;position:fixed;inset:0;background:rgba(4,6,4,.7);z-index:2000;overflow-y:scroll;-webkit-overflow-scrolling:touch;">
+  <div style="background:var(--card-solid);border:1px solid var(--border);border-radius:18px;width:520px;max-width:92vw;margin:40px auto;">
+    <div class="mhead" style="background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:18px 22px;display:flex;justify-content:space-between;border-radius:18px 18px 0 0;">
+      <strong>🎓 Enviar a Formación</strong><button onclick="cerrarModalFormacion()" style="background:none;border:none;color:#fff;cursor:pointer;">✕</button>
+    </div>
+    <div class="mbody" style="padding:22px;">
+      <p style="font-size:12px;color:var(--muted);margin:0 0 16px;">
+        Inscribe a la selección actual (o a los filtros activos si no hay selección) en un curso del sistema de Formación —
+        cada persona recibe un correo con su link personal para empezar.
+      </p>
+      <label style="font-size:11px;color:var(--muted);font-weight:600;">Curso</label>
+      <select id="formacionCurso" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;background:var(--card-solid);color:var(--text);">
+        <option value="">Cargando cursos…</option>
+      </select>
+      <p id="formacionDestinatariosInfo" style="font-size:12px;color:var(--muted);margin-top:14px;"></p>
+    </div>
+    <div class="mfoot" style="padding:14px 20px;text-align:right;border-top:1px solid var(--border);">
+      <button class="btn-gold" style="padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;" onclick="confirmarEnviarFormacion()">Inscribir y enviar</button>
+    </div>
+  </div>
+</div>
+
 <div id="overlay" onclick="cerrarDrawer()"></div>
 <div id="drawer">
   <div class="dhead"><h2 id="dNombre">—</h2><button onclick="cerrarDrawer()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button></div>
@@ -1605,6 +1629,7 @@ document.addEventListener('keydown', function(e){
   cerrarModalCampanaGoteo();
   cerrarModalDuplicados();
   cerrarModalAuditoria();
+  cerrarModalFormacion();
 });
 
 let USUARIO = localStorage.getItem('prysma_usuario') || '';
@@ -2075,6 +2100,7 @@ async function entrarApp(){
     document.getElementById('btnConfigBot').style.display='inline-block';
     document.getElementById('btnDuplicados').style.display='inline-flex';
     document.getElementById('btnAuditoria').style.display='inline-flex';
+    document.getElementById('btnFormacion').style.display='inline-flex';
   }
   if(SESSION.rol==='coordinador'){
     cargarBannerTareas();
@@ -4963,6 +4989,42 @@ function renderAuditoriaFrontend(lista){
       <td style="color:var(--green);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.valorNuevo}</td>
     </tr>`;
   }).join('');
+}
+
+// ---------- ENVIAR A FORMACIÓN (admin) ----------
+async function abrirModalFormacion(){
+  document.getElementById('modalFormacionOverlay').style.display='block';
+  const sel = document.getElementById('formacionCurso');
+  sel.innerHTML = '<option value="">Cargando cursos…</option>';
+  const totalConSeleccion = seleccionados.size;
+  const totalConFiltro = filtrados.length;
+  document.getElementById('formacionDestinatariosInfo').innerText = totalConSeleccion
+    ? `Se usará tu selección actual: ${totalConSeleccion} militante(s).`
+    : `No tienes selección activa — se usarán los filtros actuales de la tabla: ${totalConFiltro} militante(s).`;
+  const res = await apiGet({action:'listarCursosFormacion'});
+  if(!res.ok || !res.datos.length){
+    sel.innerHTML = '<option value="">Sin cursos disponibles</option>';
+    return;
+  }
+  sel.innerHTML = res.datos.map(c=>`<option value="${c.curso_id}" data-nombre="${c.nombre}">${c.nombre} (${c.audiencia})</option>`).join('');
+}
+function cerrarModalFormacion(){ document.getElementById('modalFormacionOverlay').style.display='none'; }
+async function confirmarEnviarFormacion(){
+  const sel = document.getElementById('formacionCurso');
+  const cursoId = sel.value;
+  if(!cursoId){ toast('Elige un curso'); return; }
+  const nombreCurso = sel.options[sel.selectedIndex].dataset.nombre;
+
+  let cedulas;
+  if(seleccionados.size) cedulas = [...seleccionados];
+  else cedulas = filtrados.map(m=>m.CEDULA);
+
+  mostrarCargando(true);
+  const res = await apiPost({action:'inscribirYEnviarLinkCurso', cedulas, cursoId, nombreCurso});
+  mostrarCargando(false);
+  if(!res.ok){ toast(res.error||'Error'); return; }
+  toast(`${res.enviados} de ${res.total} inscritos y enviados` + (res.errores.length ? ` (${res.errores.length} con problemas)` : ''));
+  cerrarModalFormacion();
 }
 
 </script>
