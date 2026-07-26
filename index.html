@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SIGT · Gestión Territorial · Distrito 12</title>
+<title>BASE · Gestión Territorial · Distrito 12</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0E120E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SIGT">
+<meta name="apple-mobile-web-app-title" content="BASE">
 <link rel="apple-touch-icon" href="iconos/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -320,9 +320,31 @@
     .kpiCard, .chartCard, #informeNarrativo, #okrCard, #campanasCard{background:#fff !important; border:1px solid #ddd !important; box-shadow:none !important;}
     .no-print{display:none !important;}
   }
+
+  /* ---------- INTRO 3D (BASE) ---------- */
+  #intro3D{position:fixed;inset:0;z-index:9999;background:#0A0D08;overflow:hidden;}
+  #canvasIntro3D{position:fixed;inset:0;z-index:1;}
+  #intro3DOverlay{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;padding:0 24px;text-align:center;}
+  #intro3DMarcaWrap{position:relative;padding:22px 46px;opacity:0;}
+  #intro3DMarca{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:min(15vw,110px);letter-spacing:8px;
+    background:linear-gradient(135deg,#FFFFFF 0%,#F0C088 55%,#E0A458 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    text-shadow:0 0 70px rgba(224,164,88,.55);}
+  .intro3DCursor{display:inline-block;width:.08em;color:#E0A458;-webkit-text-fill-color:#E0A458;background:none;animation:intro3DParpadeo .8s step-end infinite;font-weight:400;}
+  @keyframes intro3DParpadeo{ 0%,100%{opacity:1;} 50%{opacity:0;} }
+  .intro3DEsquina{position:absolute;width:22px;height:22px;border:2px solid #E0A458;opacity:.75;}
+  .intro3DEsquina.tl{top:0;left:0;border-right:none;border-bottom:none;}
+  .intro3DEsquina.tr{top:0;right:0;border-left:none;border-bottom:none;}
+  .intro3DEsquina.bl{bottom:0;left:0;border-right:none;border-top:none;}
+  .intro3DEsquina.br{bottom:0;right:0;border-left:none;border-top:none;}
+  #intro3DSubTexto{font-family:'Space Grotesk',sans-serif;font-size:11px;letter-spacing:5px;color:#8A9385;text-align:center;margin-top:6px;opacity:.85;}
+  #intro3DTagline{font-size:14px;color:#8A9385;letter-spacing:3px;text-transform:uppercase;margin-top:18px;opacity:0;transform:translateY(10px);max-width:480px;text-align:center;line-height:1.6;}
+  #intro3DSaltar{position:fixed;top:24px;right:24px;z-index:5;font-size:11px;color:#8A9385;background:none;border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:20px;cursor:pointer;letter-spacing:1px;}
+  #intro3DSonidoAviso{position:fixed;top:24px;left:24px;z-index:5;font-size:11px;color:#F0C088;background:rgba(224,164,88,.1);border:1px solid rgba(224,164,88,.4);padding:8px 16px;border-radius:20px;cursor:pointer;letter-spacing:1px;animation:intro3DParpadeoAviso 1.6s ease-in-out infinite;}
+  @keyframes intro3DParpadeoAviso{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
   // Configuración pública del proyecto de Firebase — no es sensible, está
   // diseñada para ir directo en el código del frontend.
@@ -339,6 +361,24 @@
 </head>
 <body>
 
+<!-- INTRO 3D (aparece cada vez que se abre la app, antes del login) -->
+<div id="intro3D">
+  <canvas id="canvasIntro3D"></canvas>
+  <div id="intro3DSonidoAviso" onclick="activarSonidoIntro3D()">🔊 Toca para activar el sonido</div>
+  <div id="intro3DOverlay">
+    <div id="intro3DMarcaWrap">
+      <div class="intro3DEsquina tl"></div>
+      <div class="intro3DEsquina tr"></div>
+      <div class="intro3DEsquina bl"></div>
+      <div class="intro3DEsquina br"></div>
+      <div id="intro3DMarca"></div>
+      <div id="intro3DSubTexto"></div>
+    </div>
+    <div id="intro3DTagline">Sistema Integrado de Gestión Territorial</div>
+  </div>
+  <button id="intro3DSaltar" onclick="finalizarIntro3D()">Saltar intro ›</button>
+</div>
+
 <div id="avisoConfig">
   <div class="box">
     <h2>Falta configurar la URL de la API</h2>
@@ -351,22 +391,22 @@
 <div id="loginScreen" style="display:none;">
   <canvas id="canvasParticulas"></canvas>
   <div id="loginBox">
-    <div class="logo">S</div>
-    <h1>SIGT</h1>
+    <div class="logo">B</div>
+    <h1>BASE</h1>
     <p style="margin-bottom:2px;">Sistema Integrado de Gestión Territorial</p>
     <p>Distrito 12</p>
     <input type="text" id="usuarioInput" placeholder="Usuario" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('passInput').focus()">
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-25-3</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-26-1 (BASE)</p>
   </div>
 </div>
 
 <div id="app">
   <header>
     <div class="left">
-      <div class="brand" onclick="irAlInicio()" style="cursor:pointer;"><div class="logo">S</div>SIGT <span>Distrito 12</span></div>
+      <div class="brand" onclick="irAlInicio()" style="cursor:pointer;"><div class="logo">B</div>BASE <span>Distrito 12</span></div>
       <button class="exit" id="btnVolverInicio" onclick="irAlInicio()">← Volver al inicio</button>
     </div>
     <div class="userinfo">
@@ -1596,6 +1636,10 @@ function parseFechaDDMMYYYY(str){
 
 // ---------- ARRANQUE ----------
 window.onload = function(){
+  iniciarIntro3D();
+};
+
+function continuarDespuesDeIntro(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('service-worker.js').catch(err=>console.log('SW no registrado:', err));
   }
@@ -1619,7 +1663,256 @@ window.onload = function(){
   } else {
     entrarApp();
   }
-};
+}
+
+// ---------- INTRO 3D (BASE) ----------
+let intro3DAudioCtx = null;
+let intro3DSonidoActivado = false;
+let intro3DFinalizada = false;
+
+function activarSonidoIntro3D(){
+  if(intro3DSonidoActivado) return;
+  intro3DSonidoActivado = true;
+  intro3DAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  document.getElementById('intro3DSonidoAviso').style.display = 'none';
+  intro3DReproducirSecuenciaSonido();
+}
+
+function intro3DReproducirRiser(duracionSeg){
+  const ahora = intro3DAudioCtx.currentTime;
+  const osc = intro3DAudioCtx.createOscillator();
+  const gainOsc = intro3DAudioCtx.createGain();
+  const filtroOsc = intro3DAudioCtx.createBiquadFilter();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(70, ahora);
+  osc.frequency.exponentialRampToValueAtTime(340, ahora + duracionSeg);
+  filtroOsc.type = 'lowpass';
+  filtroOsc.frequency.setValueAtTime(500, ahora);
+  filtroOsc.frequency.exponentialRampToValueAtTime(1400, ahora + duracionSeg);
+  filtroOsc.Q.value = 0.5;
+  gainOsc.gain.setValueAtTime(0.001, ahora);
+  gainOsc.gain.exponentialRampToValueAtTime(0.075, ahora + duracionSeg*0.9);
+  osc.connect(filtroOsc); filtroOsc.connect(gainOsc); gainOsc.connect(intro3DAudioCtx.destination);
+  osc.start(ahora); osc.stop(ahora + duracionSeg + 0.1);
+
+  const bufferSize = intro3DAudioCtx.sampleRate * duracionSeg;
+  const buffer = intro3DAudioCtx.createBuffer(1, bufferSize, intro3DAudioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
+  const ruido = intro3DAudioCtx.createBufferSource();
+  ruido.buffer = buffer;
+  const filtroRuido = intro3DAudioCtx.createBiquadFilter();
+  filtroRuido.type = 'bandpass';
+  filtroRuido.frequency.setValueAtTime(150, ahora);
+  filtroRuido.frequency.exponentialRampToValueAtTime(1200, ahora + duracionSeg);
+  filtroRuido.Q.value = 0.9;
+  const gainRuido = intro3DAudioCtx.createGain();
+  gainRuido.gain.setValueAtTime(0.001, ahora);
+  gainRuido.gain.exponentialRampToValueAtTime(0.05, ahora + duracionSeg*0.92);
+  ruido.connect(filtroRuido); filtroRuido.connect(gainRuido); gainRuido.connect(intro3DAudioCtx.destination);
+  ruido.start(ahora); ruido.stop(ahora + duracionSeg);
+
+  let tiempoLatido = 0.6;
+  let cuando = ahora + 0.5;
+  while(cuando < ahora + duracionSeg - 0.1){
+    intro3DReproducirLatido(cuando);
+    cuando += tiempoLatido;
+    tiempoLatido *= 0.82;
+  }
+}
+function intro3DReproducirLatido(cuando){
+  const osc = intro3DAudioCtx.createOscillator();
+  const gain = intro3DAudioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(90, cuando);
+  osc.frequency.exponentialRampToValueAtTime(40, cuando + 0.25);
+  gain.gain.setValueAtTime(0.16, cuando);
+  gain.gain.exponentialRampToValueAtTime(0.001, cuando + 0.3);
+  osc.connect(gain); gain.connect(intro3DAudioCtx.destination);
+  osc.start(cuando); osc.stop(cuando + 0.35);
+}
+function intro3DReproducirImpacto(inicioSeg){
+  const ahora = intro3DAudioCtx.currentTime + inicioSeg;
+  const osc = intro3DAudioCtx.createOscillator();
+  const gain = intro3DAudioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(150, ahora);
+  osc.frequency.exponentialRampToValueAtTime(35, ahora + 0.5);
+  gain.gain.setValueAtTime(0.28, ahora);
+  gain.gain.exponentialRampToValueAtTime(0.001, ahora + 1.1);
+  osc.connect(gain); gain.connect(intro3DAudioCtx.destination);
+  osc.start(ahora); osc.stop(ahora + 1.2);
+  const bufferSize = intro3DAudioCtx.sampleRate * 0.15;
+  const buffer = intro3DAudioCtx.createBuffer(1, bufferSize, intro3DAudioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1) * (1 - i/bufferSize);
+  const ruido = intro3DAudioCtx.createBufferSource();
+  ruido.buffer = buffer;
+  const gainRuido = intro3DAudioCtx.createGain();
+  gainRuido.gain.setValueAtTime(0.2, ahora);
+  ruido.connect(gainRuido); gainRuido.connect(intro3DAudioCtx.destination);
+  ruido.start(ahora);
+}
+function intro3DReproducirChime(inicioSeg){
+  const ahora = intro3DAudioCtx.currentTime + inicioSeg;
+  [440, 554.37, 659.25, 880].forEach((freq, i)=>{
+    const osc = intro3DAudioCtx.createOscillator();
+    const gain = intro3DAudioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, ahora + i*0.03);
+    gain.gain.linearRampToValueAtTime(0.1, ahora + i*0.03 + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, ahora + i*0.03 + 2.2);
+    osc.connect(gain); gain.connect(intro3DAudioCtx.destination);
+    osc.start(ahora + i*0.03); osc.stop(ahora + i*0.03 + 2.3);
+  });
+}
+function intro3DReproducirSecuenciaSonido(){
+  intro3DReproducirRiser(3.75);
+  intro3DReproducirImpacto(3.75);
+  intro3DReproducirChime(3.85);
+}
+
+function intro3DEscribirTexto(elementoId, texto, velocidadMs, callback){
+  const el = document.getElementById(elementoId);
+  let i = 0;
+  (function siguienteLetra(){
+    if(i <= texto.length){
+      el.innerHTML = texto.slice(0,i) + '<span class="intro3DCursor">|</span>';
+      i++;
+      setTimeout(siguienteLetra, velocidadMs);
+    } else if(callback){ callback(); }
+  })();
+}
+
+function iniciarIntro3D(){
+  if(typeof THREE === 'undefined'){
+    // Si por alguna razón Three.js no cargó, no bloqueamos el acceso al sistema
+    finalizarIntro3D();
+    return;
+  }
+  const canvas = document.getElementById('canvasIntro3D');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0A0D08, 0.028);
+  const camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 300);
+
+  scene.add(new THREE.AmbientLight(0x2a2a20, 1.0));
+  const luzDorada = new THREE.PointLight(0xE0A458, 4, 80);
+  luzDorada.position.set(8, 10, 0);
+  scene.add(luzDorada);
+  const luzFria = new THREE.PointLight(0x3D6E8A, 2, 60);
+  luzFria.position.set(-10, -6, -20);
+  scene.add(luzFria);
+  const luzFrontal = new THREE.PointLight(0xF0C088, 2.5, 40);
+  camera.add(luzFrontal);
+  scene.add(camera);
+
+  const TUNEL_LARGO = 140;
+  const grupoEscena = new THREE.Group();
+  scene.add(grupoEscena);
+
+  const nodos = [];
+  const geoEsfera = new THREE.SphereGeometry(0.5, 20, 20);
+  const matNodo = new THREE.MeshStandardMaterial({ color:0xE0A458, emissive:0xE0A458, emissiveIntensity:0.55, roughness:0.25, metalness:0.6 });
+  const matNodoCentral = new THREE.MeshStandardMaterial({ color:0xF0C088, emissive:0xF0C088, emissiveIntensity:1.1, roughness:0.15, metalness:0.7 });
+  for(let i=0;i<50;i++){
+    const central = i % 9 === 0;
+    const esfera = new THREE.Mesh(geoEsfera, central ? matNodoCentral : matNodo);
+    esfera.scale.setScalar(central ? 1.6 : 0.5 + Math.random()*0.5);
+    esfera.position.set((Math.random()-0.5)*22, (Math.random()-0.5)*16, -Math.random()*TUNEL_LARGO);
+    grupoEscena.add(esfera);
+    nodos.push(esfera);
+  }
+
+  const cristales = [];
+  const geosCristal = [new THREE.IcosahedronGeometry(1.3,0), new THREE.OctahedronGeometry(1.5,0), new THREE.TetrahedronGeometry(1.6,0)];
+  const matCristal = new THREE.MeshPhysicalMaterial({ color:0xD8B878, metalness:0.9, roughness:0.12, clearcoat:1, clearcoatRoughness:0.05, emissive:0x3D2E14, emissiveIntensity:0.25, flatShading:true });
+  for(let i=0;i<26;i++){
+    const cristal = new THREE.Mesh(geosCristal[i % geosCristal.length], matCristal);
+    cristal.position.set((Math.random()-0.5)*26, (Math.random()-0.5)*18, -Math.random()*TUNEL_LARGO);
+    cristal.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+    cristal.userData.velRot = { x:(Math.random()-0.5)*0.01, y:(Math.random()-0.5)*0.01 };
+    grupoEscena.add(cristal);
+    cristales.push(cristal);
+  }
+
+  const matLinea = new THREE.LineBasicMaterial({ color:0xB8923D, transparent:true, opacity:0.15 });
+  for(let i=0;i<nodos.length;i++){
+    for(let j=i+1;j<nodos.length;j++){
+      if(nodos[i].position.distanceTo(nodos[j].position) < 6 && Math.random()>0.75){
+        const geo = new THREE.BufferGeometry().setFromPoints([nodos[i].position, nodos[j].position]);
+        grupoEscena.add(new THREE.Line(geo, matLinea));
+      }
+    }
+  }
+
+  const geoParticulas = new THREE.BufferGeometry();
+  const posP = new Float32Array(500*3);
+  for(let i=0;i<500;i++){ posP[i*3]=(Math.random()-0.5)*60; posP[i*3+1]=(Math.random()-0.5)*60; posP[i*3+2]=-Math.random()*TUNEL_LARGO; }
+  geoParticulas.setAttribute('position', new THREE.BufferAttribute(posP,3));
+  grupoEscena.add(new THREE.Points(geoParticulas, new THREE.PointsMaterial({color:0x3D6E4A,size:0.1,transparent:true,opacity:0.5})));
+
+  let t = 0;
+  const DURACION_VUELO = 6.0;
+  let animando = true;
+  function animar(){
+    if(!animando) return;
+    requestAnimationFrame(animar);
+    t += 1/60;
+    const progreso = Math.min(t/DURACION_VUELO, 1);
+    const easeOut = 1 - Math.pow(1-progreso, 3);
+    camera.position.z = -easeOut * (TUNEL_LARGO*0.82);
+    camera.position.x = Math.sin(t*0.4)*1.2;
+    camera.position.y = Math.cos(t*0.3)*0.8;
+    camera.lookAt(camera.position.x*0.3, camera.position.y*0.3, camera.position.z - 20);
+    cristales.forEach(c=>{ c.rotation.x += c.userData.velRot.x; c.rotation.y += c.userData.velRot.y; });
+    nodos.forEach((n,i)=>{ n.position.y += Math.sin(t*0.6+i)*0.002; });
+    renderer.render(scene, camera);
+  }
+  animar();
+
+  const alRedimensionar = ()=>{
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  };
+  window.addEventListener('resize', alRedimensionar);
+
+  setTimeout(()=>{
+    document.getElementById('intro3DMarcaWrap').style.transition = 'opacity .3s ease';
+    document.getElementById('intro3DMarcaWrap').style.opacity = '1';
+    intro3DEscribirTexto('intro3DMarca', 'BASE', 130, ()=>{
+      setTimeout(()=>{ intro3DEscribirTexto('intro3DSubTexto', 'GESTIÓN TERRITORIAL INTELIGENTE', 22); }, 350);
+    });
+  }, 3800);
+
+  setTimeout(()=>{
+    document.getElementById('intro3DTagline').style.transition = 'opacity 1s ease, transform 1s ease';
+    document.getElementById('intro3DTagline').style.opacity = '1';
+    document.getElementById('intro3DTagline').style.transform = 'translateY(0)';
+  }, 4500);
+
+  // Auto-avanza a los 7.5s; si la persona toca "Saltar intro" antes, se corta ahí
+  const autoAvance = setTimeout(finalizarIntro3D, 7500);
+  window._intro3DLimpiar = ()=>{ animando = false; clearTimeout(autoAvance); window.removeEventListener('resize', alRedimensionar); };
+}
+
+function finalizarIntro3D(){
+  if(intro3DFinalizada) return;
+  intro3DFinalizada = true;
+  if(window._intro3DLimpiar) window._intro3DLimpiar();
+  const intro = document.getElementById('intro3D');
+  intro.style.transition = 'opacity .6s ease';
+  intro.style.opacity = '0';
+  setTimeout(()=>{
+    intro.style.display = 'none';
+    continuarDespuesDeIntro();
+  }, 600);
+}
 
 // ---------- PWA: instalación y notificaciones locales ----------
 let eventoInstalacionApp = null;
@@ -1637,7 +1930,7 @@ async function instalarApp(){
     if(resultado.outcome === 'accepted') document.getElementById('btnInstalarApp').style.display='none';
     eventoInstalacionApp = null;
   } else if(esIOS()){
-    alert('Para instalar SIGT en tu iPhone:\n\n1. Toca el botón Compartir (el cuadrado con la flecha hacia arriba)\n2. Elige "Agregar a pantalla de inicio"\n3. Toca "Agregar"');
+    alert('Para instalar BASE en tu iPhone:\n\n1. Toca el botón Compartir (el cuadrado con la flecha hacia arriba)\n2. Elige "Agregar a pantalla de inicio"\n3. Toca "Agregar"');
   } else {
     alert('Busca la opción "Instalar aplicación" en el menú de tu navegador (usualmente los tres puntos arriba a la derecha).');
   }

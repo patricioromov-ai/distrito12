@@ -1,4 +1,4 @@
-// Service Worker de SIGT — cachea el "cascarón" de la app (HTML, íconos)
+// Service Worker de BASE — cachea el "cascarón" de la app (HTML, íconos)
 // para que abra aunque no haya internet. Las llamadas al backend (Apps
 // Script) NUNCA se cachean — siempre van a la red, porque son datos vivos.
 const CACHE_NAME = 'sigt-cache-v1';
@@ -58,7 +58,7 @@ self.addEventListener('push', (evento) => {
   let datos = {};
   try { datos = evento.data ? evento.data.json() : {}; } catch (e) {}
   const notif = datos.notification || {};
-  const titulo = notif.title || 'SIGT';
+  const titulo = notif.title || 'BASE';
   const cuerpo = notif.body || '';
   evento.waitUntil(
     self.registration.showNotification(titulo, {

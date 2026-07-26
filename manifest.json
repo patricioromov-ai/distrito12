@@ -1,6 +1,6 @@
 {
-  "name": "SIGT · Sistema Integrado de Gestión Territorial",
-  "short_name": "SIGT",
+  "name": "BASE · Sistema Integrado de Gestión Territorial",
+  "short_name": "BASE",
   "description": "Gestión territorial del Distrito 12 — militantes, organizaciones, tareas y chat.",
   "start_url": "./index.html",
   "scope": "./",
