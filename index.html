@@ -359,7 +359,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-25-2</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-25-3</p>
   </div>
 </div>
 
@@ -1404,8 +1404,8 @@
           <option value="pct_telefono">% con teléfono registrado</option>
           <option value="pct_rol_asignado">% con rol asignado</option>
           <option value="pct_cartera_asignada">% con cartera territorial asignada</option>
-          <option value="pct_email_enviado">% con al menos 1 email enviado</option>
-          <option value="pct_whatsapp_enviado">% con al menos 1 WhatsApp enviado</option>
+          <option value="pct_email_enviado">% (de los que tienen email) a quienes se les envió al menos 1</option>
+          <option value="pct_whatsapp_enviado">% (de los que tienen teléfono) a quienes se les envió al menos 1 WhatsApp</option>
           <option value="pct_activos_vigentes">% en estado Activo/Vigente</option>
           <option value="pct_renuncia">% de renuncia</option>
         </select>
@@ -2212,8 +2212,8 @@ async function renderKPIs(){
     <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.cumpleanos}</div><div class="lbl">Cumpleaños enviados hoy</div></div>
     <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.aniversarios}</div><div class="lbl">Aniversarios enviados hoy</div></div>
     <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${hoy.total}</div><div class="lbl">Total correos enviados hoy</div></div>
-    <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${cantConEmailEnviado.toLocaleString('es-CL')} (${total?Math.round(cantConEmailEnviado/total*100):0}%)</div><div class="lbl">Militantes con al menos 1 email enviado</div></div>
-    <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${cantConWhatsappEnviado.toLocaleString('es-CL')} (${total?Math.round(cantConWhatsappEnviado/total*100):0}%)</div><div class="lbl">Militantes con al menos 1 WhatsApp enviado</div></div>`;
+    <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${cantConEmailEnviado.toLocaleString('es-CL')} (${conEmail?Math.round(cantConEmailEnviado/conEmail*100):0}%)</div><div class="lbl">Con email registrado, a quienes se les envió al menos 1</div></div>
+    <div class="kpiCard" style="border-left-color:var(--teal);"><div class="num">${cantConWhatsappEnviado.toLocaleString('es-CL')} (${conTel?Math.round(cantConWhatsappEnviado/conTel*100):0}%)</div><div class="lbl">Con teléfono registrado, a quienes se les envió al menos 1 WhatsApp</div></div>`;
 
   const porRol = {}; MILITANTES_KPI.forEach(m=>{ const k = m.ROL ? m.ROL.trim() : 'Sin rol asignado'; porRol[k]=(porRol[k]||0)+1; });
   const porSexo = { 'Mujer': mujeres, 'Varón': varones };
