@@ -422,7 +422,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-26-8 (UI mejorada)</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-27-1 (fix email Meet)</p>
   </div>
 </div>
 
@@ -3973,7 +3973,7 @@ async function confirmarNuevaActividad(){
   mostrarCargando(true);
   const res = await apiPost(payload);
   mostrarCargando(false);
-  toast(res.ok ? `Actividad creada — ${res.conEmail} de ${res.invitados} invitados tienen email registrado${res.emailInvalidos ? ` (${res.emailInvalidos} con email mal escrito, no se invitaron)` : ''}${res.linkMeet ? ' · Link de Meet generado ✓' : ''}` : (res.error||'Error'), 6500);
+  toast(res.ok ? `Actividad creada — ${res.conEmail} de ${res.invitados} invitados tienen email registrado${res.emailInvalidos ? ` (${res.emailInvalidos} con email mal escrito, no se invitaron)` : ''}${res.linkMeet ? ' · Link de Meet generado ✓' : ''}${res.seUsoRespaldo ? ' · Nota: la invitación nativa falló para algún correo, se usó el modo de correo personalizado como respaldo' : ''}` : (res.error||'Error'), 7500);
   if(res.ok){
     cerrarModalActividad();
     cargarActividades();
