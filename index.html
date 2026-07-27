@@ -66,6 +66,16 @@
 
   #app{display:none;height:100vh;flex-direction:column;}
   header{background:linear-gradient(135deg,var(--navy),var(--navy2));border-bottom:1px solid var(--border);backdrop-filter:blur(20px);color:#fff;padding:0 22px;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 2px 16px rgba(0,0,0,.3);z-index:5;flex-shrink:0;}
+  #buscadorGlobalWrap{position:relative;margin-left:20px;width:280px;}
+  #buscadorGlobal{width:100%;padding:9px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;font-size:12.5px;font-family:inherit;}
+  #buscadorGlobal::placeholder{color:rgba(255,255,255,.4);}
+  #resultadosBuscadorGlobal{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card-solid);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.4);max-height:340px;overflow-y:auto;z-index:50;}
+  .resGlobalItem{padding:10px 14px;cursor:pointer;font-size:12.5px;display:flex;align-items:center;gap:9px;border-bottom:1px solid rgba(255,255,255,.05);}
+  .resGlobalItem:hover{background:rgba(224,164,88,.1);}
+  .resGlobalItem:last-child{border-bottom:none;}
+  .resGlobalTipo{font-size:9px;padding:2px 7px;border-radius:8px;font-weight:700;text-transform:uppercase;flex-shrink:0;}
+  .resGlobalVacio{padding:14px;font-size:12px;color:var(--muted);text-align:center;}
+  @media (max-width:760px){ #buscadorGlobalWrap{display:none;} }
   header .left{display:flex;align-items:center;gap:16px;}
   header .brand{font-weight:800;font-size:17px;letter-spacing:.3px;display:flex;align-items:center;gap:9px;}
   header .brand .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--gold-light),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--navy);font-size:13px;}
@@ -143,8 +153,21 @@
   .iconBtn.email{background:rgba(90,168,232,.15);color:var(--blue);}
   .iconBtn.wsp{background:rgba(60,203,127,.15);color:var(--green);}
   .iconBtn:disabled{background:rgba(255,255,255,.03);color:#4A5245;cursor:not-allowed;}
-  #pager{display:flex;justify-content:center;gap:10px;padding:14px;font-size:12.5px;align-items:center;color:var(--muted);}
-  #pager button{padding:6px 14px;border:1px solid var(--border);background:var(--card-solid);color:var(--text);border-radius:9px;cursor:pointer;font-family:inherit;}
+  #pager{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px;font-size:12.5px;color:var(--muted);}
+  .pagerFila{display:flex;gap:6px;align-items:center;}
+  #pager button{width:32px;height:32px;padding:0;border:1px solid var(--border);background:var(--card-solid);color:var(--text);border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;}
+  #pager button.pagerNum.activa{background:linear-gradient(135deg,var(--gold-light),var(--gold));color:var(--navy);border:none;font-weight:800;}
+  #pager button:disabled{opacity:.35;cursor:default;}
+  .pagerElipsis{color:var(--muted);padding:0 2px;}
+  .pagerTotal{font-size:11.5px;color:var(--muted);}
+  .calOrgCabecera{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.5px;padding-bottom:8px;}
+  .calOrgGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .calOrgDia{background:var(--card-solid);min-height:88px;padding:7px;font-size:11px;}
+  .calOrgDia.fueraDeMes{opacity:.3;}
+  .calOrgDia.hoy .calOrgNum{color:var(--gold-light);font-weight:800;}
+  .calOrgNum{color:var(--muted);font-size:11px;}
+  .calOrgEvento{margin-top:4px;font-size:9.5px;padding:2px 6px;border-radius:5px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  @media (max-width:760px){ .calOrgDia{min-height:56px;font-size:9px;} .calOrgEvento{font-size:8px;} }
 
   #overlay{display:none;position:fixed;inset:0;background:rgba(4,6,4,.65);z-index:1000;}
   #drawer{display:none;position:fixed;right:0;top:0;bottom:0;width:430px;max-width:92vw;background:var(--card-solid);border-left:1px solid var(--border);z-index:1001;box-shadow:-10px 0 40px rgba(0,0,0,.4);overflow-y:auto;}
@@ -399,7 +422,7 @@
     <input type="password" id="passInput" placeholder="Clave de acceso" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
     <button onclick="hacerLogin()">Ingresar</button>
     <div id="loginError"></div>
-    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-26-6</p>
+    <p style="margin-top:14px;font-size:10px;color:#5C6559;">build 2026-07-26-8 (UI mejorada)</p>
   </div>
 </div>
 
@@ -407,6 +430,10 @@
   <header>
     <div class="left">
       <div class="brand" onclick="irAlInicio()" style="cursor:pointer;"><div class="logo">B</div>BASE <span>Distrito 12</span></div>
+      <div id="buscadorGlobalWrap">
+        <input id="buscadorGlobal" placeholder="🔍 Buscar militante u organización…" oninput="buscarGlobal(this.value)" onfocus="buscarGlobal(this.value)">
+        <div id="resultadosBuscadorGlobal"></div>
+      </div>
       <button class="exit" id="btnVolverInicio" onclick="irAlInicio()">← Volver al inicio</button>
     </div>
     <div class="userinfo">
@@ -789,7 +816,19 @@
           <button class="btn btn-outline" onclick="cargarOrganizaciones(true)">Actualizar</button>
           <button class="btn btn-outline" onclick="exportarCSVOrg()">Exportar CSV</button>
           <button class="btn btn-outline" onclick="abrirModalInformeOrg()">Generar informe acumulativo</button>
+          <button class="btn btn-outline" id="btnToggleCalendarioOrg" onclick="toggleCalendarioOrg()">📅 Ver calendario</button>
           <button class="btn btn-gold" onclick="abrirModalOrg()">+ Agregar organización</button>
+        </div>
+      </div>
+      <div id="calendarioOrgWrap" style="display:none;">
+        <div class="chartCard" style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <button class="btn btn-outline" style="padding:6px 12px;" onclick="cambiarMesCalendarioOrg(-1)">‹</button>
+            <h4 id="calOrgTituloMes" style="margin:0;"></h4>
+            <button class="btn btn-outline" style="padding:6px 12px;" onclick="cambiarMesCalendarioOrg(1)">›</button>
+          </div>
+          <div id="calOrgCabecera" class="calOrgCabecera"></div>
+          <div id="calOrgGrid" class="calOrgGrid"></div>
         </div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
@@ -1533,6 +1572,10 @@
       <textarea id="actDescripcion" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;min-height:70px;"></textarea>
       <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Lugar</label>
       <input id="actLugar" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;margin-top:3px;" placeholder="Ej: Sede distrital, Puente Alto">
+      <div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:rgba(224,164,88,.06);">
+        <input type="checkbox" id="actEsVirtual" onchange="toggleActividadVirtual()" style="width:16px;height:16px;">
+        <label for="actEsVirtual" style="font-size:12.5px;font-weight:600;cursor:pointer;">🎥 Es una reunión virtual (agregar link de Meet automáticamente)</label>
+      </div>
       <div style="display:flex;gap:10px;">
         <div style="flex:1;">
           <label style="font-size:11px;color:var(--muted);font-weight:600;margin-top:11px;display:block;">Inicio</label>
@@ -2314,11 +2357,23 @@ function renderTabla(){
 }
 function renderPager(){
   const totalPag = Math.max(1, Math.ceil(filtrados.length/PORPAGINA));
+  const botones = [];
+  botones.push(`<button onclick="irAPagina(${pagina-1})" ${pagina<=1?'disabled':''}>‹</button>`);
+
+  const paginasAMostrar = new Set([1, totalPag, pagina, pagina-1, pagina+1]);
+  let anterior = 0;
+  [...paginasAMostrar].filter(p=>p>=1 && p<=totalPag).sort((a,b)=>a-b).forEach(p=>{
+    if(anterior && p - anterior > 1) botones.push(`<span class="pagerElipsis">…</span>`);
+    botones.push(`<button class="pagerNum ${p===pagina?'activa':''}" onclick="irAPagina(${p})">${p}</button>`);
+    anterior = p;
+  });
+
+  botones.push(`<button onclick="irAPagina(${pagina+1})" ${pagina>=totalPag?'disabled':''}>›</button>`);
   document.getElementById('pager').innerHTML = `
-    <button onclick="cambiarPagina(-1)" ${pagina<=1?'disabled':''}>‹ Anterior</button>
-    <span>Página ${pagina} de ${totalPag} · ${filtrados.length} resultados</span>
-    <button onclick="cambiarPagina(1)" ${pagina>=totalPag?'disabled':''}>Siguiente ›</button>`;
+    <div class="pagerFila">${botones.join('')}</div>
+    <span class="pagerTotal">${filtrados.length} resultado(s)</span>`;
 }
+function irAPagina(n){ pagina = n; renderTabla(); }
 function cambiarPagina(delta){ pagina += delta; renderTabla(); }
 function toggleSel(cedula, el){
   if(el.checked) seleccionados.add(String(cedula)); else seleccionados.delete(String(cedula));
@@ -2646,17 +2701,37 @@ function generarInformeEjecutivo(k){
     <ul>${sugerencias.map(s=>`<li>${s}</li>`).join('')}</ul>`;
 }
 
+// Plugin de Chart.js: dibuja el total (suma de todos los valores) al centro
+// de una dona — como en la maqueta aprobada, en vez de solo la leyenda abajo.
+const pluginTotalCentro = {
+  id: 'totalCentro',
+  afterDraw(chart){
+    if(!chart.config.options.mostrarTotalCentro) return;
+    const { ctx, chartArea: { left, right, top, bottom } } = chart;
+    const total = chart.data.datasets[0].data.reduce((a,b)=>a+Number(b),0);
+    const cx = (left+right)/2, cy = (top+bottom)/2;
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '800 22px Inter, sans-serif'; ctx.fillStyle = '#F3F5F1';
+    ctx.fillText(total.toLocaleString('es-CL'), cx, cy-8);
+    ctx.font = '700 9px Inter, sans-serif'; ctx.fillStyle = '#8A9385';
+    ctx.fillText('TOTAL', cx, cy+12);
+    ctx.restore();
+  }
+};
+Chart.register(pluginTotalCentro);
+
 function _dibujarChart(canvasId, tipo, labels, data, colores){
   if(charts[canvasId]) charts[canvasId].destroy();
   const ctx = document.getElementById(canvasId).getContext('2d');
   const colorFinal = colores.length>=labels.length ? colores : labels.map((_,i)=>colores[i%colores.length]);
   const datasetExtra = tipo==='bar'
     ? { borderRadius:6, borderSkipped:false, maxBarThickness:56 }
-    : { borderColor:'#171C17', borderWidth:3, hoverOffset:6 };
+    : { borderColor:'#171C17', borderWidth:3, hoverOffset:6, cutout:'68%' };
   charts[canvasId] = new Chart(ctx, {
     type: tipo,
     data: { labels, datasets: [{ data, backgroundColor: colorFinal, ...datasetExtra }] },
-    options: { responsive:true,
+    options: { responsive:true, mostrarTotalCentro: tipo==='doughnut',
       plugins:{ legend:{ display: tipo==='doughnut', position:'bottom', labels:{boxWidth:12,font:{size:11},color:'#C7CEC2'} } },
       scales: tipo==='bar' ? {
         y:{beginAtZero:true, ticks:{precision:0,color:'#8A9385'}, grid:{color:'rgba(255,255,255,.07)'}},
@@ -3840,6 +3915,8 @@ function abrirModalActividad(){
   document.getElementById('actLugar').value='';
   document.getElementById('actInicio').value='';
   document.getElementById('actFin').value='';
+  document.getElementById('actEsVirtual').checked=false;
+  toggleActividadVirtual();
   cambiarModoInvitacion('nativa');
   const fComuna = document.getElementById('actFiltroComuna');
   if(!fComuna.dataset.cargado){
@@ -3867,6 +3944,11 @@ function actualizarInfoDestinatariosActividad(){
     ? `Se usará tu selección actual de la pestaña Militantes: ${objetivo} persona(s).`
     : 'No hay selección activa — se usarán los filtros de comuna/sexo/rol de arriba (vacíos = toda la base).';
 }
+function toggleActividadVirtual(){
+  const esVirtual = document.getElementById('actEsVirtual').checked;
+  const campoLugar = document.getElementById('actLugar');
+  campoLugar.placeholder = esVirtual ? 'Opcional — el link de Meet reemplaza la ubicación física' : 'Ej: Sede distrital, Puente Alto';
+}
 async function confirmarNuevaActividad(){
   const datos = {
     titulo: document.getElementById('actTitulo').value.trim(),
@@ -3874,7 +3956,8 @@ async function confirmarNuevaActividad(){
     lugar: document.getElementById('actLugar').value.trim(),
     fechaInicio: document.getElementById('actInicio').value,
     fechaFin: document.getElementById('actFin').value,
-    tipoInvitacion: modoInvitacionActual
+    tipoInvitacion: modoInvitacionActual,
+    esReunionVirtual: document.getElementById('actEsVirtual').checked
   };
   if(!datos.titulo || !datos.fechaInicio || !datos.fechaFin){ toast('Completa título y fechas'); return; }
   const payload = {action:'crearActividad', datos};
@@ -3890,8 +3973,15 @@ async function confirmarNuevaActividad(){
   mostrarCargando(true);
   const res = await apiPost(payload);
   mostrarCargando(false);
-  toast(res.ok ? `Actividad creada — ${res.conEmail} de ${res.invitados} invitados tienen email registrado${res.emailInvalidos ? ` (${res.emailInvalidos} con email mal escrito, no se invitaron)` : ''}` : (res.error||'Error'), 6000);
-  if(res.ok){ cerrarModalActividad(); cargarActividades(); }
+  toast(res.ok ? `Actividad creada — ${res.conEmail} de ${res.invitados} invitados tienen email registrado${res.emailInvalidos ? ` (${res.emailInvalidos} con email mal escrito, no se invitaron)` : ''}${res.linkMeet ? ' · Link de Meet generado ✓' : ''}` : (res.error||'Error'), 6500);
+  if(res.ok){
+    cerrarModalActividad();
+    cargarActividades();
+    if(res.linkMeet){
+      const ventana = window.open(res.linkMeet, '_blank');
+      if(!ventana) prompt('Link de tu reunión de Meet (cópialo):', res.linkMeet);
+    }
+  }
 }
 
 function abrirModalResultados(id){
@@ -3943,6 +4033,7 @@ let ordenOrgAsc = true;
 let _debounceBuscarOrg = null;
 
 async function cargarOrganizaciones(forzar){
+  if(forzar) calOrgActividadesCache = null;
   if(ORGANIZACIONES.length && !forzar){ aplicarFiltrosOrg(); return; } // ya está en memoria, no se vuelve a pedir
   document.getElementById('orgTotalTexto').innerText = 'Cargando…';
   const res = await apiGet({action:'listarOrganizaciones', filtros:{}});
@@ -5101,6 +5192,118 @@ async function toggleOficinaVirtual(){
   }
   cargarEstadoOficinaVirtual();
 }
+
+// ---------- CALENDARIO DE ACTIVIDADES (Organizaciones) ----------
+let calOrgMesActual = new Date();
+let calOrgActividadesCache = null;
+function toggleCalendarioOrg(){
+  const wrap = document.getElementById('calendarioOrgWrap');
+  const mostrar = wrap.style.display === 'none';
+  wrap.style.display = mostrar ? 'block' : 'none';
+  document.getElementById('btnToggleCalendarioOrg').innerText = mostrar ? '📋 Ver lista' : '📅 Ver calendario';
+  if(mostrar) cargarCalendarioOrg();
+}
+async function cargarCalendarioOrg(){
+  if(!calOrgActividadesCache){
+    const res = await apiGet({action:'listarActividadesOrg'});
+    calOrgActividadesCache = res.ok ? res.datos : [];
+  }
+  renderCalendarioOrg();
+}
+function cambiarMesCalendarioOrg(delta){
+  calOrgMesActual.setMonth(calOrgMesActual.getMonth() + delta);
+  renderCalendarioOrg();
+}
+function renderCalendarioOrg(){
+  const anio = calOrgMesActual.getFullYear(), mes = calOrgMesActual.getMonth();
+  document.getElementById('calOrgTituloMes').innerText = calOrgMesActual.toLocaleDateString('es-CL',{month:'long',year:'numeric'});
+  document.getElementById('calOrgCabecera').innerHTML = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'].map(d=>`<div>${d}</div>`).join('');
+
+  const mapaOrg = {}; (ORGANIZACIONES||[]).forEach(o=>mapaOrg[o.id]=o.nombre);
+  const porDia = {};
+  (calOrgActividadesCache||[]).forEach(a=>{
+    if(!a.fechaProgramada) return;
+    const f = new Date(a.fechaProgramada);
+    if(f.getFullYear()===anio && f.getMonth()===mes){
+      const dia = f.getDate();
+      (porDia[dia] = porDia[dia]||[]).push({ ...a, org: mapaOrg[a.idOrganizacion]||'Organización' });
+    }
+  });
+
+  const primerDia = new Date(anio, mes, 1).getDay();
+  const diasEnMes = new Date(anio, mes+1, 0).getDate();
+  const diasMesAnterior = new Date(anio, mes, 0).getDate();
+  const hoy = new Date();
+  const colorEstado = { 'Programada':'rgba(224,164,88,.18);color:#F0C088', 'Realizada':'rgba(60,203,127,.18);color:#3CCB7F', 'Cancelada':'rgba(240,102,90,.18);color:#F0665A' };
+
+  let celdas = '';
+  for(let i=primerDia-1;i>=0;i--) celdas += `<div class="calOrgDia fueraDeMes"><div class="calOrgNum">${diasMesAnterior-i}</div></div>`;
+  for(let d=1; d<=diasEnMes; d++){
+    const esHoy = hoy.getFullYear()===anio && hoy.getMonth()===mes && hoy.getDate()===d;
+    const eventos = (porDia[d]||[]).map(a=>{
+      const estilo = colorEstado[a.estado] || 'rgba(138,147,133,.18);color:#8A9385';
+      return `<div class="calOrgEvento" style="background:${estilo};" title="${a.tipoActividad} · ${a.org}" onclick="cambiarMesCalendarioOrgOff();abrirDrawerOrg(${JSON.stringify(a.idOrganizacion)})">${a.tipoActividad} · ${a.org}</div>`;
+    }).join('');
+    celdas += `<div class="calOrgDia ${esHoy?'hoy':''}"><div class="calOrgNum">${d}</div>${eventos}</div>`;
+  }
+  const totalCeldas = primerDia + diasEnMes;
+  const restantes = (7 - (totalCeldas % 7)) % 7;
+  for(let d=1; d<=restantes; d++) celdas += `<div class="calOrgDia fueraDeMes"><div class="calOrgNum">${d}</div></div>`;
+
+  document.getElementById('calOrgGrid').innerHTML = celdas;
+}
+function cambiarMesCalendarioOrgOff(){ /* no-op, solo para no cerrar el calendario al abrir la ficha */ }
+
+// ---------- BÚSQUEDA GLOBAL (header) ----------
+let debounceBuscadorGlobal = null;
+function buscarGlobal(q){
+  clearTimeout(debounceBuscadorGlobal);
+  debounceBuscadorGlobal = setTimeout(()=>_ejecutarBusquedaGlobal(q), 150);
+}
+function _ejecutarBusquedaGlobal(q){
+  const cont = document.getElementById('resultadosBuscadorGlobal');
+  q = (q||'').trim().toLowerCase();
+  if(q.length < 2){ cont.style.display='none'; return; }
+
+  const resultadosMilitantes = (MILITANTES||[]).filter(m => (m.NOMBRE||'').toLowerCase().includes(q)).slice(0,6);
+  const resultadosOrg = (typeof ORGANIZACIONES!=='undefined' ? ORGANIZACIONES : []).filter(o => (o.nombre||'').toLowerCase().includes(q)).slice(0,6);
+
+  if(!resultadosMilitantes.length && !resultadosOrg.length){
+    cont.innerHTML = '<div class="resGlobalVacio">Sin resultados</div>';
+    cont.style.display='block';
+    return;
+  }
+
+  let html = '';
+  resultadosMilitantes.forEach(m=>{
+    html += `<div class="resGlobalItem" onclick="irAResultadoGlobal('militante','${m.CEDULA}')">
+      <span class="resGlobalTipo" style="background:rgba(90,168,232,.18);color:#5AA8E8;">Militante</span>
+      <span>${titleCase(m.NOMBRE)}</span>
+    </div>`;
+  });
+  resultadosOrg.forEach(o=>{
+    html += `<div class="resGlobalItem" onclick="irAResultadoGlobal('organizacion',${JSON.stringify(o.id)})">
+      <span class="resGlobalTipo" style="background:rgba(224,164,88,.18);color:#E0A458;">Organización</span>
+      <span>${titleCase(o.nombre)}</span>
+    </div>`;
+  });
+  cont.innerHTML = html;
+  cont.style.display = 'block';
+}
+function irAResultadoGlobal(tipo, id){
+  document.getElementById('resultadosBuscadorGlobal').style.display='none';
+  document.getElementById('buscadorGlobal').value='';
+  if(tipo==='militante'){
+    cambiarTab('militantes');
+    setTimeout(()=>abrirDrawer(id), 150);
+  } else {
+    cambiarTab('organizaciones');
+    setTimeout(()=>abrirDrawerOrg(id), 150);
+  }
+}
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('#buscadorGlobalWrap')) document.getElementById('resultadosBuscadorGlobal').style.display='none';
+});
 
 </script>
 </body>
