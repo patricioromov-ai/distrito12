@@ -3420,35 +3420,65 @@ async function confirmarTareaManual(){
 }
 
 // ---------- TAREAS DE PRECANDIDATOS ----------
+let BANCO_TAREAS_CANDIDATO = [];
 async function cargarCandidatos(){
-  const res = await apiGet({action:'getTareasCandidatosPendientes'});
+  const [resTareas, resBanco] = await Promise.all([
+    apiGet({action:'getTareasCandidatosPendientes'}),
+    apiGet({action:'getBancoTareasCandidatos'})
+  ]);
+  if(resBanco.ok) BANCO_TAREAS_CANDIDATO = resBanco.datos;
+  const res = resTareas;
   if(!res.ok){ document.getElementById('listaCandidatos').innerHTML = res.error||'Error'; return; }
   if(!res.datos.length){ document.getElementById('listaCandidatos').innerHTML = '<p style="color:var(--muted);font-size:13px;">Aún no hay militantes marcados con "Intención de candidatura".</p>'; return; }
+  const categoriasBanco = [...new Set(BANCO_TAREAS_CANDIDATO.map(b=>b.categoria))];
+  const opcionesBanco = categoriasBanco.map(cat=>`<optgroup label="${cat}">${BANCO_TAREAS_CANDIDATO.filter(b=>b.categoria===cat).map(b=>`<option value="${b.id}">${b.titulo}</option>`).join('')}</optgroup>`).join('');
   document.getElementById('listaCandidatos').innerHTML = res.datos.map(c=>`
     <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
       <b style="font-size:13px;">${titleCase(c.nombre)}</b> <span style="color:var(--muted);font-size:11.5px;">${c.email?'· '+c.email:'· sin email (no recibirá el correo)'}</span>
       <div style="margin-top:8px;">
         ${c.tareas.map(t=>`
-          <div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;">
-            <input type="text" value="${t.descripcion.replace(/"/g,'&quot;')}" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;" onchange="editarTareaCandidato('${t.id}', this.value)">
-            <button onclick="borrarTareaCandidato('${t.id}','${c.cedula}')" style="background:none;border:none;color:var(--red);cursor:pointer;">✕</button>
+          <div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+              <input type="text" id="titulo-${t.id}" value="${(t.titulo||'').replace(/"/g,'&quot;')}" placeholder="Título de la tarea" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:700;" onchange="guardarTareaCandidato('${t.id}')">
+              <button onclick="borrarTareaCandidato('${t.id}','${c.cedula}')" style="background:none;border:none;color:var(--red);cursor:pointer;">✕</button>
+            </div>
+            <textarea id="desc-${t.id}" rows="2" placeholder="Descripción — el qué y el cómo" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;" onchange="guardarTareaCandidato('${t.id}')">${t.descripcion}</textarea>
           </div>`).join('') || '<p style="color:var(--muted);font-size:11.5px;margin:4px 0;">Sin tareas cargadas.</p>'}
       </div>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <input type="text" id="nuevaTarea-${c.cedula}" placeholder="Nueva tarea para esta persona…" style="flex:1;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;">
-        <button class="btn btn-outline" style="padding:6px 12px;font-size:11.5px;" onclick="agregarTareaCandidatoFrontend('${c.cedula}')">+ Agregar</button>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
+        <select id="bancoSel-${c.cedula}" onchange="elegirDeBancoTareas('${c.cedula}', this.value)" style="padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;">
+          <option value="">+ Elegir del banco de tareas…</option>
+          ${opcionesBanco}
+        </select>
+        <input type="text" id="nuevaTareaTitulo-${c.cedula}" placeholder="Título de la tarea" style="padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:700;">
+        <textarea id="nuevaTareaDesc-${c.cedula}" rows="2" placeholder="Descripción — el qué y el cómo…" style="padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;"></textarea>
+        <button class="btn btn-outline" style="align-self:flex-start;padding:6px 12px;font-size:11.5px;" onclick="agregarTareaCandidatoFrontend('${c.cedula}')">+ Agregar tarea</button>
       </div>
     </div>`).join('');
 }
-async function agregarTareaCandidatoFrontend(cedula){
-  const input = document.getElementById('nuevaTarea-'+cedula);
-  const descripcion = input.value.trim();
-  if(!descripcion) return;
-  const res = await apiPost({action:'agregarTareaCandidato', cedula, descripcion});
-  if(res.ok){ input.value=''; cargarCandidatos(); } else toast(res.error||'Error');
+function elegirDeBancoTareas(cedula, idBanco){
+  if(!idBanco) return;
+  const t = BANCO_TAREAS_CANDIDATO.find(b=>b.id===idBanco);
+  if(!t) return;
+  document.getElementById('nuevaTareaTitulo-'+cedula).value = t.titulo;
+  document.getElementById('nuevaTareaDesc-'+cedula).value = t.descripcion;
 }
-async function editarTareaCandidato(id, descripcion){
-  const res = await apiPost({action:'actualizarTareaCandidato', id, descripcion});
+async function agregarTareaCandidatoFrontend(cedula){
+  const titulo = document.getElementById('nuevaTareaTitulo-'+cedula).value.trim();
+  const descripcion = document.getElementById('nuevaTareaDesc-'+cedula).value.trim();
+  if(!descripcion){ toast('Falta la descripción de la tarea'); return; }
+  const res = await apiPost({action:'agregarTareaCandidato', cedula, titulo, descripcion});
+  if(res.ok){
+    document.getElementById('nuevaTareaTitulo-'+cedula).value='';
+    document.getElementById('nuevaTareaDesc-'+cedula).value='';
+    document.getElementById('bancoSel-'+cedula).value='';
+    cargarCandidatos();
+  } else toast(res.error||'Error');
+}
+async function guardarTareaCandidato(id){
+  const titulo = document.getElementById('titulo-'+id).value;
+  const descripcion = document.getElementById('desc-'+id).value;
+  const res = await apiPost({action:'actualizarTareaCandidato', id, titulo, descripcion});
   if(!res.ok) toast(res.error||'Error');
 }
 async function borrarTareaCandidato(id, cedula){
