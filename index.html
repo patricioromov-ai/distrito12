@@ -834,6 +834,8 @@
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
         <input type="text" id="orgBuscar" placeholder="Buscar por nombre…" style="flex:1;min-width:220px;padding:10px 14px;border:1px solid var(--border);border-radius:11px;font-size:13px;font-family:inherit;background:rgba(255,255,255,.04);color:var(--text);" oninput="onBuscarOrgInput()">
         <select id="orgFiltroComuna" onchange="aplicarFiltrosOrg()"><option value="">Todas las comunas</option></select>
+        <button class="togglePill" id="orgPillEmail" onclick="toggleOrgPill('orgPillEmail')">Con email</button>
+        <button class="togglePill" id="orgPillTel" onclick="toggleOrgPill('orgPillTel')">Con teléfono</button>
         <button class="btn btn-outline" onclick="limpiarFiltrosOrg()">Limpiar filtros</button>
       </div>
       <div id="chipsCategoriaOrg" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>
@@ -4083,9 +4085,15 @@ function seleccionarCategoriaOrg(cat){
   poblarFiltrosOrg(); // solo para refrescar el estado visual "on" de los chips (no repuebla, ya está cargado=1)
   aplicarFiltrosOrg();
 }
+function toggleOrgPill(id){
+  document.getElementById(id).classList.toggle('on');
+  aplicarFiltrosOrg();
+}
 function limpiarFiltrosOrg(){
   document.getElementById('orgBuscar').value='';
   document.getElementById('orgFiltroComuna').value='';
+  document.getElementById('orgPillEmail').classList.remove('on');
+  document.getElementById('orgPillTel').classList.remove('on');
   categoriaSeleccionadaOrg='';
   poblarFiltrosOrg();
   aplicarFiltrosOrg();
@@ -4095,10 +4103,14 @@ function aplicarFiltrosOrg(){
   const q = document.getElementById('orgBuscar').value.toLowerCase();
   const comuna = document.getElementById('orgFiltroComuna').value;
   const categoria = categoriaSeleccionadaOrg;
+  const conEmail = document.getElementById('orgPillEmail').classList.contains('on');
+  const conTel = document.getElementById('orgPillTel').classList.contains('on');
   orgFiltrados = ORGANIZACIONES.filter(o=>{
     if(q && !String(o.nombre).toLowerCase().includes(q)) return false;
     if(comuna && o.comuna !== comuna) return false;
     if(categoria && o.categoria !== categoria) return false;
+    if(conEmail && !o.contactoEmail) return false;
+    if(conTel && !o.contactoTelefono) return false;
     return true;
   });
   ordenarArregloOrg();
