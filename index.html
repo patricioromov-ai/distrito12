@@ -233,6 +233,7 @@
   #misTareasView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:transparent;}
   #mapaView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:transparent;}
   #gestionView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:transparent;}
+  #candidatosModuloView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:transparent;}
   #organizacionesView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:transparent;}
   #encuestasView{display:none;flex:1;overflow-y:auto;padding:24px 26px;background:transparent;}
   #chatEquipoView{display:none;flex:1;flex-direction:column;padding:24px 26px 16px;background:transparent;overflow:hidden;}
@@ -1748,6 +1749,12 @@ let cedulaActiva = null;
 let charts = {};
 
 function norm(str){ return (str||'').toString().trim().toUpperCase(); }
+// Igual que la versión del backend: tolerante a espacios, mayúsculas y
+// acentos mal codificados en el valor de CANDIDATO.
+function esCandidato(m){
+  const valor = String((m && m.CANDIDATO) || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return valor === 'si';
+}
 function titleCase(str){
   return (str||'').toString().trim().toLowerCase().replace(/\p{L}+/gu, w => w.charAt(0).toUpperCase()+w.slice(1));
 }
@@ -2375,7 +2382,7 @@ function iconosMilitante(m){
     : `<div title="Mujer" style="width:22px;height:22px;border-radius:50%;background:rgba(224,164,88,.13);display:inline-flex;align-items:center;justify-content:center;">
          <svg width="12" height="12" viewBox="0 0 24 24" fill="#E0A458"><circle cx="12" cy="7" r="4"/><path d="M12 12c-3.5 0-6.5 2-7.4 5l-.6 2h5l.5 3h5l.5-3h5l-.6-2c-.9-3-3.9-5-7.4-5z"/></svg>
        </div>`;
-  const iconoCandidato = m.CANDIDATO
+  const iconoCandidato = esCandidato(m)
     ? `<div title="${esVaron?'Precandidato':'Precandidata'}" style="width:22px;height:22px;border-radius:50%;background:rgba(240,192,136,.15);display:inline-flex;align-items:center;justify-content:center;">
          <svg width="11" height="11" viewBox="0 0 24 24" fill="#F0C088"><path d="M12 2l2.9 6.6L22 9.3l-5 4.8 1.3 6.9L12 17.6 5.7 21l1.3-6.9-5-4.8 7.1-.7z"/></svg>
        </div>`
@@ -3747,7 +3754,7 @@ function abrirDrawer(cedula){
   document.getElementById('dComuna').value = m.COMUNA||'';
   document.getElementById('dRol').value = norm(m.ROL);
   document.getElementById('dEstado').value = m.ESTADO || 'Nuevo Militante';
-  document.getElementById('dCandidato').checked = String(m.CANDIDATO).toLowerCase()==='sí' || String(m.CANDIDATO).toLowerCase()==='si';
+  document.getElementById('dCandidato').checked = esCandidato(m);
   document.getElementById('lblCandidato').style.display = SESSION.rol==='admin' ? 'flex':'none';
   document.getElementById('dNotaNueva').value = '';
   document.getElementById('notaList').innerText = m.NOTAS || 'Sin notas registradas.';
